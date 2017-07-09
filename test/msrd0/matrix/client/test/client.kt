@@ -12,8 +12,8 @@ class ClientTest
 	companion object
 	{
 		val hs = HomeServer("matrix.org", URI("https://matrix.org"))
-		val id = MatrixID("msrd0", "matrix.org")
-		val context = Context(hs, id)
+		val id = MatrixId("msrd0", "matrix.org")
+		val context = ClientContext(hs, id)
 	}
 	
 	@Rule

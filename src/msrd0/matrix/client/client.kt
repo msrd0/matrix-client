@@ -10,7 +10,7 @@ import javax.ws.rs.core.*
 /**
  * This class is the http client for the matrix server.
  */
-open class Client(val context : Context)
+open class Client(val context : ClientContext)
 {
 	companion object
 	{
@@ -18,12 +18,17 @@ open class Client(val context : Context)
 	}
 	
 	/** HTTP Client */
-	protected val target : WebTarget = ClientBuilder.newClient().target(context.hs.base)
+	internal val target : WebTarget = ClientBuilder.newClient().target(context.hs.base)
 	
 	/** Access Token */
 	var token : String? = null
 	/** The next batch field from sync that should be supplied as the since parameter with the next query. */
 	var next_batch : String? = null
+	
+	/** The rooms that this user has joined. */
+	val rooms = ArrayList<Room>()
+	/** The rooms that this user has an invitation for. */
+	val roomsInvited = ArrayList<Room>()
 	
 	
 	/**
@@ -33,7 +38,7 @@ open class Client(val context : Context)
 	 * @throws MatrixErrorResponseException If an error was found
 	 */
 	@Throws(MatrixErrorResponseException::class)
-	protected fun checkForError(json : JsonObject)
+	internal fun checkForError(json : JsonObject)
 	{
 		if (json.containsKey("error"))
 			throw MatrixErrorResponseException(json.string("error")!!)
@@ -59,7 +64,6 @@ open class Client(val context : Context)
 	{
 		val l = HashSet<Auth>()
 		val res = if (json.isEmpty()) target.get("_matrix/client/r0/login") else target.post("_matrix/client/r0/login", json)
-		logger.debug("login response: ${res.str}")
 		checkForError(res.json)
 		
 		// if the request contains an access_token field, the auth was successfull
@@ -68,6 +72,7 @@ open class Client(val context : Context)
 		{
 			token = access_token
 			l.add(Auth(this, LoginType.SUCCESS))
+			logger.debug("$context successfully authenticated")
 			return l
 		}
 		
@@ -106,8 +111,11 @@ open class Client(val context : Context)
 	/**
 	 * Returns the query url with the access token.
 	 */
-	protected fun queryUrl(url : String) = url + (if (url.contains('?')) "&" else "?") + "&access_token=$token"
-	
+	internal fun queryUrl(url : String) = when (token) {
+		null -> url
+		else -> url + (if (url.contains('?')) "&" else "?") + "&access_token=$token"
+	}
+			
 	/**
 	 * Logout the current user.
 	 */
@@ -116,16 +124,29 @@ open class Client(val context : Context)
 		target.get(queryUrl("/_matrix/client/r0/logout"))
 	}
 	
+	
+	/**
+	 * Processes the rooms hash and returns a list containing all rooms.
+	 */
+	protected fun processRooms(hash : JsonObject) : List<Room>
+			= hash.keys.map { Room(this, RoomId.fromString(it)) }
+	
 	/**
 	 * Synchronize the account.
 	 */
 	fun sync()
 	{
 		val res = target.get(queryUrl("/_matrix/client/r0/sync" + (if (next_batch != null) "?since=$next_batch" else "")))
-		logger.debug("sync response: ${res.str}")
 		checkForError(res.json)
 		
 		next_batch = res.json.string("next_batch") ?: throw IllegalJsonException("Missing: 'next_batch'")
+		
+		// parse all rooms and add them
+		val rooms = res.json.obj("rooms") ?: throw IllegalJsonException("Missing: 'rooms'")
+		val roomsJoined = rooms.obj("join") ?: throw IllegalJsonException("Missing: 'rooms.join'")
+		val roomsInvited = rooms.obj("invite") ?: throw IllegalJsonException("Missing: 'rooms.invite'")
+		this.rooms.addAll(processRooms(roomsJoined))
+		this.roomsInvited.addAll(processRooms(roomsInvited))
 		
 		// TODO!!
 	}
