@@ -5,7 +5,8 @@ build:
   script:
     - gradle jar
   artifacts:
-    - build/libs/*.jar
+    paths:
+      - build/libs/*.jar
 
 test:
   stage: test
