@@ -7,6 +7,8 @@ build:
   artifacts:
     paths:
       - build/libs/*.jar
+      - cli/build/libs/*.jar
+      - cli/build/distributions/*
 
 test:
   stage: test
