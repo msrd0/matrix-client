@@ -7,6 +7,9 @@ import javax.ws.rs.client.*
 import javax.ws.rs.core.MediaType.*
 import javax.ws.rs.core.*
 
+/**
+ * This class is the http client for the matrix server.
+ */
 open class Client(val context : Context)
 {
 	companion object
@@ -14,11 +17,21 @@ open class Client(val context : Context)
 		val logger : Logger = LoggerFactory.getLogger(Client::class.java)
 	}
 	
+	/** HTTP Client */
 	protected val target : WebTarget = ClientBuilder.newClient().target(context.hs.base)
 	
+	/** Access Token */
 	var token : String? = null
+	/** The next batch field from sync that should be supplied as the since parameter with the next query. */
+	var next_batch : String? = null
 	
 	
+	/**
+	 * This function checks the given json for error messages and throws an exception
+	 * if it finds any errors.
+	 *
+	 * @throws MatrixErrorResponseException If an error was found
+	 */
 	@Throws(MatrixErrorResponseException::class)
 	protected fun checkForError(json : JsonObject)
 	{
@@ -27,9 +40,20 @@ open class Client(val context : Context)
 	}
 	
 	
+	/**
+	 * Returns a list of authentication options.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer
+	 */
 	@Throws(MatrixAnswerException::class)
 	fun auth() : Collection<Auth> = auth(JsonObject())
 	
+	/**
+	 * Returns a list of authentication options. The json object is passed in the request
+	 * body.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer
+	 */
 	@Throws(MatrixAnswerException::class)
 	internal fun auth(json : JsonObject) : Collection<Auth>
 	{
@@ -38,6 +62,7 @@ open class Client(val context : Context)
 		logger.debug("login response: ${res.str}")
 		checkForError(res.json)
 		
+		// if the request contains an access_token field, the auth was successfull
 		val access_token = res.json.string("access_token")
 		if (access_token != null)
 		{
@@ -46,6 +71,7 @@ open class Client(val context : Context)
 			return l
 		}
 		
+		// extract interesting values from the json object
 		val completed = res.json.array<String>("completed") ?: JsonArray<String>()
 		val flows = res.json.array<JsonObject>("flows") ?: throw IllegalJsonException("Missing: 'flows'")
 		val session = res.json.string("session")
@@ -77,22 +103,46 @@ open class Client(val context : Context)
 		return l
 	}
 	
+	/**
+	 * Returns the query url with the access token.
+	 */
 	protected fun queryUrl(url : String) = url + (if (url.contains('?')) "&" else "?") + "&access_token=$token"
 	
+	/**
+	 * Logout the current user.
+	 */
 	fun logout()
 	{
 		target.get(queryUrl("/_matrix/client/r0/logout"))
+	}
+	
+	/**
+	 * Synchronize the account.
+	 */
+	fun sync()
+	{
+		val res = target.get(queryUrl("/_matrix/client/r0/sync" + (if (next_batch != null) "?since=$next_batch" else "")))
+		logger.debug("sync response: ${res.str}")
+		checkForError(res.json)
+		
+		next_batch = res.json.string("next_batch") ?: throw IllegalJsonException("Missing: 'next_batch'")
+		
+		// TODO!!
 	}
 }
 
 // extensions to the http lib
 
+/** Run a GET request on the given path. */
 fun WebTarget.get(path : String) : Response
 		= path(path).request().get()
+/** Run a POST request on the given path. */
 fun WebTarget.post(path : String, body : JsonBase) : Response
 		= path(path).request().post(Entity.entity(body.toJsonString(prettyPrint = false), APPLICATION_JSON_TYPE))
 
+/** Return the response body as a string. */
 val Response.str : String
 		get() = readEntity(String::class.java)
+/** Return the response body as a json object. */
 val Response.json : JsonObject
 		get() = Parser().parse(StringReader(str)) as JsonObject
