@@ -1,0 +1,13 @@
+image: msrd0/gradle
+
+build:
+  stage: build
+  script:
+    - gradle jar
+  artifacts:
+    - build/libs/*.jar
+
+test:
+  stage: test
+  script:
+    - gradle test
