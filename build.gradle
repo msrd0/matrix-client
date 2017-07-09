@@ -10,6 +10,8 @@ buildscript {
 	}
 	dependencies {
 		classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+		
+		classpath "org.jfrog.buildinfo:build-info-extractor-gradle:+"
 	}
 }
 
@@ -58,4 +60,40 @@ compileKotlin {
 }
 compileTestKotlin {
 	kotlinOptions.jvmTarget = "1.6"
+}
+
+
+apply plugin: 'com.jfrog.artifactory'
+apply plugin: 'maven-publish'
+
+publishing {
+	publications {
+		mavenKotlin(MavenPublication) {
+			from components.java
+		}
+	}
+}
+
+artifactory {
+	contextUrl = 'https://msrd0.duckdns.org/artifactory'
+	resolve {
+		repository {
+			repoKey = 'gradle'
+		}
+	}
+	publish {
+		repository {
+			repoKey = 'local'
+			username = 'gitlab-ci'
+			password = System.getenv("ARTIFACTORY_PASSWORD")
+			maven = true
+		}
+		defaults {
+			publications('mavenKotlin')
+		}
+	}
+}
+
+artifactoryPublish {
+	dependsOn jar
 }
