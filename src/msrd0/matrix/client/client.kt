@@ -3,6 +3,7 @@ package msrd0.matrix.client
 import com.beust.klaxon.*
 import org.slf4j.*
 import java.io.StringReader
+import java.net.URLEncoder
 import javax.ws.rs.client.*
 import javax.ws.rs.core.MediaType.*
 import javax.ws.rs.core.*
@@ -24,6 +25,7 @@ open class Client(val context : ClientContext)
 	var token : String? = null
 	/** The next batch field from sync that should be supplied as the since parameter with the next query. */
 	var next_batch : String? = null
+		protected set
 	
 	/** The rooms that this user has joined. */
 	val rooms = ArrayList<Room>()
@@ -32,16 +34,17 @@ open class Client(val context : ClientContext)
 	
 	
 	/**
-	 * This function checks the given json for error messages and throws an exception
+	 * This function checks the given response for error messages and throws an exception
 	 * if it finds any errors.
 	 *
 	 * @throws MatrixErrorResponseException If an error was found
 	 */
 	@Throws(MatrixErrorResponseException::class)
-	internal fun checkForError(json : JsonObject)
+	internal fun checkForError(res : Response)
 	{
+		val json = res.json
 		if (json.containsKey("error"))
-			throw MatrixErrorResponseException(json.string("error")!!)
+			throw MatrixErrorResponseException((if (json.containsKey("errcode")) json.string("errcode")!! + ": " else "") + json.string("error")!!)
 	}
 	
 	
@@ -64,7 +67,7 @@ open class Client(val context : ClientContext)
 	{
 		val l = HashSet<Auth>()
 		val res = if (json.isEmpty()) target.get("_matrix/client/r0/login") else target.post("_matrix/client/r0/login", json)
-		checkForError(res.json)
+		checkForError(res)
 		
 		// if the request contains an access_token field, the auth was successfull
 		val access_token = res.json.string("access_token")
@@ -94,9 +97,12 @@ open class Client(val context : ClientContext)
 			
 			val stages = flow.array<String>("stages")!!
 			var i : Int = 0
-			for (i in completed.indices)
+			for (j in completed.indices)
+			{
+				i = j
 				if (stages[i] != completed[i])
 					continue@flows
+			}
 			val a = Auth(this, LoginType.fromString(stages[i]))
 			a.setProperty("type", a.loginType.type)
 			a.setProperty("user", context.id.localpart)
@@ -111,9 +117,14 @@ open class Client(val context : ClientContext)
 	/**
 	 * Returns the query url with the access token.
 	 */
-	internal fun queryUrl(url : String) = when (token) {
-		null -> url
-		else -> url + (if (url.contains('?')) "&" else "?") + "&access_token=$token"
+	internal fun queryUrl(url : String) : String
+	{
+		val qurl = when (token) {
+			null -> url
+			else -> url + (if (url.contains('?')) "&" else "?") + "access_token=" + URLEncoder.encode(token, "UTF-8")
+		}
+		logger.debug("queryUrl: $qurl")
+		return qurl
 	}
 			
 	/**
@@ -137,7 +148,7 @@ open class Client(val context : ClientContext)
 	fun sync()
 	{
 		val res = target.get(queryUrl("/_matrix/client/r0/sync" + (if (next_batch != null) "?since=$next_batch" else "")))
-		checkForError(res.json)
+		checkForError(res)
 		
 		next_batch = res.json.string("next_batch") ?: throw IllegalJsonException("Missing: 'next_batch'")
 		

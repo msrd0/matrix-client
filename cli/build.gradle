@@ -1,0 +1,44 @@
+group 'msrd0.matrix'
+version "$matrix_client_version"
+
+apply plugin: 'java'
+
+apply plugin: 'application'
+mainClassName = "msrd0.matrix.client.cli.Main"
+run.standardInput = System.in
+
+sourceCompatibility = 1.8
+
+dependencies {
+	compile rootProject
+	
+	compile 'ch.qos.logback:logback-classic:1.+'
+}
+
+sourceSets {
+	main {
+		java.srcDirs = ['src/']
+		resources.srcDirs = ['res/']
+	}
+	test {
+		java.srcDirs = ['test/']
+		resources.srcDirs = []
+	}
+}
+
+jar {
+	manifest {
+		attributes "Main-Class": "$mainClassName"
+	}
+}
+
+task standalone(type : Jar) {
+	manifest {
+		attributes "Main-Class": "$mainClassName"
+	}
+	baseName = project.name + "-standalone"
+	from(configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }) {
+		//exclude("META-INF/*")
+	}
+	with jar
+}

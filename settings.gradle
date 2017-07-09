@@ -1,2 +1,5 @@
 rootProject.name = 'matrix-client'
 
+include 'cli'
+project(':cli').name = 'matrix-client-cli'
+

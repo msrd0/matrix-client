@@ -29,7 +29,7 @@ open class Room(
 	protected fun retrieveName()
 	{
 		val res = client.target.get(client.queryUrl("/_matrix/client/r0/rooms/$id/state/m.room.name"))
-		client.checkForError(res.json)
+		client.checkForError(res)
 		
 		name = res.json.string("name") ?: throw IllegalJsonException("Missing: 'name'")
 	}
@@ -41,7 +41,7 @@ open class Room(
 	protected fun retrieveMembers()
 	{
 		val res = client.target.get(client.queryUrl("/_matrix/client/r0/rooms/$id/members"))
-		client.checkForError(res.json)
+		client.checkForError(res)
 		
 		members.clear()
 		
