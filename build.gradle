@@ -1,0 +1,61 @@
+group 'msrd0.matrix'
+version '0.1-SNAPSHOT'
+
+buildscript {
+	ext.kotlin_version = '1.1.+'
+	
+	repositories {
+		mavenLocal()
+		jcenter()
+	}
+	dependencies {
+		classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+	}
+}
+
+apply plugin: 'kotlin'
+
+repositories {
+	mavenLocal()
+	jcenter()
+}
+
+dependencies {
+	// stdlib
+	compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+	compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+	
+	// http lib
+	compile "org.apache.cxf:cxf-rt-rs-client:3.+"
+	
+	// json lib
+	compile "com.beust:klaxon:0.30"
+	
+	// logging
+	compile "org.slf4j:slf4j-api:1.7.+"
+	
+	// test stuff
+	testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
+	testCompile "org.hamcrest:hamcrest-integration:1.+"
+	testCompile "ch.qos.logback:logback-classic:1.+"
+}
+
+sourceSets {
+	main {
+		kotlin.srcDirs = ['src/']
+		java.srcDirs = []
+		resources.srcDirs = ['res/']
+	}
+	test {
+		kotlin.srcDirs = ['test/']
+		java.srcDirs = []
+		resources.srcDirs = []
+	}
+}
+
+compileKotlin {
+	kotlinOptions.jvmTarget = "1.6"
+}
+compileTestKotlin {
+	kotlinOptions.jvmTarget = "1.6"
+}
