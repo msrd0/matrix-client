@@ -1,0 +1,13 @@
+# gradle stuff
+.gradle/
+build/
+
+# intellij stuff
+.idea/
+
+# kde stuff
+.directory
+
+# emacs stuff
+*~
+\#*#
