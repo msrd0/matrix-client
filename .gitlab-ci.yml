@@ -6,9 +6,8 @@ build:
     - gradle jar
   artifacts:
     paths:
-      - build/libs/*.jar
-      - cli/build/libs/*.jar
-      - cli/build/distributions/*
+      - build/
+      - cli/build/
 
 test:
   stage: test
