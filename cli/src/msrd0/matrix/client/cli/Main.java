@@ -1,12 +1,15 @@
 package msrd0.matrix.client.cli;
 
-import msrd0.matrix.client.*;
-import org.slf4j.*;
+import static java.util.concurrent.TimeUnit.*;
 
 import java.io.*;
 import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import com.google.common.base.Stopwatch;
+import msrd0.matrix.client.*;
+import org.slf4j.*;
 
 public class Main
 {
@@ -23,6 +26,8 @@ public class Main
 		return sysin.readLine().trim();
 	}
 
+	private static Client client;
+	
 	public static void main(String args[]) throws Exception
 	{
 		Thread.setDefaultUncaughtExceptionHandler((t, ex) -> logger.error(ex.getClass().getSimpleName() + ": " + ex.getMessage(), ex));
@@ -64,7 +69,7 @@ public class Main
 		conf.store(new FileWriter(confFile), null);
 		
 		// now create the client
-		Client client = new Client(new ClientContext(hs, id));
+		client = new Client(new ClientContext(hs, id));
 		if (conf.containsKey("token"))
 			client.setToken(conf.getProperty("token"));
 		else
@@ -97,9 +102,7 @@ public class Main
 		conf.store(new FileWriter(confFile), null);
 		
 		// synchronize the client
-		System.out.println("Synchronizing ...");
-		client.sync();
-		System.out.println("Synchronization successfull");
+		sync();
 		
 		while (true)
 		{
@@ -111,7 +114,10 @@ public class Main
 			if (line.equals("q") || line.equals("quit"))
 				break;
 			
-			if (line.equals("rooms"))
+			if (line.equals("sync"))
+				sync();
+			
+			else if (line.equals("rooms"))
 			{
 				ArrayList<Room> rooms = client.getRooms();
 				for (Room room : rooms)
@@ -121,5 +127,14 @@ public class Main
 		
 		// store the configuration
 		conf.store(new FileWriter(confFile), null);
+	}
+	
+	private static void sync()
+	{
+		System.out.println("Synchronizing ...");
+		Stopwatch stopwatch = Stopwatch.createStarted();
+		client.sync();
+		stopwatch.stop();
+		System.out.println("Synchronization successfull (" + (stopwatch.elapsed(MILLISECONDS) / 1000.0) + " sec)");
 	}
 }

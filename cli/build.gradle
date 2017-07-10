@@ -12,6 +12,10 @@ sourceCompatibility = 1.8
 dependencies {
 	compile rootProject
 	
+	// guava
+	compile "com.google.guava:guava:+"
+	
+	// logging
 	compile 'ch.qos.logback:logback-classic:1.+'
 }
 
