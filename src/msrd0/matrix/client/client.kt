@@ -21,7 +21,7 @@ package msrd0.matrix.client
 import com.beust.klaxon.*
 import org.slf4j.*
 import java.io.StringReader
-import java.net.URLEncoder
+import java.net.*
 import javax.ws.rs.client.*
 import javax.ws.rs.core.MediaType.*
 import javax.ws.rs.core.*
@@ -35,6 +35,13 @@ open class Client(val context : ClientContext)
 	{
 		val logger : Logger = LoggerFactory.getLogger(Client::class.java)
 	}
+	
+	/**
+	 * A convenient constructor call to create the ClientContext from the given parameters.
+	 */
+	@JvmOverloads
+	constructor(domain : String, localpart : String, hsDomain : String = domain, hsBaseUri : URI = URI("https://$hsDomain/"))
+			: this(ClientContext(HomeServer(hsDomain, hsBaseUri), MatrixId(localpart, domain)))
 	
 	/** HTTP Client */
 	internal val target : WebTarget = ClientBuilder.newClient().target(context.hs.base)
