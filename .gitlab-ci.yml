@@ -20,3 +20,5 @@ deploy:
   stage: deploy
   script:
     - gradle artifactoryPublish
+  only:
+    - master
