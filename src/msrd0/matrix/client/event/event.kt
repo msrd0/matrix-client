@@ -19,31 +19,45 @@
 
 package msrd0.matrix.client.event
 
+import com.beust.klaxon.JsonObject
+
 enum class EventType
 
-abstract class Event(timestamp : Long, sender : String, event_id : String, age : Long, unsigned : Unsigned, type : EventType)
+interface JsonSerializable
+{
+	fun getJson() : JsonObject
+}
+
+abstract class Event(
+		val timestamp : Long,
+		val sender : String,
+		val event_id : String,
+		val age : Long,
+		val unsigned : Unsigned,
+		val type : EventType
+) : JsonSerializable
 {
 	//information of events from other servers
-	class Unsigned(age : Long)
+	companion object
 	{
-		var prev_content : EventContent? = null
-		var transaction_id : String? = null
-		
-		fun addEventContent(eventContent : EventContent) : Unsigned
+		class Unsigned (
+			val age : Long
+		)
 		{
-			prev_content = eventContent
-			return this
-		}
-		
-		fun addTransactionID(id : String) : Unsigned
-		{
-			transaction_id = id
-			return this
+			var prev_content : EventContent? = null
+			var transaction_id : String? = null
+			
+			fun addEventContent(eventContent : EventContent) : Unsigned
+			{
+				prev_content = eventContent
+				return this
+			}
+			
+			fun addTransactionID(id : String) : Unsigned
+			{
+				transaction_id = id
+				return this
+			}
 		}
 	}
-	
-	//depends on eventtype
-	abstract class EventContent()
-	
-	abstract fun getJSON() : String
 }
