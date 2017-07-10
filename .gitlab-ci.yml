@@ -8,6 +8,7 @@ build:
     paths:
       - build/
       - cli/build/
+      - .gradle/
 
 test:
   stage: test
