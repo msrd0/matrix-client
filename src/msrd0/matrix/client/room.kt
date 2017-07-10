@@ -1,6 +1,7 @@
 package msrd0.matrix.client
 
 import com.beust.klaxon.*
+import org.slf4j.*
 
 /**
  * This class represents a matrix room.
@@ -9,6 +10,11 @@ open class Room(
 		val client : Client,
 		val id : RoomId
 ) {
+	companion object
+	{
+		val logger : Logger = LoggerFactory.getLogger(Room::class.java)
+	}
+	
 	/** The name of this room or it's id. */
 	var name : String = id.id
 		protected set
@@ -16,7 +22,15 @@ open class Room(
 	
 	init
 	{
-		retrieveName()
+		try { retrieveName() }
+		catch (ex : MatrixErrorResponseException)
+		{
+			if (ex.errcode == "M_NOT_FOUND")
+				/* The room does not have a name */
+			else
+				logger.warn("Failed to retrieve room name", ex)
+		}
+		
 		retrieveMembers()
 	}
 	
@@ -28,7 +42,7 @@ open class Room(
 	@Throws(MatrixAnswerException::class)
 	protected fun retrieveName()
 	{
-		val res = client.target.get(client.queryUrl("/_matrix/client/r0/rooms/$id/state/m.room.name"))
+		val res = client.target.get("/_matrix/client/r0/rooms/$id/state/m.room.name", client.token ?: throw NoTokenException())
 		client.checkForError(res)
 		
 		name = res.json.string("name") ?: throw IllegalJsonException("Missing: 'name'")
@@ -40,7 +54,7 @@ open class Room(
 	@Throws(MatrixAnswerException::class)
 	protected fun retrieveMembers()
 	{
-		val res = client.target.get(client.queryUrl("/_matrix/client/r0/rooms/$id/members"))
+		val res = client.target.get("/_matrix/client/r0/rooms/$id/members", client.token ?: throw NoTokenException())
 		client.checkForError(res)
 		
 		members.clear()

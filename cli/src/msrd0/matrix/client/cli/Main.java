@@ -10,15 +10,17 @@ import java.util.stream.Collectors;
 
 public class Main
 {
-	public static final Logger logger = LoggerFactory.getLogger(Main.class);
+	private static final Logger logger = LoggerFactory.getLogger(Main.class);
 	
-	public static Properties conf = new Properties();
+	private static final BufferedReader sysin = new BufferedReader(new InputStreamReader(System.in));
+	
+	private static Properties conf = new Properties();
 
-	public static String query(String q) throws IOException
+	private static String query(String q) throws IOException
 	{
 		System.out.print(q + ": ");
 		System.out.flush();
-		return new BufferedReader(new InputStreamReader(System.in)).readLine().trim();
+		return sysin.readLine().trim();
 	}
 
 	public static void main(String args[]) throws Exception
@@ -95,8 +97,27 @@ public class Main
 		conf.store(new FileWriter(confFile), null);
 		
 		// synchronize the client
+		System.out.println("Synchronizing ...");
 		client.sync();
 		System.out.println("Synchronization successfull");
+		
+		while (true)
+		{
+			System.out.print("> ");
+			System.out.flush();
+			String line = sysin.readLine().trim();
+			if (line.isEmpty())
+				continue;
+			if (line.equals("q") || line.equals("quit"))
+				break;
+			
+			if (line.equals("rooms"))
+			{
+				ArrayList<Room> rooms = client.getRooms();
+				for (Room room : rooms)
+					System.out.println("  -> " + room.getName().toString() + " @ " + room.getId().getDomain());
+			}
+		}
 		
 		// store the configuration
 		conf.store(new FileWriter(confFile), null);

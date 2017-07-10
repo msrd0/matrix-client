@@ -46,7 +46,7 @@ open class Client(val context : ClientContext)
 		if (json.containsKey("error"))
 		{
 			logger.debug("Found error in json: ${res.str}")
-			throw MatrixErrorResponseException((if (json.containsKey("errcode")) json.string("errcode")!! + ": " else "") + json.string("error")!!)
+			throw MatrixErrorResponseException(json.string("errcode") ?: "MSRD0_UNKNOWN", json.string("error")!!)
 		}
 	}
 	
@@ -116,26 +116,14 @@ open class Client(val context : ClientContext)
 		
 		return l
 	}
-	
-	/**
-	 * Returns the query url with the access token.
-	 */
-	internal fun queryUrl(url : String) : String
-	{
-		val qurl = when (token) {
-			null -> url
-			else -> url + (if (url.contains('?')) "&" else "?") + "access_token=" + URLEncoder.encode(token, "UTF-8")
-		}
-		logger.debug("queryUrl: $qurl")
-		return qurl
-	}
 			
 	/**
 	 * Logout the current user.
 	 */
 	fun logout()
 	{
-		target.get(queryUrl("_matrix/client/r0/logout"))
+		val res = target.get("_matrix/client/r0/logout", token ?: throw NoTokenException())
+		checkForError(res)
 	}
 	
 	
@@ -150,7 +138,11 @@ open class Client(val context : ClientContext)
 	 */
 	fun sync()
 	{
-		val res = target.get(queryUrl("_matrix/client/r0/sync" + (if (next_batch != null) "?since=$next_batch" else "")))
+		val params = HashMap<String, Any>()
+		params["access_token"] = token ?: throw NoTokenException()
+		if (next_batch != null)
+			params["since"] = next_batch!!
+		val res = target.get("_matrix/client/r0/sync", params)
 		checkForError(res)
 		
 		next_batch = res.json.string("next_batch") ?: throw IllegalJsonException("Missing: 'next_batch'")
@@ -171,6 +163,15 @@ open class Client(val context : ClientContext)
 /** Run a GET request on the given path. */
 fun WebTarget.get(path : String) : Response
 		= path(path).request().get()
+fun WebTarget.get(path : String, token : String) : Response
+		= path(path).queryParam("access_token", token).request().get()
+fun WebTarget.get(path : String, args : Map<String, Any>) : Response
+{
+	var t = path(path)
+	for (key in args.keys)
+		t = t.queryParam(key, args[key])
+	return t.request().get()
+}
 /** Run a POST request on the given path. */
 fun WebTarget.post(path : String, body : JsonBase) : Response
 		= path(path).request().post(Entity.entity(body.toJsonString(prettyPrint = false), APPLICATION_JSON_TYPE))
