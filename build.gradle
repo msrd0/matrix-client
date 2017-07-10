@@ -72,6 +72,18 @@ publishing {
 	publications {
 		mavenKotlin(MavenPublication) {
 			from components.java
+			pom.withXml {
+				asNode()
+					.appendNode('licenses')
+						.appendNode('license')
+							.appendNode('name', "GNU General Public License, Version 3")
+								.parent()
+							.appendNode('url', "http://gnu.org/licenses/gpl-3.0")
+								.parent()
+							.appendNode('distribution', "repo")
+								.parent()
+							.appendNode('comments', "A copyleft license for free open source software")
+			}
 		}
 	}
 }
