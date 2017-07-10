@@ -35,14 +35,3 @@ jar {
 		attributes "Main-Class": "$mainClassName"
 	}
 }
-
-task standalone(type : Jar) {
-	manifest {
-		attributes "Main-Class": "$mainClassName"
-	}
-	baseName = project.name + "-standalone"
-	from(configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }) {
-		//exclude("META-INF/*")
-	}
-	with jar
-}
