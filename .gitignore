@@ -4,6 +4,7 @@ build/
 
 # intellij stuff
 .idea/
+*.iml
 
 # kde stuff
 .directory
