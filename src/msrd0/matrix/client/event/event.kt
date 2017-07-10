@@ -16,9 +16,34 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
-package msrd0.matrix.event
 
-open interface EventEncryptor
+package msrd0.matrix.client.event
+
+enum class EventType
+
+abstract class Event(timestamp : Long, sender : String, event_id : String, age : Long, unsigned : Unsigned, type : EventType)
 {
-	fun getEncryptedJSON(event: Event): String
+	//information of events from other servers
+	class Unsigned(age : Long)
+	{
+		var prev_content : EventContent? = null
+		var transaction_id : String? = null
+		
+		fun addEventContent(eventContent : EventContent) : Unsigned
+		{
+			prev_content = eventContent
+			return this
+		}
+		
+		fun addTransactionID(id : String) : Unsigned
+		{
+			transaction_id = id
+			return this
+		}
+	}
+	
+	//depends on eventtype
+	abstract class EventContent()
+	
+	abstract fun getJSON() : String
 }
