@@ -2,8 +2,10 @@ image: msrd0/gradle
 
 build:
   stage: build
+  before_script:
+    - mkdir -p .gradle
   script:
-    - gradle jar
+    - GRADLE_USER_HOME=.gradle gradle jar
   artifacts:
     paths:
       - build/
@@ -13,12 +15,12 @@ build:
 test:
   stage: test
   script:
-    - gradle test
+    - GRADLE_USER_HOME=.gradle gradle test
 
 
 deploy:
   stage: deploy
   script:
-    - gradle artifactoryPublish
+    - GRADLE_USER_HOME=.gradle gradle artifactoryPublish
   only:
     - master
