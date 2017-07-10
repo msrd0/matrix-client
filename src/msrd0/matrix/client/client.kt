@@ -44,7 +44,10 @@ open class Client(val context : ClientContext)
 	{
 		val json = res.json
 		if (json.containsKey("error"))
+		{
+			logger.debug("Found error in json: ${res.str}")
 			throw MatrixErrorResponseException((if (json.containsKey("errcode")) json.string("errcode")!! + ": " else "") + json.string("error")!!)
+		}
 	}
 	
 	
@@ -132,7 +135,7 @@ open class Client(val context : ClientContext)
 	 */
 	fun logout()
 	{
-		target.get(queryUrl("/_matrix/client/r0/logout"))
+		target.get(queryUrl("_matrix/client/r0/logout"))
 	}
 	
 	
@@ -147,7 +150,7 @@ open class Client(val context : ClientContext)
 	 */
 	fun sync()
 	{
-		val res = target.get(queryUrl("/_matrix/client/r0/sync" + (if (next_batch != null) "?since=$next_batch" else "")))
+		val res = target.get(queryUrl("_matrix/client/r0/sync" + (if (next_batch != null) "?since=$next_batch" else "")))
 		checkForError(res)
 		
 		next_batch = res.json.string("next_batch") ?: throw IllegalJsonException("Missing: 'next_batch'")

@@ -1,6 +1,7 @@
 package msrd0.matrix.client.cli;
 
 import msrd0.matrix.client.*;
+import org.slf4j.*;
 
 import java.io.*;
 import java.net.URI;
@@ -9,6 +10,8 @@ import java.util.stream.Collectors;
 
 public class Main
 {
+	public static final Logger logger = LoggerFactory.getLogger(Main.class);
+	
 	public static Properties conf = new Properties();
 
 	public static String query(String q) throws IOException
@@ -20,6 +23,8 @@ public class Main
 
 	public static void main(String args[]) throws Exception
 	{
+		Thread.setDefaultUncaughtExceptionHandler((t, ex) -> logger.error(ex.getClass().getSimpleName() + ": " + ex.getMessage(), ex));
+		
 		// load the configuration if it exists
 		File confFile = new File(System.getProperty("user.home"), ".matrix-client-cli.ini");
 		if (confFile.exists())
