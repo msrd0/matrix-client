@@ -85,6 +85,13 @@ open class Client(val context : ClientContext)
 	fun auth() : Collection<Auth> = auth(JsonObject())
 	
 	/**
+	 * Returns the authentication option of the selected login type, or `null`
+	 * if it was not found.
+	 */
+	fun auth(type : LoginType) : Auth?
+		= auth().filter { it.loginType == type }.firstOrNull()
+	
+	/**
 	 * Returns a list of authentication options. The json object is passed in the request
 	 * body.
 	 *

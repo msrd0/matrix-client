@@ -94,27 +94,25 @@ public class Main
 		else
 		{
 			// the client has to login
-			Collection<Auth> auth = client.auth();
-			for (Auth a : auth)
+			Auth a = client.auth(LoginType.PASSWORD);
+			if (a == null)
 			{
-				if (a.getLoginType() == LoginType.PASSWORD)
-				{
-					a.setProperty("password", query("Password"));
-					Collection<Auth> submit = a.submit();
-					if (submit.stream().filter((o) -> o.getLoginType() == LoginType.SUCCESS).collect(Collectors.toList()).isEmpty())
-					{
-						System.out.println("Authentication failed");
-						return;
-					}
-					conf.setProperty("token", client.getToken());
-					break;
-				}
+				System.out.println("Authentication failed");
+				return;
+			}
+			a.setProperty("password", query("Password"));
+			Collection<Auth> submit = a.submit();
+			if (submit.stream().filter((o) -> o.getLoginType() == LoginType.SUCCESS).collect(Collectors.toList()).isEmpty())
+			{
+				System.out.println("Authentication failed");
+				return;
 			}
 			if (client.getToken() == null)
 			{
 				System.out.println("No supported authentication method found");
 				return;
 			}
+			conf.setProperty("token", client.getToken());
 		}
 		
 		// store the configuration
