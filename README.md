@@ -1,4 +1,4 @@
-# matrix-client [![GitLab CI Build Status](https://gitlab.com/msrd0/matrix-client/badges/master/build.svg)](https://gitlab.com/msrd0/matrix-client/pipelines) [![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+# matrix-client [![GitLab CI Build Status](https://gitlab.com/msrd0/matrix-client/badges/master/build.svg)](https://gitlab.com/msrd0/matrix-client/pipelines) [![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![coverage report](https://gitlab.com/msrd0/matrix-client/badges/master/coverage.svg)](https://gitlab.com/msrd0/matrix-client/commits/master)
 
 A [matrix](https://matrix.org/) client for Java and other JVM languages written in Kotlin.
 
