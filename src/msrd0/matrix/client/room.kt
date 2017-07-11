@@ -28,6 +28,8 @@ open class Room(
 		val client : Client,
 		val id : RoomId
 ) {
+	override fun toString() = "Room(name=$name, id=$id)"
+	
 	companion object
 	{
 		val logger : Logger = LoggerFactory.getLogger(Room::class.java)

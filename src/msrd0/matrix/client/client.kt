@@ -19,12 +19,13 @@
 package msrd0.matrix.client
 
 import com.beust.klaxon.*
+import msrd0.matrix.client.listener.*
 import org.slf4j.*
 import java.io.StringReader
-import java.net.*
+import java.net.URI
 import javax.ws.rs.client.*
 import javax.ws.rs.core.MediaType.*
-import javax.ws.rs.core.*
+import javax.ws.rs.core.Response
 
 /**
  * This class is the http client for the matrix server.
@@ -33,7 +34,30 @@ open class Client(val context : ClientContext)
 {
 	companion object
 	{
-		val logger : Logger = LoggerFactory.getLogger(Client::class.java)
+		private val logger : Logger = LoggerFactory.getLogger(Client::class.java)
+		
+		/** The EventQueue shared by all clients. */
+		internal val eventQueue = EventQueue()
+		
+		@JvmStatic
+		fun stopEventQueue() = eventQueue.stop()
+	}
+	
+	init
+	{
+		// start the event q if it is not running already (since all clients share one q)
+		if (!eventQueue.isRunning)
+			eventQueue.start()
+	}
+	
+	/**
+	 * Register a new listener for the given event type.
+	 */
+	fun on(type : EventType, l : Listener<*>)
+	{
+		if (l.javaClass.interfaces.find { it == type.listener } == null)
+			throw IllegalArgumentException("The listener of type ${l.javaClass.canonicalName} doesn't implement ${type.listener.canonicalName}")
+		eventQueue.addListener(type, l)
 	}
 	
 	/**
@@ -56,6 +80,7 @@ open class Client(val context : ClientContext)
 	val rooms = ArrayList<Room>()
 	/** The rooms that this user has an invitation for. */
 	val roomsInvited = ArrayList<Room>()
+	
 	
 	
 	/**
@@ -183,8 +208,17 @@ open class Client(val context : ClientContext)
 		val rooms = res.json.obj("rooms") ?: throw IllegalJsonException("Missing: 'rooms'")
 		val roomsJoined = rooms.obj("join") ?: throw IllegalJsonException("Missing: 'rooms.join'")
 		val roomsInvited = rooms.obj("invite") ?: throw IllegalJsonException("Missing: 'rooms.invite'")
-		this.rooms.addAll(processRooms(roomsJoined))
-		this.roomsInvited.addAll(processRooms(roomsInvited))
+		
+		for (room in processRooms(roomsJoined))
+		{
+			this.rooms.add(room)
+			eventQueue.enqueue(RoomJoinEvent(room))
+		}
+		for (room in processRooms(roomsInvited))
+		{
+			this.roomsInvited.add(room)
+			eventQueue.enqueue(RoomInvitationEvent(room))
+		}
 		
 		// TODO!!
 	}
