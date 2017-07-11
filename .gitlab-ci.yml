@@ -16,10 +16,6 @@ test:
   stage: test
   script:
     - GRADLE_USER_HOME=.gradle gradle test
-
-coverage:
-  stage: test
-  script:
     - GRADLE_USER_HOME=.gradle gradle jacocoTestReport
 
 
