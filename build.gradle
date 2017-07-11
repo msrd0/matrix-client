@@ -9,13 +9,21 @@ buildscript {
 		jcenter()
 	}
 	dependencies {
+		// kotlin
 		classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
 		
+		// code coverage
+		classpath "com.palantir:jacoco-coverage:0.4.+"
+		classpath "com.github.ksoichiro:gradle-console-reporter:0.5.+"
+		
+		// jfrog artifactory
 		classpath "org.jfrog.buildinfo:build-info-extractor-gradle:+"
 	}
 }
 
 apply plugin: 'kotlin'
+apply plugin: "com.palantir.jacoco-full-report"
+apply plugin: "com.github.ksoichiro.console.reporter"
 
 allprojects {
 	repositories {

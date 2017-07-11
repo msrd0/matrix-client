@@ -5,7 +5,7 @@ build:
   before_script:
     - mkdir -p .gradle
   script:
-    - GRADLE_USER_HOME=.gradle gradle jar
+    - GRADLE_USER_HOME=.gradle gradle assemble
   artifacts:
     paths:
       - build/
@@ -16,6 +16,11 @@ test:
   stage: test
   script:
     - GRADLE_USER_HOME=.gradle gradle test
+
+coverage:
+  stage: test
+  script:
+    - GRADLE_USER_HOME=.gradle gradle jacocoTestReport
 
 
 deploy:
