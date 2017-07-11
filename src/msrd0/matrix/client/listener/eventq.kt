@@ -37,14 +37,14 @@ class EventQueue
 		private set
 	
 	/** All listeners sorted after their id. */
-	private val listeners = HashMap<String, Deque<Listener<*>>>()
+	private val listeners = HashMap<EventType, LinkedList<Listener<*>>>()
 	
 	/** Adds a listener. */
-	fun addListener(listener : Listener<*>)
+	fun addListener(type : EventType, listener : Listener<*>)
 	{
-		if (!listeners.containsKey(listener.name))
-			listeners.put(listener.name, LinkedList<Listener<*>>())
-		listeners[listener.name]!!.addFirst(listener)
+		if (!listeners.containsKey(type))
+			listeners.put(type, LinkedList<Listener<*>>())
+		listeners[type]!!.addFirst(listener)
 	}
 	
 	
@@ -55,6 +55,33 @@ class EventQueue
 	/** Tells the queue whether it should be stopped. */
 	private var shouldStop = false
 	
+	@Throws(NoSuchMethodException::class)
+	private fun invoke(l : Listener<*>, ev : Event) : Boolean
+	{
+		for (method in l.javaClass.methods)
+		{
+			if (method.name != "call")
+				continue
+			if (method.parameterCount != 1)
+				continue
+			if (method.returnType != java.lang.Boolean.TYPE)
+				continue
+			try
+			{
+				method.isAccessible = true
+				return method.invoke(l, ev) as Boolean
+			}
+			catch (ex : ReflectiveOperationException)
+			{
+				logger.warn("Unable to invoke '$method' on listener", ex)
+			}
+		}
+		throw NoSuchMethodException("Unable to find suitable 'call' method in Listener")
+	}
+	
+	/**
+	 * Start the EventQueue in a new thread.
+	 */
 	fun start()
 	{
 		if (isRunning)
@@ -71,7 +98,42 @@ class EventQueue
 						lock.wait()
 					}
 				val ev = q.pollFirst() ?: continue
+				val l = listeners.get(ev.type) ?: continue
+				for (listener : Listener<*> in l)
+				{
+					try
+					{
+						if (invoke(listener, ev))
+							break
+					}
+					catch (ex : NoSuchMethodException)
+					{
+						logger.warn("Unable to invoke listener", ex)
+					}
+				}
 			}
+		}
+	}
+	
+	/**
+	 * Enqueues the Event.
+	 */
+	fun enqueue(ev : Event)
+	{
+		q.addLast(ev)
+		synchronized(lock) {
+			lock.notifyAll()
+		}
+	}
+	
+	/**
+	 * Tells the EventQueue to stop.
+	 */
+	fun stop()
+	{
+		shouldStop = true
+		synchronized(lock) {
+			lock.notifyAll()
 		}
 	}
 }

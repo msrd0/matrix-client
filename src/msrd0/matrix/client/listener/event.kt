@@ -18,7 +18,22 @@
 
 package msrd0.matrix.client.listener
 
-open class Event(val name : String)
-{
+import msrd0.matrix.client.Room
 
+/**
+ * This is the base class for every event handled by the EventQueue. It's id must match
+ * the one of the listeners registered for it.
+ */
+open class Event(val type : EventType)
+{
+	constructor(id : String, listener : Class<*>) : this(EventType(id, listener))
+	
+	val id : String
+		get() = type.id
+	val listener : Class<*>
+		get() = type.listener
 }
+
+open class RoomJoinEvent(val room : Room) : Event("matrix.room.join", RoomJoinListener::class.java)
+
+open class RoomInvitationEvent(val room : Room) : Event("matrix.room.invitation", RoomInvitationListener::class.java)

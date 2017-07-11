@@ -18,8 +18,16 @@
 
 package msrd0.matrix.client.listener
 
-enum class EventType(val id : String, val listener : Class<*>)
+data class EventType(
+		val id : String,
+		val listener : Class<*>
+)
+
+object EventTypes
 {
-	ROOM_JOIN("event.room.join", RoomJoinListener::class.java),
-	ROOM_INVITATION("event.room.invitation", RoomInvitationListener::class.java)
+	@JvmField
+	val ROOM_JOIN = EventType("matrix.room.join", RoomJoinListener::class.java)
+	
+	@JvmField
+	val ROOM_INVITATION = EventType("matrix.room.invitation", RoomInvitationListener::class.java)
 }

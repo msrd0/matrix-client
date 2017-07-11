@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import msrd0.matrix.client.*;
+import msrd0.matrix.client.listener.*;
 
 import com.google.common.base.Stopwatch;
 import org.slf4j.*;
@@ -49,7 +50,10 @@ public class Main
 	
 	public static void main(String args[]) throws Exception
 	{
-		Thread.setDefaultUncaughtExceptionHandler((t, ex) -> logger.error(ex.getClass().getSimpleName() + ": " + ex.getMessage(), ex));
+		Thread.setDefaultUncaughtExceptionHandler((t, ex) -> {
+			logger.error(ex.getClass().getSimpleName() + ": " + ex.getMessage(), ex);
+			System.exit(1);
+		});
 		
 		// load the configuration if it exists
 		File confFile = new File(System.getProperty("user.home"), ".matrix-client-cli.ini");
@@ -118,6 +122,18 @@ public class Main
 		// store the configuration
 		conf.store(new FileWriter(confFile), null);
 		
+		// register some listeners
+		RoomJoinListener joinListener = (ev) -> {
+			System.out.println("Joined a new room: " + ev.getRoom());
+			return true;
+		};
+		client.on(EventTypes.ROOM_JOIN, joinListener);
+		RoomInvitationListener invitationListener = (ev) -> {
+			System.out.println("Invited to a new room: " + ev.getRoom());
+			return true;
+		};
+		client.on(EventTypes.ROOM_INVITATION, invitationListener);
+		
 		// synchronize the client
 		sync();
 		
@@ -144,6 +160,9 @@ public class Main
 		
 		// store the configuration
 		conf.store(new FileWriter(confFile), null);
+		
+		// stop the client's event queue
+		Client.stopEventQueue();
 	}
 	
 	private static void sync()

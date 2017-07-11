@@ -18,15 +18,11 @@
 
 package msrd0.matrix.client.listener
 
-import msrd0.matrix.client.listener.EventType.*
-
-import msrd0.matrix.client.Room
-
 
 /**
  * This class must be inherited by every Listener supplied to the event queue.
  */
-abstract class Listener<in E>(val name : String)
+interface Listener<in E>
 {
 	/**
 	 * This method will be called as soon as an event of the type of this listener is fired. The
@@ -35,12 +31,15 @@ abstract class Listener<in E>(val name : String)
 	 *
 	 * @returns true to stop further listeners for this event to be called.
 	 */
-	abstract fun call(event : E) : Boolean
+	fun call(event : E) : Boolean
 }
 
-abstract class RoomJoinListener : Listener<Room>(ROOM_JOIN.id)
+/**
+ * This listener is called as soon as a new room was joined.
+ */
+interface RoomJoinListener : Listener<RoomJoinEvent>
 
 /**
  * This listeners is called as soon as a new room invitation arrives.
  */
-abstract class RoomInvitationListener : Listener<Room>(ROOM_INVITATION.id)
+interface RoomInvitationListener : Listener<RoomInvitationEvent>
