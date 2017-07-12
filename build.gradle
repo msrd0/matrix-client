@@ -47,7 +47,7 @@ dependencies {
 	compile "org.slf4j:slf4j-api:1.7.+"
 	
 	// test stuff
-	testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
+	testCompile "org.testng:testng:6.+"
 	testCompile "org.hamcrest:hamcrest-integration:1.+"
 	testCompile "ch.qos.logback:logback-classic:1.+"
 }

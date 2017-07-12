@@ -19,11 +19,10 @@
 package msrd0.matrix.client.test
 
 import msrd0.matrix.client.*
-import java.net.URI
 import org.hamcrest.MatcherAssert.*
 import org.hamcrest.Matchers.*
-import org.junit.*
-import org.junit.rules.ExpectedException
+import org.testng.annotations.Test
+import java.net.URI
 
 class ClientTest
 {
@@ -34,18 +33,13 @@ class ClientTest
 		val context = ClientContext(hs, id)
 	}
 	
-	@Rule
-	@JvmField
-	val exceptionGrabber = ExpectedException.none()
-	
-	@Test
+	@Test(expectedExceptions = arrayOf(MatrixErrorResponseException::class))
 	fun client_auth()
 	{
 		val client = Client(context)
 		val authList = client.auth()
 		assertThat(authList.size, greaterThan(0))
 		val auth = authList.first()
-		exceptionGrabber.expect(MatrixErrorResponseException::class.java)
 		auth.submit()
 	}
 }
