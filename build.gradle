@@ -72,6 +72,10 @@ compileTestKotlin {
 	kotlinOptions.jvmTarget = "1.6"
 }
 
+test {
+	useTestNG()
+}
+
 
 apply plugin: 'com.jfrog.artifactory'
 apply plugin: 'maven-publish'
