@@ -25,6 +25,6 @@ interface EventEncryptor
 	fun getEncryptedJson(event : JsonObject) : JsonObject
 	fun getDecryptedJson(event : JsonObject) : JsonObject
 	fun exchangeKeys() : JsonObject
-	fun addKeys(deviceKey : String, identityKey : String, vararg additionalKeys : String)
+	fun addDeviceKeys(userId : String, deviceKey : String, identityKey : String, vararg additionalKeys : String)
 	fun uploadKeysJson() : JsonObject
 }
