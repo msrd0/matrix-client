@@ -18,7 +18,12 @@
  */
 package msrd0.matrix.client.event
 
+import com.beust.klaxon.*
+
 interface EventEncryptor
 {
-	fun getEncryptedJSON(event : Event) : String
+	fun getEncryptedJson(event : JsonObject) : JsonObject
+	fun getDecryptedJson(event : JsonObject) : JsonObject
+	fun exchangeKeys(deviceKey : String, identityKey : String, vararg additionalKeys : String) : JsonObject
+	fun uploadKeysJson() : JsonObject
 }

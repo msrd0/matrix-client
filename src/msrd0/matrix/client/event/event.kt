@@ -32,32 +32,6 @@ abstract class Event(
 		val timestamp : Long,
 		val sender : String,
 		val event_id : String,
-		val age : Long,
-		val unsigned : Unsigned,
-		val type : EventType
+		val type : EventType,
+		val content : EventContent
 ) : JsonSerializable
-{
-	//information of events from other servers
-	companion object
-	{
-		class Unsigned (
-			val age : Long
-		)
-		{
-			var prev_content : EventContent? = null
-			var transaction_id : String? = null
-			
-			fun addEventContent(eventContent : EventContent) : Unsigned
-			{
-				prev_content = eventContent
-				return this
-			}
-			
-			fun addTransactionID(id : String) : Unsigned
-			{
-				transaction_id = id
-				return this
-			}
-		}
-	}
-}
