@@ -29,6 +29,7 @@ allprojects {
 	repositories {
 		mavenLocal()
 		jcenter()
+		maven { url "https://msrd0.duckdns.org/artifactory/gradle" }
 	}
 }
 
@@ -41,7 +42,7 @@ dependencies {
 	compile "org.apache.cxf:cxf-rt-rs-client:3.+"
 	
 	// json lib
-	compile "com.beust:klaxon:0.30"
+	compile "com.beust:klaxon:0.31-SNAPSHOT"
 	
 	// logging
 	compile "org.slf4j:slf4j-api:1.7.+"
