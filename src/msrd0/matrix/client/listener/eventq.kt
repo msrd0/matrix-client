@@ -28,8 +28,6 @@ class EventQueue
 	companion object
 	{
 		val logger : Logger = LoggerFactory.getLogger(EventQueue::class.java)
-		
-		
 	}
 	
 	/** Whether the EventQueue is running. */

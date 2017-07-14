@@ -43,11 +43,18 @@ open class Client(val context : ClientContext)
 		fun stopEventQueue() = eventQueue.stop()
 	}
 	
-	init
+	private var queue : EventQueue = eventQueue
+	
+	/**
+	 * Move the client to the given event queue. This method should be called before the `sync()` call, although it is
+	 * theoretically possible to change the queue afterwards.
+	 *
+	 * Please note that the `sync()` method will start the queue if it is not running already, but all other methods
+	 * assume that the queue is running.
+	 */
+	fun moveTo(eventQueue : EventQueue)
 	{
-		// start the event q if it is not running already (since all clients share one q)
-		if (!eventQueue.isRunning)
-			eventQueue.start()
+		queue = eventQueue
 	}
 	
 	/**
@@ -57,8 +64,14 @@ open class Client(val context : ClientContext)
 	{
 		if (l.javaClass.interfaces.find { it == type.listener } == null)
 			throw IllegalArgumentException("The listener of type ${l.javaClass.canonicalName} doesn't implement ${type.listener.canonicalName}")
-		eventQueue.addListener(type, l)
+		queue.addListener(type, l)
 	}
+	
+	/**
+	 * Fire an event.
+	 */
+	internal fun fire(ev : Event)
+			= queue.enqueue(ev)
 	
 	/**
 	 * A convenient constructor call to create the ClientContext from the given parameters.
@@ -195,6 +208,10 @@ open class Client(val context : ClientContext)
 	 */
 	fun sync()
 	{
+		// check that the event queue is running
+		if (!queue.isRunning)
+			queue.start()
+		
 		val params = HashMap<String, Any>()
 		params["access_token"] = token ?: throw NoTokenException()
 		if (next_batch != null)
@@ -212,12 +229,12 @@ open class Client(val context : ClientContext)
 		for (room in processRooms(roomsJoined))
 		{
 			this.rooms.add(room)
-			eventQueue.enqueue(RoomJoinEvent(room))
+			fire(RoomJoinEvent(room))
 		}
 		for (room in processRooms(roomsInvited))
 		{
 			this.roomsInvited.add(room)
-			eventQueue.enqueue(RoomInvitationEvent(room))
+			fire(RoomInvitationEvent(room))
 		}
 		
 		// TODO!!
