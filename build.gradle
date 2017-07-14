@@ -29,6 +29,7 @@ allprojects {
 	repositories {
 		mavenLocal()
 		jcenter()
+		maven { url "https://msrd0.duckdns.org/artifactory/gradle" }
 	}
 }
 
