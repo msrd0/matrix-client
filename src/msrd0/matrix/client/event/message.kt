@@ -18,9 +18,11 @@
 
 package msrd0.matrix.client.event
 
-import com.beust.klaxon.JsonObject
+import com.beust.klaxon.*
 import msrd0.matrix.client.*
 import msrd0.matrix.client.event.EventTypes.ROOM_MESSAGE
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit.*
 import java.util.*
 
 object MessageTypes
@@ -34,6 +36,19 @@ class MessageContent(
 		val msgtype : String
 ) : EventContent()
 {
+	companion object
+	{
+		/**
+		 * Constructs a message content by parsing the supplied json. For a documentation of the json see the matrix
+		 * specifications.
+		 *
+		 * @throws NullPointerException If one of the required json parameters were null (or not present).
+		 */
+		@JvmStatic
+		fun fromJson(json : JsonObject) : MessageContent
+				= MessageContent(json.string("body")!!, json.string("msgtype")!!)
+	}
+	
 	override fun getJson() : JsonObject
 	{
 		val json = JsonObject()
@@ -43,14 +58,36 @@ class MessageContent(
 	}
 }
 
+/**
+ * This class represents a message in a room.
+ */
 class Message(
 		val room : Room,
 		sender : MatrixId,
+		val age : LocalDateTime,
 		content : MessageContent
 ) : Event(sender, ROOM_MESSAGE, content)
 {
-	constructor(room : Room, sender : MatrixId, body : String, msgtype : String)
-		: this(room, sender, MessageContent(body, msgtype))
+	constructor(room : Room, sender : MatrixId, age : LocalDateTime, body : String, msgtype : String)
+		: this(room, sender, age, MessageContent(body, msgtype))
+	
+	companion object
+	{
+		/**
+		 * Constructs a message by parsing the supplied json. For a documentation of the json see the matrix
+		 * specifications.
+		 *
+		 * @throws NullPointerException If one of the required json parameters were null (or not present).
+		 */
+		@JvmStatic
+		fun fromJson(room : Room, json : JsonObject) : Message
+				= Message(room, MatrixId.fromString(json.string("sender")!!),
+					LocalDateTime.now().minus(json.long("age")!!, MILLIS),
+					MessageContent.fromJson(json.obj("content")!!))
+	}
+	
+	val body get() = (content as MessageContent).body
+	val msgtype get() = (content as MessageContent).msgtype
 	
 	override fun getJson() : JsonObject
 	{
@@ -65,6 +102,3 @@ class Messages(
 		val end : String,
 		messages : Collection<Message> = Collections.emptyList()
 ) : ArrayList<Message>(messages)
-{
-
-}
