@@ -114,7 +114,7 @@ class EventQueue
 	}
 	
 	/**
-	 * Enqueues the MatrixEvent.
+	 * Enqueues the Event.
 	 */
 	fun enqueue(ev : Event)
 	{
