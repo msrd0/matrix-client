@@ -39,6 +39,10 @@ open class Client(val context : ClientContext)
 		/** The EventQueue shared by all clients. */
 		internal val eventQueue = EventQueue()
 		
+		/**
+		 * Stop the global MatrixEvent Queue. If you didn't specify an event queue for a client, this is the event
+		 * queue the client will use.
+		 */
 		@JvmStatic
 		fun stopEventQueue() = eventQueue.stop()
 	}
@@ -73,6 +77,13 @@ open class Client(val context : ClientContext)
 	internal fun fire(ev : Event)
 			= queue.enqueue(ev)
 	
+	/** The last transaction id used by this client. */
+	private var lastTxnId : Long = -1
+	
+	/** The next transaction id to use by this client. */
+	val nextTxnId : Long
+		get() = ++lastTxnId
+	
 	/**
 	 * A convenient constructor call to create the ClientContext from the given parameters.
 	 */
@@ -90,9 +101,11 @@ open class Client(val context : ClientContext)
 		protected set
 	
 	/** The rooms that this user has joined. */
-	val rooms = ArrayList<Room>()
+	private val roomsJoined = HashMap<RoomId, Room>()
+	/** The rooms that this user has joined. */
+	val rooms get() = roomsJoined.values
 	/** The rooms that this user has an invitation for. */
-	val roomsInvited = ArrayList<Room>()
+	val roomsInvited = ArrayList<RoomInvitation>()
 	
 	
 	
@@ -198,12 +211,6 @@ open class Client(val context : ClientContext)
 	
 	
 	/**
-	 * Processes the rooms hash and returns a list containing all rooms.
-	 */
-	protected fun processRooms(hash : JsonObject) : List<Room>
-			= hash.keys.map { Room(this, RoomId.fromString(it)) }
-	
-	/**
 	 * Synchronize the account.
 	 */
 	fun sync()
@@ -226,12 +233,18 @@ open class Client(val context : ClientContext)
 		val roomsJoined = rooms.obj("join") ?: throw IllegalJsonException("Missing: 'rooms.join'")
 		val roomsInvited = rooms.obj("invite") ?: throw IllegalJsonException("Missing: 'rooms.invite'")
 		
-		for (room in processRooms(roomsJoined))
+		for (room in roomsJoined.keys.map { Room(this, RoomId.fromString(it)) })
 		{
-			this.rooms.add(room)
+			if (this.roomsJoined.containsKey(room.id))
+			{
+				// TODO there are new messages in this room
+				continue
+			}
+			this.roomsJoined[room.id] = room
 			fire(RoomJoinEvent(room))
 		}
-		for (room in processRooms(roomsInvited))
+		
+		for (room in roomsInvited.keys.map { RoomInvitation(this, RoomId.fromString(it)) })
 		{
 			this.roomsInvited.add(room)
 			fire(RoomInvitationEvent(room))
@@ -256,8 +269,12 @@ fun WebTarget.get(path : String, args : Map<String, Any>) : Response
 	return t.request().get()
 }
 /** Run a POST request on the given path. */
-fun WebTarget.post(path : String, body : JsonBase) : Response
-		= path(path).request().post(Entity.entity(body.toJsonString(prettyPrint = false), APPLICATION_JSON_TYPE))
+private fun jsonEntity(body : JsonBase)
+	= Entity.entity(body.toJsonString(prettyPrint = false), APPLICATION_JSON_TYPE)
+fun WebTarget.post(path : String, body : JsonBase = JsonObject()) : Response
+		= path(path).request().post(jsonEntity(body))
+fun WebTarget.post(path : String, token : String, body : JsonBase = JsonObject()) : Response
+		= path(path).queryParam("access_token", token).request().post(jsonEntity(body))
 
 /** Return the response body as a string. */
 val Response.str : String

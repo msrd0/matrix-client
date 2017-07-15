@@ -20,35 +20,47 @@
 package msrd0.matrix.client.event
 
 import com.beust.klaxon.JsonObject
-import msrd0.matrix.client.MatrixId
+import msrd0.matrix.client.*
 
-object EventTypes
+object MatrixEventTypes
 {
+	@JvmField
+	val ROOM_MEMBER = "m.room.member"
+	
 	@JvmField
 	val ROOM_MESSAGE = "m.room.message"
 }
 
 interface JsonSerializable
 {
-	fun getJson() : JsonObject
+	val json : JsonObject
 }
 
-abstract class Event(
+abstract class MatrixEventContent : JsonSerializable
+
+abstract class MatrixEvent(
 		val sender : MatrixId,
 		val type : String,
-		val content : EventContent
+		val content : MatrixEventContent
 ) : JsonSerializable
 {
 	var timestamp : Long? = null
 	
 	var event_id : String? = null
 	
-	protected fun getAbstractJson() : JsonObject
+	val abstractJson : JsonObject get()
 	{
 		val json = JsonObject()
 		json["sender"] = sender.toString()
 		json["type"] = type
-		json["content"] = content.getJson()
+		json["content"] = content.json
 		return json
 	}
 }
+
+abstract class MatrixRoomEvent(
+		sender : MatrixId,
+		val room : RoomId,
+		type : String,
+		content : MatrixEventContent
+) : MatrixEvent(sender, type, content)

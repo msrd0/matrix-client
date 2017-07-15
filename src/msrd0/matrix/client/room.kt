@@ -93,6 +93,9 @@ open class Room(
 		}
 	}
 	
+	/** The previous batch of the last retrieveMessage call. */
+	private val prev_batch : String? = null
+	
 	/**
 	 * Retrieves the last `limit` messages, starting now or, if supplied, at `start`.
 	 */

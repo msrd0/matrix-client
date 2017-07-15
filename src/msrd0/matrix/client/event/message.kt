@@ -20,7 +20,7 @@ package msrd0.matrix.client.event
 
 import com.beust.klaxon.*
 import msrd0.matrix.client.*
-import msrd0.matrix.client.event.EventTypes.ROOM_MESSAGE
+import msrd0.matrix.client.event.MatrixEventTypes.ROOM_MESSAGE
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit.*
 import java.util.*
@@ -34,7 +34,7 @@ object MessageTypes
 class MessageContent(
 		val body : String,
 		val msgtype : String
-) : EventContent()
+) : MatrixEventContent()
 {
 	companion object
 	{
@@ -49,7 +49,7 @@ class MessageContent(
 				= MessageContent(json.string("body")!!, json.string("msgtype")!!)
 	}
 	
-	override fun getJson() : JsonObject
+	override val json : JsonObject get()
 	{
 		val json = JsonObject()
 		json["body"] = body
@@ -66,7 +66,7 @@ class Message(
 		sender : MatrixId,
 		val age : LocalDateTime,
 		content : MessageContent
-) : Event(sender, ROOM_MESSAGE, content)
+) : MatrixEvent(sender, ROOM_MESSAGE, content)
 {
 	constructor(room : Room, sender : MatrixId, age : LocalDateTime, body : String, msgtype : String)
 		: this(room, sender, age, MessageContent(body, msgtype))
@@ -89,9 +89,9 @@ class Message(
 	val body get() = (content as MessageContent).body
 	val msgtype get() = (content as MessageContent).msgtype
 	
-	override fun getJson() : JsonObject
+	override val json : JsonObject get()
 	{
-		val json = getAbstractJson()
+		val json = abstractJson
 		json["room_id"] = room.id.toString()
 		return json
 	}

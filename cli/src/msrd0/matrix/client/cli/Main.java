@@ -156,9 +156,19 @@ public class Main
 			
 			else if (line.equals("rooms"))
 			{
-				ArrayList<Room> rooms = client.getRooms();
+				Collection<Room> rooms = client.getRooms();
 				for (Room room : rooms)
-					System.out.println("  -> " + room.getName().toString() + " @ " + room.getId().getDomain());
+					System.out.println("  -> " + room.getName() + " @ " + room.getId().getDomain());
+			}
+			
+			else if (line.startsWith("accept "))
+			{
+				final String name = line.substring(7);
+				RoomInvitation room = client.getRoomsInvited().stream().filter(i -> i.getRoom().toString().equals(name)).collect(Collectors.toList()).get(0);
+				if (room == null)
+					System.out.println("Invitation " + name + " not found");
+				else
+					room.accept();
 			}
 			
 			else if (line.startsWith("room "))
