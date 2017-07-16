@@ -30,7 +30,7 @@ import javax.ws.rs.core.Response
 /**
  * This class is the http client for the matrix server.
  */
-open class Client(val context : ClientContext)
+open class Client(val context : ClientContext) : ListenerRegistration
 {
 	companion object
 	{
@@ -64,7 +64,7 @@ open class Client(val context : ClientContext)
 	/**
 	 * Register a new listener for the given event type.
 	 */
-	fun on(type : EventType, l : Listener<*>)
+	override fun on(type : EventType, l : Listener<*>)
 	{
 		if (l.javaClass.interfaces.find { it == type.listener } == null)
 			throw IllegalArgumentException("The listener of type ${l.javaClass.canonicalName} doesn't implement ${type.listener.canonicalName}")
