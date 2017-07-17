@@ -116,4 +116,15 @@ open class Room(
 		return Messages(json.string("start")!!, json.string("end")!!,
 				chunk.filter{ it.string("type") == "m.room.message" }.map { Message.fromJson(this, it) })
 	}
+	
+	/**
+	 * Send the message to this room. This message is sent as plain text. There is no encryption going on.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun sendMessage(msg : MessageContent)
+	{
+		val res = client.target.put("_matrix/client/r0/rooms/$id/state/m.room.message",
+				client.token ?: throw NoTokenException(), msg.json)
+		client.checkForError(res)
+	}
 }

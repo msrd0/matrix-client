@@ -256,6 +256,8 @@ open class Client(val context : ClientContext) : ListenerRegistration
 
 // extensions to the http lib
 
+private fun jsonEntity(body : JsonBase)
+		= Entity.entity(body.toJsonString(prettyPrint = false), APPLICATION_JSON_TYPE)
 /** Run a GET request on the given path. */
 fun WebTarget.get(path : String) : Response
 		= path(path).request().get()
@@ -269,12 +271,15 @@ fun WebTarget.get(path : String, args : Map<String, Any>) : Response
 	return t.request().get()
 }
 /** Run a POST request on the given path. */
-private fun jsonEntity(body : JsonBase)
-	= Entity.entity(body.toJsonString(prettyPrint = false), APPLICATION_JSON_TYPE)
 fun WebTarget.post(path : String, body : JsonBase = JsonObject()) : Response
 		= path(path).request().post(jsonEntity(body))
 fun WebTarget.post(path : String, token : String, body : JsonBase = JsonObject()) : Response
 		= path(path).queryParam("access_token", token).request().post(jsonEntity(body))
+/** Run a PUT request on the given path. */
+fun WebTarget.put(path : String, body : JsonBase = JsonObject()) : Response
+		= path(path).request().put(jsonEntity(body))
+fun WebTarget.put(path : String, token : String, body : JsonBase = JsonObject()) : Response
+		= path(path).queryParam("access_token", token).request().put(jsonEntity(body))
 
 /** Return the response body as a string. */
 val Response.str : String

@@ -190,6 +190,16 @@ public class Main
 						System.out.println("  -> [" + msg.getAge().format(DateTimeFormatter.ofPattern("dd MMM uuuu HH:mm:ss")) + "] " + msg.getBody());
 				}
 			}
+			else if (line.equals("send"))
+			{
+				if (curr == null)
+					System.out.println("No room selected");
+				else
+				{
+					MessageContent content = new MessageContent(query("Message"), "m.text");
+					curr.sendMessage(content);
+				}
+			}
 		}
 		
 		// store the configuration
