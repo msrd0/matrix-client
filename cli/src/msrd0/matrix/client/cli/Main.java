@@ -189,7 +189,18 @@ public class Main
 				{
 					Messages msgs = curr.retrieveMessages();
 					for (Message msg : msgs)
-						System.out.println("  -> [" + msg.getAge().format(DateTimeFormatter.ofPattern("dd MMM uuuu HH:mm:ss")) + "] " + msg.getBody());
+					{
+						String body = msg.getBody();
+						if (msg.getMsgtype().equals(MessageTypes.IMAGE))
+						{
+							File file = File.createTempFile("matrix", ".png");
+							file.deleteOnExit();
+							ImageIO.write(((ImageMessageContent)msg.getContent()).downloadImage(client), "PNG", file);
+							body = "(" + file.getAbsolutePath() + ") " + body;
+						}
+						System.out.println("  -> " + msg.getAge().format(DateTimeFormatter.ofPattern("dd MMM uuuu HH:mm:ss")) +
+								" [" + msg.getSender() + "] " + body);
+					}
 				}
 			}
 			else if (line.equals("send"))
