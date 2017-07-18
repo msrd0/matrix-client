@@ -19,13 +19,16 @@
 package msrd0.matrix.client.cli;
 
 import static java.util.concurrent.TimeUnit.*;
+import static msrd0.matrix.client.listener.EventTypes.*;
 
 import java.io.*;
 import java.net.URI;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import msrd0.matrix.client.*;
+import msrd0.matrix.client.event.*;
 import msrd0.matrix.client.listener.*;
 
 import com.google.common.base.Stopwatch;
@@ -127,16 +130,17 @@ public class Main
 			System.out.println("Joined a new room: " + ev.getRoom());
 			return true;
 		};
-		client.on(EventTypes.ROOM_JOIN, joinListener);
+		client.on(ROOM_JOIN, joinListener);
 		RoomInvitationListener invitationListener = (ev) -> {
 			System.out.println("Invited to a new room: " + ev.getRoom());
 			return true;
 		};
-		client.on(EventTypes.ROOM_INVITATION, invitationListener);
+		client.on(ROOM_INVITATION, invitationListener);
 		
 		// synchronize the client
 		sync();
 		
+		Room curr = null;
 		while (true)
 		{
 			System.out.print("> ");
@@ -152,9 +156,49 @@ public class Main
 			
 			else if (line.equals("rooms"))
 			{
-				ArrayList<Room> rooms = client.getRooms();
+				Collection<Room> rooms = client.getRooms();
 				for (Room room : rooms)
-					System.out.println("  -> " + room.getName().toString() + " @ " + room.getId().getDomain());
+					System.out.println("  -> " + room.getName() + " @ " + room.getId().getDomain());
+			}
+			
+			else if (line.startsWith("accept "))
+			{
+				final String name = line.substring(7);
+				RoomInvitation room = client.getRoomsInvited().stream().filter(i -> i.getRoom().toString().equals(name)).collect(Collectors.toList()).get(0);
+				if (room == null)
+					System.out.println("Invitation " + name + " not found");
+				else
+					room.accept();
+			}
+			
+			else if (line.startsWith("room "))
+			{
+				final String name = line.substring(5);
+				curr = client.getRooms().stream().filter(room -> room.getName().equals(name)).collect(Collectors.toList()).get(0);
+				if (curr == null)
+					System.out.println("Room " + name + " not found");
+			}
+			
+			else if (line.equals("messages"))
+			{
+				if (curr == null)
+					System.out.println("No room selected");
+				else
+				{
+					Messages msgs = curr.retrieveMessages();
+					for (Message msg : msgs)
+						System.out.println("  -> [" + msg.getAge().format(DateTimeFormatter.ofPattern("dd MMM uuuu HH:mm:ss")) + "] " + msg.getBody());
+				}
+			}
+			else if (line.equals("send"))
+			{
+				if (curr == null)
+					System.out.println("No room selected");
+				else
+				{
+					MessageContent content = new MessageContent(query("Message"), "m.text");
+					curr.sendMessage(content);
+				}
 			}
 		}
 		

@@ -30,7 +30,7 @@ import javax.ws.rs.core.Response
 /**
  * This class is the http client for the matrix server.
  */
-open class Client(val context : ClientContext)
+open class Client(val context : ClientContext) : ListenerRegistration
 {
 	companion object
 	{
@@ -39,26 +39,50 @@ open class Client(val context : ClientContext)
 		/** The EventQueue shared by all clients. */
 		internal val eventQueue = EventQueue()
 		
+		/**
+		 * Stop the global MatrixEvent Queue. If you didn't specify an event queue for a client, this is the event
+		 * queue the client will use.
+		 */
 		@JvmStatic
 		fun stopEventQueue() = eventQueue.stop()
 	}
 	
-	init
+	private var queue : EventQueue = eventQueue
+	
+	/**
+	 * Move the client to the given event queue. This method should be called before the `sync()` call, although it is
+	 * theoretically possible to change the queue afterwards.
+	 *
+	 * Please note that the `sync()` method will start the queue if it is not running already, but all other methods
+	 * assume that the queue is running.
+	 */
+	fun moveTo(eventQueue : EventQueue)
 	{
-		// start the event q if it is not running already (since all clients share one q)
-		if (!eventQueue.isRunning)
-			eventQueue.start()
+		queue = eventQueue
 	}
 	
 	/**
 	 * Register a new listener for the given event type.
 	 */
-	fun on(type : EventType, l : Listener<*>)
+	override fun on(type : EventType, l : Listener<*>)
 	{
 		if (l.javaClass.interfaces.find { it == type.listener } == null)
 			throw IllegalArgumentException("The listener of type ${l.javaClass.canonicalName} doesn't implement ${type.listener.canonicalName}")
-		eventQueue.addListener(type, l)
+		queue.addListener(type, l)
 	}
+	
+	/**
+	 * Fire an event.
+	 */
+	internal fun fire(ev : Event)
+			= queue.enqueue(ev)
+	
+	/** The last transaction id used by this client. */
+	private var lastTxnId : Long = -1
+	
+	/** The next transaction id to use by this client. */
+	val nextTxnId : Long
+		get() = ++lastTxnId
 	
 	/**
 	 * A convenient constructor call to create the ClientContext from the given parameters.
@@ -77,9 +101,11 @@ open class Client(val context : ClientContext)
 		protected set
 	
 	/** The rooms that this user has joined. */
-	val rooms = ArrayList<Room>()
+	private val roomsJoined = HashMap<RoomId, Room>()
+	/** The rooms that this user has joined. */
+	val rooms get() = roomsJoined.values
 	/** The rooms that this user has an invitation for. */
-	val roomsInvited = ArrayList<Room>()
+	val roomsInvited = ArrayList<RoomInvitation>()
 	
 	
 	
@@ -185,16 +211,14 @@ open class Client(val context : ClientContext)
 	
 	
 	/**
-	 * Processes the rooms hash and returns a list containing all rooms.
-	 */
-	protected fun processRooms(hash : JsonObject) : List<Room>
-			= hash.keys.map { Room(this, RoomId.fromString(it)) }
-	
-	/**
 	 * Synchronize the account.
 	 */
 	fun sync()
 	{
+		// check that the event queue is running
+		if (!queue.isRunning)
+			queue.start()
+		
 		val params = HashMap<String, Any>()
 		params["access_token"] = token ?: throw NoTokenException()
 		if (next_batch != null)
@@ -209,15 +233,21 @@ open class Client(val context : ClientContext)
 		val roomsJoined = rooms.obj("join") ?: throw IllegalJsonException("Missing: 'rooms.join'")
 		val roomsInvited = rooms.obj("invite") ?: throw IllegalJsonException("Missing: 'rooms.invite'")
 		
-		for (room in processRooms(roomsJoined))
+		for (room in roomsJoined.keys.map { Room(this, RoomId.fromString(it)) })
 		{
-			this.rooms.add(room)
-			eventQueue.enqueue(RoomJoinEvent(room))
+			if (this.roomsJoined.containsKey(room.id))
+			{
+				// TODO there are new messages in this room
+				continue
+			}
+			this.roomsJoined[room.id] = room
+			fire(RoomJoinEvent(room))
 		}
-		for (room in processRooms(roomsInvited))
+		
+		for (room in roomsInvited.keys.map { RoomInvitation(this, RoomId.fromString(it)) })
 		{
 			this.roomsInvited.add(room)
-			eventQueue.enqueue(RoomInvitationEvent(room))
+			fire(RoomInvitationEvent(room))
 		}
 		
 		// TODO!!
@@ -226,6 +256,8 @@ open class Client(val context : ClientContext)
 
 // extensions to the http lib
 
+private fun jsonEntity(body : JsonBase)
+		= Entity.entity(body.toJsonString(prettyPrint = false), APPLICATION_JSON_TYPE)
 /** Run a GET request on the given path. */
 fun WebTarget.get(path : String) : Response
 		= path(path).request().get()
@@ -239,8 +271,15 @@ fun WebTarget.get(path : String, args : Map<String, Any>) : Response
 	return t.request().get()
 }
 /** Run a POST request on the given path. */
-fun WebTarget.post(path : String, body : JsonBase) : Response
-		= path(path).request().post(Entity.entity(body.toJsonString(prettyPrint = false), APPLICATION_JSON_TYPE))
+fun WebTarget.post(path : String, body : JsonBase = JsonObject()) : Response
+		= path(path).request().post(jsonEntity(body))
+fun WebTarget.post(path : String, token : String, body : JsonBase = JsonObject()) : Response
+		= path(path).queryParam("access_token", token).request().post(jsonEntity(body))
+/** Run a PUT request on the given path. */
+fun WebTarget.put(path : String, body : JsonBase = JsonObject()) : Response
+		= path(path).request().put(jsonEntity(body))
+fun WebTarget.put(path : String, token : String, body : JsonBase = JsonObject()) : Response
+		= path(path).queryParam("access_token", token).request().put(jsonEntity(body))
 
 /** Return the response body as a string. */
 val Response.str : String

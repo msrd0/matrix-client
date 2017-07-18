@@ -13,7 +13,7 @@ dependencies {
 	compile rootProject
 	
 	// guava
-	compile "com.google.guava:guava:+"
+	compile "com.google.guava:guava:22.0"
 	
 	// logging
 	compile 'ch.qos.logback:logback-classic:1.+'

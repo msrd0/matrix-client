@@ -19,6 +19,7 @@
 package msrd0.matrix.client
 
 import com.beust.klaxon.*
+import msrd0.matrix.client.event.*
 import org.slf4j.*
 
 /**
@@ -90,5 +91,40 @@ open class Room(
 			val userid = member.string("state_key") ?: throw IllegalJsonException("Missing: 'chunk.[].state_key")
 			members.add(MatrixId.fromString(userid))
 		}
+	}
+	
+	/** The previous batch of the last retrieveMessage call. */
+	private val prev_batch : String? = null
+	
+	/**
+	 * Retrieves the last `limit` messages, starting now or, if supplied, at `start`.
+	 */
+	@Throws(MatrixAnswerException::class)
+	@JvmOverloads
+	fun retrieveMessages(limit : Int = 10, start : String? = null) : Messages
+	{
+		val params = HashMap<String, Any>()
+		params["access_token"] = client.token ?: throw NoTokenException()
+		params["dir"] = "b"
+		if (start != null)
+			params["from"] = start
+		val res = client.target.get("/_matrix/client/r0/rooms/$id/messages", params)
+		client.checkForError(res)
+		
+		val json = res.json
+		val chunk = json.array<JsonObject>("chunk")!!
+		return Messages(json.string("start")!!, json.string("end")!!,
+				chunk.filter{ it.string("type") == "m.room.message" }.map { Message.fromJson(this, it) })
+	}
+	
+	/**
+	 * Send the message to this room. This message is sent as plain text. There is no encryption going on.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun sendMessage(msg : MessageContent)
+	{
+		val res = client.target.put("_matrix/client/r0/rooms/$id/state/m.room.message",
+				client.token ?: throw NoTokenException(), msg.json)
+		client.checkForError(res)
 	}
 }
