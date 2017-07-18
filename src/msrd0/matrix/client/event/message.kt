@@ -21,17 +21,32 @@ package msrd0.matrix.client.event
 import com.beust.klaxon.*
 import msrd0.matrix.client.*
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_MESSAGE
+import msrd0.matrix.client.event.MessageTypes.IMAGE
+import msrd0.matrix.client.event.MessageTypes.TEXT
+import java.awt.*
+import java.awt.image.RenderedImage
+import java.io.ByteArrayOutputStream
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit.*
 import java.util.*
+import javax.imageio.ImageIO
+import javax.ws.rs.client.Entity
+import javax.ws.rs.core.MediaType
 
 object MessageTypes
 {
 	@JvmField
 	var TEXT = "m.text"
+	
+	@JvmField
+	var IMAGE = "m.image"
 }
 
-class MessageContent(
+/**
+ * The content of a message. Every message has a body and a message type. While you can use this class directly, the
+ * use of one of the subclasses is recommended.
+ */
+open class MessageContent(
 		val body : String,
 		val msgtype : String
 ) : MatrixEventContent()
@@ -54,6 +69,62 @@ class MessageContent(
 		val json = JsonObject()
 		json["body"] = body
 		json["msgtype"] = msgtype
+		return json
+	}
+}
+
+/**
+ * The content of a text message.
+ */
+open class TextMessageContent(body : String) : MessageContent(body, TEXT)
+
+/**
+ * The content of an image message. Please make sure to call `uploadImage` before trying to send events of this type.
+ */
+open class ImageMessageContent(alt : String) : MessageContent(alt, IMAGE)
+{
+	var url : String? = null
+			protected set
+	val mimetype : String = "image/png"
+	var width : Int? = null
+			protected set
+	var height : Int? = null
+			protected set
+	var size : Int? = null
+			protected set
+	
+	/**
+	 * Uploads the image to the matrix server. This method needs to be called before sending this message.
+	 *
+	 * @throws MatrixAnswerException On errors in the answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	open fun uploadImage(img : RenderedImage, client : Client)
+	{
+		width = img.width
+		height = img.height
+		
+		val baos = ByteArrayOutputStream()
+		ImageIO.write(img, "PNG", baos)
+		val bytes = baos.toByteArray()
+		size = bytes.size
+		
+		val res = client.target.post("_matrix/media/r0/upload", client.token ?: throw NoTokenException(),
+				Entity.entity(bytes, MediaType.valueOf(mimetype)))
+		client.checkForError(res)
+		url = res.json.string("content_uri") ?: throw IllegalJsonException("Missing: 'content_uri'")
+	}
+	
+	override val json : JsonObject get()
+	{
+		val json = super.json
+		json["url"] = url ?: throw IllegalStateException("You need to call ImageMessageContent::uploadImage first")
+		json["info"] = mapOf(
+				"mimetype" to mimetype,
+				"h" to height,
+				"w" to width,
+				"size" to size
+		)
 		return json
 	}
 }

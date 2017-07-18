@@ -26,6 +26,7 @@ import java.net.URI
 import javax.ws.rs.client.*
 import javax.ws.rs.core.MediaType.*
 import javax.ws.rs.core.Response
+import javax.ws.rs.core.Response.Status.Family.*
 
 /**
  * This class is the http client for the matrix server.
@@ -118,12 +119,23 @@ open class Client(val context : ClientContext) : ListenerRegistration
 	@Throws(MatrixErrorResponseException::class)
 	internal fun checkForError(res : Response)
 	{
-		val json = res.json
-		if (json.containsKey("error"))
+		try
 		{
-			logger.debug("Found error in json: ${res.str}")
-			throw MatrixErrorResponseException(json.string("errcode") ?: "MSRD0_UNKNOWN", json.string("error")!!)
+			val json = res.json
+			if (json.containsKey("error"))
+			{
+				logger.debug("Found error in json: ${res.str}")
+				throw MatrixErrorResponseException(json.string("errcode") ?: "MSRD0_UNKNOWN", json.string("error")!!)
+			}
 		}
+		catch (ex : RuntimeException) // unfortunately the json library throws only RuntimeExceptions
+		{
+			logger.warn("Error while checking for error in response", ex)
+		}
+		
+		val status = res.statusInfo
+		if (status.family != SUCCESSFUL)
+			throw MatrixErrorResponseException("${status.statusCode}", status.reasonPhrase)
 	}
 	
 	
@@ -275,6 +287,8 @@ fun WebTarget.post(path : String, body : JsonBase = JsonObject()) : Response
 		= path(path).request().post(jsonEntity(body))
 fun WebTarget.post(path : String, token : String, body : JsonBase = JsonObject()) : Response
 		= path(path).queryParam("access_token", token).request().post(jsonEntity(body))
+fun <T> WebTarget.post(path : String, token : String, body : Entity<T>) : Response
+		= path(path).queryParam("access_token", token).request().post(body)
 /** Run a PUT request on the given path. */
 fun WebTarget.put(path : String, body : JsonBase = JsonObject()) : Response
 		= path(path).request().put(jsonEntity(body))

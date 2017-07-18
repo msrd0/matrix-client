@@ -27,6 +27,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import javax.imageio.ImageIO;
+
 import msrd0.matrix.client.*;
 import msrd0.matrix.client.event.*;
 import msrd0.matrix.client.listener.*;
@@ -196,7 +198,20 @@ public class Main
 					System.out.println("No room selected");
 				else
 				{
-					MessageContent content = new MessageContent(query("Message"), "m.text");
+					MessageContent content = new TextMessageContent(query("Message"));
+					curr.sendMessage(content);
+				}
+			}
+			else if (line.equals("sendimg"))
+			{
+				if (curr == null)
+					System.out.println("No room selected");
+				else
+				{
+					String path = query("Image Path");
+					File file = new File(path);
+					ImageMessageContent content = new ImageMessageContent(file.getName());
+					content.uploadImage(ImageIO.read(file), client);
 					curr.sendMessage(content);
 				}
 			}
