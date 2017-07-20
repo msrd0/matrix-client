@@ -265,39 +265,3 @@ open class Client(val context : ClientContext) : ListenerRegistration
 		// TODO!!
 	}
 }
-
-// extensions to the http lib
-
-private fun jsonEntity(body : JsonBase)
-		= Entity.entity(body.toJsonString(prettyPrint = false), APPLICATION_JSON_TYPE)
-/** Run a GET request on the given path. */
-fun WebTarget.get(path : String) : Response
-		= path(path).request().get()
-fun WebTarget.get(path : String, token : String) : Response
-		= path(path).queryParam("access_token", token).request().get()
-fun WebTarget.get(path : String, args : Map<String, Any>) : Response
-{
-	var t = path(path)
-	for (key in args.keys)
-		t = t.queryParam(key, args[key])
-	return t.request().get()
-}
-/** Run a POST request on the given path. */
-fun WebTarget.post(path : String, body : JsonBase = JsonObject()) : Response
-		= path(path).request().post(jsonEntity(body))
-fun WebTarget.post(path : String, token : String, body : JsonBase = JsonObject()) : Response
-		= path(path).queryParam("access_token", token).request().post(jsonEntity(body))
-fun <T> WebTarget.post(path : String, token : String, body : Entity<T>) : Response
-		= path(path).queryParam("access_token", token).request().post(body)
-/** Run a PUT request on the given path. */
-fun WebTarget.put(path : String, body : JsonBase = JsonObject()) : Response
-		= path(path).request().put(jsonEntity(body))
-fun WebTarget.put(path : String, token : String, body : JsonBase = JsonObject()) : Response
-		= path(path).queryParam("access_token", token).request().put(jsonEntity(body))
-
-/** Return the response body as a string. */
-val Response.str : String
-		get() = readEntity(String::class.java)
-/** Return the response body as a json object. */
-val Response.json : JsonObject
-		get() = Parser().parse(StringReader(str)) as JsonObject
