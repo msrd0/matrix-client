@@ -19,9 +19,10 @@
 package msrd0.matrix.client
 
 import com.beust.klaxon.*
-import java.io.StringReader
+import java.io.*
 import javax.ws.rs.client.*
 import javax.ws.rs.core.*
+import org.apache.commons.io.IOUtils
 
 private fun jsonEntity(body : JsonBase)
 		= Entity.entity(body.toJsonString(prettyPrint = false), MediaType.APPLICATION_JSON_TYPE)
@@ -50,9 +51,12 @@ fun WebTarget.put(path : String, body : JsonBase = JsonObject()) : Response
 fun WebTarget.put(path : String, token : String, body : JsonBase = JsonObject()) : Response
 		= path(path).queryParam("access_token", token).request().put(jsonEntity(body))
 
+/** Return the response body as a byte array. Make sure to call this only once as it will consume the InputStream. */
+val Response.bytes : ByteArray
+	get() = IOUtils.toByteArray(this.readEntity(InputStream::class.java))
 /** Return the response body as a string. */
 val Response.str : String
 	get() = readEntity(String::class.java)
 /** Return the response body as a json object. */
 val Response.json : JsonObject
-	get() = Parser().parse(StringReader(str)) as JsonObject
+	get() = Parser().parse(StringBuilder(str)) as JsonObject
