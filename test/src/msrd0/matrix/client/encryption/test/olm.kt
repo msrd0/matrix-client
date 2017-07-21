@@ -1,33 +1,29 @@
 /*
  * matrix-client
  * Copyright (C) 2017 Julius Lehmann
- *  
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-package msrd0.matrix.client.event
+package msrd0.matrix.client.encryption.test
 
-import com.beust.klaxon.JsonObject
+import msrd0.matrix.client.encryption.olm
+import org.testng.annotations.Test
 
-interface EventEncryptor
+@Test
+fun version()
 {
-	fun getEncryptedJson(event : JsonObject) : JsonObject
-	fun getDecryptedJson(event : JsonObject) : JsonObject
-	fun exchangeKeys(additionalKeys : Map<String, List<String>> = mapOf()) : JsonObject
-	fun addDeviceKeys(userId : String, deviceId : String, identityKey : String)
-	fun uploadKeysJson() : JsonObject
-	fun loadFromStorage()
-	fun saveToStorage()
+	olm.olmLibVersion
 }

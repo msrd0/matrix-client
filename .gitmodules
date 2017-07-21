@@ -1,0 +1,3 @@
+[submodule "olm"]
+	path = olm
+	url = https://matrix.org/git/olm.git

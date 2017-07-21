@@ -57,7 +57,7 @@ dependencies {
 sourceSets {
 	main {
 		kotlin.srcDirs = ['src/']
-		java.srcDirs = []
+		java.srcDirs = ['jni/java']
 		resources.srcDirs = ['res/']
 	}
 	test {
@@ -66,6 +66,30 @@ sourceSets {
 		resources.srcDirs = ['test/res/']
 	}
 }
+
+def olmLibVersion = "2.2.2"
+
+def cmakeDirectory = projectDir.toString() + "/jni/native"
+def olmDirectory = projectDir.toString() + "/olm"
+def buildDirectory = new File(getBuildDir().toString() + "/cmake")
+buildDirectory.mkdirs()
+
+task generateMakefiles(type: Exec, description: "Generate Makefiles") {
+	workingDir = buildDirectory
+	commandLine "cmake", "-DOLM_SOURCE=" + olmDirectory, "-DOLM_VERSION=" + olmLibVersion, "-DCMAKE_INSTALL_PREFIX=/", cmakeDirectory
+}
+
+task buildNative(type: Exec, description: "Build Java Native", dependsOn: ":generateMakefiles") {
+	workingDir = buildDirectory
+	commandLine "make"
+}
+
+task installNative(type: Exec, description: "Install Java Native", dependsOn: ":buildNative") {
+	workingDir = buildDirectory
+	commandLine "make", "install", "DESTDIR=" + projectDir.toString()
+}
+
+compileJava.dependsOn installNative
 
 compileKotlin {
 	kotlinOptions.jvmTarget = "1.8"
