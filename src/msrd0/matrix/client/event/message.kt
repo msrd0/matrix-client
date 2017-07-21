@@ -151,10 +151,7 @@ open class ImageMessageContent(alt : String) : MessageContent(alt, IMAGE)
 		val bytes = baos.toByteArray()
 		size = bytes.size
 		
-		val res = client.target.post("_matrix/media/r0/upload", client.token ?: throw NoTokenException(),
-				Entity.entity(bytes, MediaType.valueOf(mimetype)))
-		client.checkForError(res)
-		url = res.json.string("content_uri") ?: throw IllegalJsonException("Missing: 'content_uri'")
+		url = client.upload(bytes, mimetype)
 	}
 	
 	/**
@@ -167,13 +164,8 @@ open class ImageMessageContent(alt : String) : MessageContent(alt, IMAGE)
 	@Throws(MatrixAnswerException::class, IOException::class)
 	open fun downloadImage(client : Client) : RenderedImage
 	{
-		val match = urlPattern.matcher(url ?: throw IllegalStateException("url is null"))
-		if (!match.matches())
-			throw IllegalStateException("url doesn't match the required pattern")
-		val domain = match.group("domain")
-		val mediaId = match.group("mediaId")
-		
-		return ImageIO.read(URL("${client.context.hs.base}/_matrix/media/r0/download/$domain/$mediaId?token=${client.token}"))
+		val res = client.download(MatrixContentUrl.fromString(url ?: throw IllegalStateException("url is null")))
+		return ImageIO.read(ByteArrayInputStream(res.first))
 	}
 	
 	override val json : JsonObject get()

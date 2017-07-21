@@ -39,6 +39,9 @@ dependencies {
 	compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
 	compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
 	
+	// apache commons
+	compile 'commons-io:commons-io:2.5'
+	
 	// http lib
 	compile "org.apache.cxf:cxf-rt-rs-client:3.+"
 	

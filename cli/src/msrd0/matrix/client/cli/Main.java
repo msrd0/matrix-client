@@ -193,10 +193,17 @@ public class Main
 						String body = msg.getBody();
 						if (msg.getMsgtype().equals(MessageTypes.IMAGE))
 						{
-							File file = File.createTempFile("matrix", ".png");
-							file.deleteOnExit();
-							ImageIO.write(((ImageMessageContent)msg.getContent()).downloadImage(client), "PNG", file);
-							body = "(" + file.getAbsolutePath() + ") " + body;
+							try
+							{
+								File file = File.createTempFile("matrix", ".png");
+								file.deleteOnExit();
+								ImageIO.write(((ImageMessageContent) msg.getContent()).downloadImage(client), "PNG", file);
+								body = "(" + file.getAbsolutePath() + ") " + body;
+							}
+							catch (MatrixAnswerException mae)
+							{
+								body = "(broken image) " + body;
+							}
 						}
 						System.out.println("  -> " + msg.getAge().format(DateTimeFormatter.ofPattern("dd MMM uuuu HH:mm:ss")) +
 								" [" + msg.getSender() + "] " + body);
