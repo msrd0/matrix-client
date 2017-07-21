@@ -21,17 +21,34 @@ package msrd0.matrix.client.event
 import com.beust.klaxon.*
 import msrd0.matrix.client.*
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_MESSAGE
+import msrd0.matrix.client.event.MessageTypes.IMAGE
+import msrd0.matrix.client.event.MessageTypes.TEXT
+import java.awt.*
+import java.awt.image.RenderedImage
+import java.io.*
+import java.net.URL
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit.*
 import java.util.*
+import java.util.regex.Pattern
+import javax.imageio.ImageIO
+import javax.ws.rs.client.Entity
+import javax.ws.rs.core.MediaType
 
 object MessageTypes
 {
 	@JvmField
 	var TEXT = "m.text"
+	
+	@JvmField
+	var IMAGE = "m.image"
 }
 
-class MessageContent(
+/**
+ * The content of a message. Every message has a body and a message type. While you can use this class directly, the
+ * use of one of the subclasses is recommended.
+ */
+open class MessageContent(
 		val body : String,
 		val msgtype : String
 ) : MatrixEventContent()
@@ -42,11 +59,30 @@ class MessageContent(
 		 * Constructs a message content by parsing the supplied json. For a documentation of the json see the matrix
 		 * specifications.
 		 *
-		 * @throws NullPointerException If one of the required json parameters were null (or not present).
+		 * @throws MatrixAnswerException On errors in the json.
 		 */
 		@JvmStatic
+		@Throws(MatrixAnswerException::class)
 		fun fromJson(json : JsonObject) : MessageContent
-				= MessageContent(json.string("body")!!, json.string("msgtype")!!)
+		{
+			val type = json.string("msgtype") ?: throw IllegalJsonException("Missing: 'msgtype'")
+			val body = json.string("body") ?: throw IllegalJsonException("Missing: 'body'")
+			
+			if (type == TEXT)
+				return TextMessageContent(body)
+			
+			if (type == IMAGE)
+			{
+				val content = ImageMessageContent(body)
+				content.loadFromJson(
+						json.obj("info") ?: throw IllegalJsonException("Missing: 'info'"),
+						json.string("url") ?: throw IllegalJsonException("Missing: 'url'")
+				)
+				return content
+			}
+			
+			throw MatrixAnswerException("Unknown message type $type")
+		}
 	}
 	
 	override val json : JsonObject get()
@@ -54,6 +90,102 @@ class MessageContent(
 		val json = JsonObject()
 		json["body"] = body
 		json["msgtype"] = msgtype
+		return json
+	}
+}
+
+/**
+ * The content of a text message.
+ */
+open class TextMessageContent(body : String) : MessageContent(body, TEXT)
+
+/**
+ * The content of an image message. Please make sure to call `uploadImage` before trying to send events of this type.
+ */
+open class ImageMessageContent(alt : String) : MessageContent(alt, IMAGE)
+{
+	companion object
+	{
+		private var urlPattern = Pattern.compile("mxc://(?<domain>[^/]+)/(?<mediaId>[^/]+)")
+	}
+	
+	var url : String? = null
+			protected set
+	var mimetype : String = "image/png"
+			protected set
+	var width : Int? = null
+			protected set
+	var height : Int? = null
+			protected set
+	var size : Int? = null
+			protected set
+	
+	/**
+	 * Loads the image from the json of a received message event.
+	 *
+	 * @throws IllegalJsonException On errors in the json.
+	 */
+	@Throws(IllegalJsonException::class)
+	open fun loadFromJson(info : JsonObject, url : String)
+	{
+		this.url = url
+		this.mimetype = info.string("mimetype") ?: throw IllegalJsonException("Missing: 'mimetype'")
+		this.width = info.int("w") ?: throw IllegalJsonException("Missing: 'w'")
+		this.height = info.int("h") ?: throw IllegalJsonException("Missing: 'h'")
+		this.size = info.int("size") ?: throw IllegalJsonException("Missing: 'size'")
+	}
+	
+	/**
+	 * Uploads the image to the matrix server. This method needs to be called before sending this message.
+	 *
+	 * @throws MatrixAnswerException On errors in the answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	open fun uploadImage(img : RenderedImage, client : Client)
+	{
+		width = img.width
+		height = img.height
+		
+		val baos = ByteArrayOutputStream()
+		ImageIO.write(img, "PNG", baos)
+		val bytes = baos.toByteArray()
+		size = bytes.size
+		
+		val res = client.target.post("_matrix/media/r0/upload", client.token ?: throw NoTokenException(),
+				Entity.entity(bytes, MediaType.valueOf(mimetype)))
+		client.checkForError(res)
+		url = res.json.string("content_uri") ?: throw IllegalJsonException("Missing: 'content_uri'")
+	}
+	
+	/**
+	 * Downloads the image from the matrix server. Please make sure that either `uploadImage` or `loadFromJson` was
+	 * called before to populate the url of this image message.
+	 *
+	 * @throws MatrixAnswerException On errors in the answer.
+	 * @throws IOException On errors when reading the image.
+	 */
+	@Throws(MatrixAnswerException::class, IOException::class)
+	open fun downloadImage(client : Client) : RenderedImage
+	{
+		val match = urlPattern.matcher(url ?: throw IllegalStateException("url is null"))
+		if (!match.matches())
+			throw IllegalStateException("url doesn't match the required pattern")
+		val domain = match.group("domain")
+		val mediaId = match.group("mediaId")
+		
+		return ImageIO.read(URL("${client.context.hs.base}/_matrix/media/r0/download/$domain/$mediaId?token=${client.token}"))
+	}
+	
+	override val json : JsonObject get()
+	{
+		val json = super.json
+		json["url"] = url ?: throw IllegalStateException("You need to call ImageMessageContent::uploadImage first")
+		json["info"] = mapOf(
+				"mimetype" to mimetype,
+				"h" to height,
+				"w" to width,
+				"size" to size
+		)
 		return json
 	}
 }
