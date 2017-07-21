@@ -48,6 +48,9 @@ dependencies {
 	// json lib
 	compile "com.beust:klaxon:0.31-SNAPSHOT"
 	
+	// olm java
+	compile "msrd0.matrix:matrix-olm-java:+"
+	
 	// logging
 	compile "org.slf4j:slf4j-api:1.7.+"
 	

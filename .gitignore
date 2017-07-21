@@ -12,3 +12,6 @@ build/
 # emacs stuff
 *~
 \#*#
+
+# native
+*.so
