@@ -21,8 +21,10 @@ package msrd0.matrix.client.encryption
 
 import org.matrix.olm.OlmAccount
 
-class OlmEncryption()
+abstract class OlmEncryption(val deviceId : String)
 {
-	var account : OlmAccount = OlmAccount()
-	
+	val account : OlmAccount = OlmAccount()
+	val identityKey : String = account.identityKeys()["curve25519"] ?: ""
+	val signingKey : String = account.identityKeys()["ed25519"] ?: ""
+	val deviceid : String = ""
 }

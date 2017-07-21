@@ -33,13 +33,14 @@ interface RoomEncryptor
 	 *
 	 * @param secrets the map containing all secrets transmitted by olm
 	 */
-	fun addSecrets(secrets : Map<String, String> = mapOf())
+	fun addSecrets(secrets : Map<String, String>)
 	
 	/**
 	 * Enrypts a room event
 	 *
 	 * After encryption has finished, the result should be sent as is to the corresponding room. A client/server may add
-	 * additional properties **outside** of ```content```.
+	 * additional properties **outside** of ```content```. The properties ```type``` and ```room_id``` are set by this
+	 * class.
 	 */
 	fun getEncryptedJson(event : JsonObject) : JsonObject
 	
