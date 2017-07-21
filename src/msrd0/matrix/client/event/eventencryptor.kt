@@ -1,6 +1,6 @@
 /*
  * matrix-client
- * Copyright (C) 2017  Julius Lehmann
+ * Copyright (C) 2017 Julius Lehmann
  *  
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
+
 package msrd0.matrix.client.event
 
 import com.beust.klaxon.JsonObject
@@ -24,7 +25,9 @@ interface EventEncryptor
 {
 	fun getEncryptedJson(event : JsonObject) : JsonObject
 	fun getDecryptedJson(event : JsonObject) : JsonObject
-	fun exchangeKeys() : JsonObject
-	fun addDeviceKeys(userId : String, deviceId : String, identityKey : String, vararg additionalKeys : String)
+	fun exchangeKeys(additionalKeys : Map<String, List<String>> = mapOf()) : JsonObject
+	fun addDeviceKeys(userId : String, deviceId : String, identityKey : String)
 	fun uploadKeysJson() : JsonObject
+	fun loadFromStorage()
+	fun saveToStorage()
 }
