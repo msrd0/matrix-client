@@ -19,8 +19,9 @@
 package msrd0.matrix.client
 
 import com.beust.klaxon.string
+import msrd0.matrix.client.Client.Companion.checkForError
 import java.util.regex.Pattern
-import javax.ws.rs.client.Entity.entity
+import javax.ws.rs.client.Entity.*
 import javax.ws.rs.core.*
 
 /**
@@ -67,7 +68,7 @@ object ContentRepo
 	{
 		val res = client.target.post("_matrix/media/r0/upload", client.token ?: throw NoTokenException(),
 				entity(bytes, MediaType.valueOf(mimetype)))
-		client.checkForError(res)
+		checkForError(res)
 		return res.json.string("content_uri") ?: throw IllegalJsonException("Missing: 'content_uri'")
 	}
 	

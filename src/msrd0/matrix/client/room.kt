@@ -19,6 +19,7 @@
 package msrd0.matrix.client
 
 import com.beust.klaxon.*
+import msrd0.matrix.client.Client.Companion.checkForError
 import msrd0.matrix.client.event.*
 import org.slf4j.*
 
@@ -64,7 +65,7 @@ open class Room(
 	protected fun retrieveName()
 	{
 		val res = client.target.get("/_matrix/client/r0/rooms/$id/state/m.room.name", client.token ?: throw NoTokenException())
-		client.checkForError(res)
+		checkForError(res)
 		
 		name = res.json.string("name") ?: throw IllegalJsonException("Missing: 'name'")
 	}
@@ -76,7 +77,7 @@ open class Room(
 	protected fun retrieveMembers()
 	{
 		val res = client.target.get("/_matrix/client/r0/rooms/$id/members", client.token ?: throw NoTokenException())
-		client.checkForError(res)
+		checkForError(res)
 		
 		members.clear()
 		
@@ -109,7 +110,7 @@ open class Room(
 		if (start != null)
 			params["from"] = start
 		val res = client.target.get("/_matrix/client/r0/rooms/$id/messages", params)
-		client.checkForError(res)
+		checkForError(res)
 		
 		val json = res.json
 		val chunk = json.array<JsonObject>("chunk")!!
@@ -125,6 +126,6 @@ open class Room(
 	{
 		val res = client.target.put("_matrix/client/r0/rooms/$id/state/m.room.message",
 				client.token ?: throw NoTokenException(), msg.json)
-		client.checkForError(res)
+		checkForError(res)
 	}
 }

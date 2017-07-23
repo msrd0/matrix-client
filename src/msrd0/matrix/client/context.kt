@@ -18,6 +18,9 @@
 
 package msrd0.matrix.client
 
+import com.beust.klaxon.string
+import msrd0.matrix.client.Client.Companion.checkForError
+import msrd0.matrix.client.Client.Companion.publicTarget
 import java.net.URI
 
 /**
@@ -52,6 +55,17 @@ data class MatrixId(
 				throw IllegalArgumentException()
 			return MatrixId(s[0].substring(1), s[1])
 		}
+	}
+	
+	/**
+	 * The displayname of this matrix user.
+	 */
+	@get:[Throws(MatrixAnswerException::class)]
+	val displayname : String? get()
+	{
+		val res = publicTarget.get("_matrix/client/r0/profile/$this/displayname")
+		checkForError(res)
+		return res.json.string("displayname")
 	}
 	
 	override fun toString() : String = "@$localpart:$domain"

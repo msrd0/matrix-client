@@ -39,6 +39,46 @@ open class Client(val context : ClientContext) : ListenerRegistration
 	{
 		private val logger : Logger = LoggerFactory.getLogger(Client::class.java)
 		
+		
+		
+		/**
+		 * A public target to the matrix.org server. Should only be used for user-independent calls. All other calls
+		 * should be submitted directly to the homeserver of that user.
+		 */
+		@JvmStatic
+		val publicTarget : WebTarget = ClientBuilder.newClient().target(URI("https://matrix.org/"))
+		
+		/**
+		 * This function checks the given response for error messages and throws an exception
+		 * if it finds any errors.
+		 *
+		 * @throws MatrixErrorResponseException If an error was found
+		 */
+		@JvmStatic
+		@Throws(MatrixErrorResponseException::class)
+		fun checkForError(res : Response)
+		{
+			try
+			{
+				val json = res.json
+				if (json.containsKey("error"))
+				{
+					logger.debug("Found error in json: ${res.str}")
+					throw MatrixErrorResponseException(json.string("errcode") ?: "MSRD0_UNKNOWN", json.string("error")!!)
+				}
+			}
+			catch (ex : RuntimeException) // unfortunately the json library throws only RuntimeExceptions
+			{
+				logger.warn("Error while checking for error in response", ex)
+			}
+			
+			val status = res.statusInfo
+			if (status.family != SUCCESSFUL)
+				throw MatrixErrorResponseException("${status.statusCode}", status.reasonPhrase)
+		}
+		
+		
+		
 		/** The EventQueue shared by all clients. */
 		internal val eventQueue = EventQueue()
 		
@@ -110,35 +150,6 @@ open class Client(val context : ClientContext) : ListenerRegistration
 	/** The rooms that this user has an invitation for. */
 	val roomsInvited = ArrayList<RoomInvitation>()
 	
-	
-	
-	/**
-	 * This function checks the given response for error messages and throws an exception
-	 * if it finds any errors.
-	 *
-	 * @throws MatrixErrorResponseException If an error was found
-	 */
-	@Throws(MatrixErrorResponseException::class)
-	internal fun checkForError(res : Response)
-	{
-		try
-		{
-			val json = res.json
-			if (json.containsKey("error"))
-			{
-				logger.debug("Found error in json: ${res.str}")
-				throw MatrixErrorResponseException(json.string("errcode") ?: "MSRD0_UNKNOWN", json.string("error")!!)
-			}
-		}
-		catch (ex : RuntimeException) // unfortunately the json library throws only RuntimeExceptions
-		{
-			logger.warn("Error while checking for error in response", ex)
-		}
-		
-		val status = res.statusInfo
-		if (status.family != SUCCESSFUL)
-			throw MatrixErrorResponseException("${status.statusCode}", status.reasonPhrase)
-	}
 	
 	
 	/**

@@ -20,6 +20,7 @@ package msrd0.matrix.client.filter
 
 import com.beust.klaxon.*
 import msrd0.matrix.client.*
+import msrd0.matrix.client.Client.Companion.checkForError
 
 enum class EventFormat
 {
@@ -63,7 +64,7 @@ class Filter : JsonSerializable
 	{
 		val res = client.target.post("_matrix/client/r0/user/${client.context.id}/filter",
 				client.token ?: throw NoTokenException(), json)
-		client.checkForError(res)
+		checkForError(res)
 		return res.json.string("filter_id") ?: throw IllegalJsonException("Missing: 'filter_id'")
 	}
 }
