@@ -20,6 +20,7 @@ package msrd0.matrix.client.listener
 
 import msrd0.matrix.client.Room
 import msrd0.matrix.client.RoomInvitation
+import msrd0.matrix.client.event.Message
 
 /**
  * This is the base class for every event handled by the EventQueue. It's id must match
@@ -35,6 +36,8 @@ open class Event(val type : EventType)
 		get() = type.listener
 }
 
-open class RoomJoinEvent(val room : Room) : Event("matrix.room.join", RoomJoinListener::class.java)
+open class RoomJoinEvent(val room : Room) : Event(EventTypes.ROOM_JOIN)
 
-open class RoomInvitationEvent(val room : RoomInvitation) : Event("matrix.room.invitation", RoomInvitationListener::class.java)
+open class RoomInvitationEvent(val room : RoomInvitation) : Event(EventTypes.ROOM_INVITATION)
+
+open class RoomMessageEvent(val room : Room, val msg : Message) : Event(EventTypes.ROOM_MESSAGE)

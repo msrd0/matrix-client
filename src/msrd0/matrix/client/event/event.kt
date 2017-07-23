@@ -31,11 +31,6 @@ object MatrixEventTypes
 	val ROOM_MESSAGE = "m.room.message"
 }
 
-interface JsonSerializable
-{
-	val json : JsonObject
-}
-
 abstract class MatrixEventContent : JsonSerializable
 
 abstract class MatrixEvent(

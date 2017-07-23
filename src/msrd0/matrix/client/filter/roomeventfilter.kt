@@ -16,21 +16,25 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
 */
 
-package msrd0.matrix.client.listener
+package msrd0.matrix.client.filter
 
-data class EventType(
-		val id : String,
-		val listener : Class<*>
-)
+import com.beust.klaxon.*
+import msrd0.matrix.client.RoomId
 
-object EventTypes
+class RoomEventFilter : EventFilter()
 {
-	@JvmField
-	val ROOM_JOIN = EventType("matrix.room.join", RoomJoinListener::class.java)
+	/** A list of room IDs to exclude. A matching room will be excluded even if in `rooms`. */
+	var notRooms = ArrayList<RoomId>()
+	/** A list of room IDs to include. */
+	var rooms = ArrayList<RoomId>()
 	
-	@JvmField
-	val ROOM_INVITATION = EventType("matrix.room.invitation", RoomInvitationListener::class.java)
-	
-	@JvmField
-	val ROOM_MESSAGE = EventType("matrix.room.message", RoomMessageListener::class.java)
+	override val json : JsonObject get()
+	{
+		val json = super.json
+		if (notRooms.isNotEmpty())
+			json["not_rooms"] = JsonArray(notRooms.map { it.toString() })
+		if (rooms.isNotEmpty())
+			json["rooms"] = JsonArray(rooms.map { it.toString() })
+		return json
+	}
 }

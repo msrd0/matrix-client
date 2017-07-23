@@ -40,6 +40,11 @@ interface Listener<in E>
 interface RoomJoinListener : Listener<RoomJoinEvent>
 
 /**
- * This listeners is called as soon as a new room invitation arrives.
+ * This listener is called as soon as a new room invitation arrives.
  */
 interface RoomInvitationListener : Listener<RoomInvitationEvent>
+
+/**
+ * This listener is called as soon as a new message was sent to the room.
+ */
+interface  RoomMessageListener : Listener<RoomMessageEvent>

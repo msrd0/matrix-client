@@ -19,6 +19,7 @@
 package msrd0.matrix.client
 
 import com.beust.klaxon.*
+import msrd0.matrix.client.filter.*
 import msrd0.matrix.client.listener.*
 import org.slf4j.*
 import java.io.StringReader
@@ -222,16 +223,41 @@ open class Client(val context : ClientContext) : ListenerRegistration
 	}
 	
 	
+	/** The ID of the filter used for sync calls. Empty if no filter was uploaded yet. */
+	protected var syncFilter = ""
+	
+	/**
+	 * Uploads the filter used for sync calls and sets the `syncFilter` property accordingly.
+	 *
+	 * @throws MatrixAnswerException On errors when uploading the filter
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun uploadSyncFilter()
+	{
+		val f = Filter()
+		f.room.state.types = arrayListOf("m.room.*")
+		f.room.timeline.types = arrayListOf("m.room.message")
+		f.room.ephemeral.notTypes = arrayListOf("*")
+		f.presence.notTypes = arrayListOf("*")
+		syncFilter = uploadFilter(f)
+	}
+	
 	/**
 	 * Synchronize the account.
 	 */
+	@Throws(MatrixAnswerException::class)
 	fun sync()
 	{
 		// check that the event queue is running
 		if (!queue.isRunning)
 			queue.start()
 		
+		// check that our filter is uploaded
+		if (syncFilter.isEmpty())
+			uploadSyncFilter()
+		
 		val params = HashMap<String, Any>()
+		params["filter"] = syncFilter
 		params["access_token"] = token ?: throw NoTokenException()
 		if (next_batch != null)
 			params["since"] = next_batch!!

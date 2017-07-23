@@ -24,6 +24,16 @@ import javax.ws.rs.client.*
 import javax.ws.rs.core.*
 import org.apache.commons.io.IOUtils
 
+
+/**
+ * A simple interface that has an abstract property `json`.
+ */
+interface JsonSerializable
+{
+	val json : JsonObject
+}
+
+
 private fun jsonEntity(body : JsonBase)
 		= Entity.entity(body.toJsonString(prettyPrint = false), MediaType.APPLICATION_JSON_TYPE)
 /** Run a GET request on the given path. */

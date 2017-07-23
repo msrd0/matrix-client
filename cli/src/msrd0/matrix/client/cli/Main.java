@@ -242,7 +242,7 @@ public class Main
 		Client.stopEventQueue();
 	}
 	
-	private static void sync()
+	private static void sync() throws MatrixAnswerException
 	{
 		System.out.println("Synchronizing ...");
 		Stopwatch stopwatch = Stopwatch.createStarted();
