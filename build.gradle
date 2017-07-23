@@ -46,7 +46,7 @@ dependencies {
 	compile "org.apache.cxf:cxf-rt-rs-client:3.+"
 	
 	// json lib
-	compile "com.beust:klaxon:0.31-SNAPSHOT"
+	compile "com.beust:klaxon:0.32-SNAPSHOT"
 	
 	// olm java
 	compile "msrd0.matrix:matrix-olm-java:+"
