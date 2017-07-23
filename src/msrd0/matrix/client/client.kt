@@ -19,6 +19,7 @@
 package msrd0.matrix.client
 
 import com.beust.klaxon.*
+import msrd0.matrix.client.event.Presence
 import msrd0.matrix.client.filter.*
 import msrd0.matrix.client.listener.*
 import org.slf4j.*
@@ -289,5 +290,19 @@ open class Client(val context : ClientContext) : ListenerRegistration
 		}
 		
 		// TODO!!
+	}
+	
+	
+	/**
+	 * Retrieve and return the user's presence.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun presence(user : MatrixId) : Presence
+	{
+		val res = target.get("_matrix/client/r0/presence/$user/status", token ?: throw NoTokenException())
+		checkForError(res)
+		return Presence.fromJson(user, res.json)
 	}
 }

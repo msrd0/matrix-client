@@ -179,6 +179,11 @@ public class Main
 				curr = client.getRooms().stream().filter(room -> room.getName().equals(name)).collect(Collectors.toList()).get(0);
 				if (curr == null)
 					System.out.println("Room " + name + " not found");
+				else
+				{
+					for (MatrixId user : curr.getMembers())
+						System.out.println("  -> Member " + user + " (" + client.presence(user).getPresence().name() + ")");
+				}
 			}
 			
 			else if (line.equals("messages"))
