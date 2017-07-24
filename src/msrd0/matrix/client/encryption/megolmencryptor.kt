@@ -23,7 +23,7 @@ import com.beust.klaxon.*
 import org.matrix.olm.*
 import kotlin.collections.set
 
-class MegolmEncryptor(val olm : OlmEncryption, val roomId : String) : RoomEncryptor
+class MegolmEncryptor(val olm : OlmEncryption, val roomId : String, val maxTime : String, val maxMessages : String) : RoomEncryptor
 {
 	private var outSession : OlmOutboundGroupSession = OlmOutboundGroupSession()
 	private var inSessions : MutableMap<String, OlmInboundGroupSession> = mutableMapOf(outSession.sessionIdentifier() to OlmInboundGroupSession(outSession.sessionKey()))
@@ -32,6 +32,7 @@ class MegolmEncryptor(val olm : OlmEncryption, val roomId : String) : RoomEncryp
 	
 	override fun getEncryptedJson(event : JsonObject) : JsonObject
 	{
+		//TODO: test if time is up or max messages have been sent
 		val formattedJson = event.toJsonString(false, true)
 		val encryptedJson = outSession.encryptMessage(formattedJson)
 		val resultJson = JsonObject()
@@ -76,6 +77,7 @@ class MegolmEncryptor(val olm : OlmEncryption, val roomId : String) : RoomEncryp
 		val eventJson = JsonObject()
 		eventJson["type"] = "m.room_key"
 		eventJson["content"] = megolmJson
+		pendingSecrets = false
 		return megolmJson
 	}
 	

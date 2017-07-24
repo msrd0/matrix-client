@@ -63,7 +63,7 @@ dependencies {
 	compile "com.beust:klaxon:0.32-SNAPSHOT"
 	
 	// olm java
-	compile "msrd0.matrix:matrix-olm-java:+"
+	compile "msrd0.matrix:matrix-olm-java:2.+"
 	
 	// logging
 	compile "org.slf4j:slf4j-api:1.7.+"
