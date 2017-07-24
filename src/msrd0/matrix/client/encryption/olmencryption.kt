@@ -24,7 +24,7 @@ import org.matrix.olm.OlmAccount
 abstract class OlmEncryption(val deviceId : String)
 {
 	val account : OlmAccount = OlmAccount()
-	val identityKey : String = account.identityKeys()["curve25519"] ?: ""
-	val signingKey : String = account.identityKeys()["ed25519"] ?: ""
+	val identityKey : String = account.identityKeys()["curve25519"] as String
+	val signingKey : String = account.identityKeys()["ed25519"] as String
 	val deviceid : String = ""
 }
