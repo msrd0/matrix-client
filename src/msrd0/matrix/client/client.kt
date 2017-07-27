@@ -19,7 +19,7 @@
 package msrd0.matrix.client
 
 import com.beust.klaxon.*
-import msrd0.matrix.client.event.Presence
+import msrd0.matrix.client.event.*
 import msrd0.matrix.client.filter.*
 import msrd0.matrix.client.listener.*
 import org.slf4j.*
@@ -29,6 +29,7 @@ import javax.ws.rs.client.*
 import javax.ws.rs.core.MediaType.*
 import javax.ws.rs.core.Response
 import javax.ws.rs.core.Response.Status.Family.*
+import kotlin.concurrent.thread
 
 /**
  * This class is the http client for the matrix server.
@@ -301,6 +302,118 @@ open class Client(val context : ClientContext) : ListenerRegistration
 		}
 		
 		// TODO!!
+	}
+	
+	/** The filter id for the blocking sync call. */
+	protected var syncBlockingFilter : String? = null
+	
+	/**
+	 * Uploads the blocking sync filter and sets the `syncBlockingFilter`.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	protected fun uploadSyncBlockingFilter()
+	{
+		val f = Filter()
+		// we don't care about accountData, ephemeral or presence events
+		f.accountData.notTypes = arrayListOf("*")
+		f.room.ephemeral.notTypes = arrayListOf("*")
+		f.presence.notTypes = arrayListOf("*")
+		// limit the event count to 30
+		f.room.timeline.limit = 30
+		
+		// finally, upload the filter
+		syncBlockingFilter = uploadFilter(f)
+	}
+	
+	/** Set to true if there is no `syncBlocking` call at the moment or if it should stop. */
+	private var syncBlockingStopped : Boolean = true
+	
+	/** Returns true if the method `retrieveMessagesBlocking` is active. */
+	val isSyncBlockingRunning : Boolean get() = !syncBlockingStopped
+	
+	/**
+	 * Stop the `syncBlocking` method. Please note that it might take a while until it will finish; this
+	 * depends on the timeout of that function.
+	 *
+	 * @throws IllegalStateException If no `syncBlocking` call is active.
+	 */
+	@Throws(IllegalStateException::class)
+	fun stopSyncBlocking()
+	{
+		synchronized(syncBlockingStopped) {
+			if (syncBlockingStopped)
+				throw IllegalStateException("No active retrieveMessagesBlocking call found")
+			syncBlockingStopped = true
+		}
+	}
+	
+	/**
+	 * Starts a sync request for this client that blocks until an event is available. As soon as an event was received,
+	 * a corresponding event will be fired and a new request will be made. If `threaded` is false, this method will
+	 * never return. Otherwise it will run in a new thread.
+	 *
+	 * Please note that at the moment this will only receive message events. To receive everything else please call
+	 * the `sync` method. **This behaviour might change in the future without prior notice!!**
+	 *
+	 * @param timeout The timeout in milliseconds.
+	 * @param threaded Controls whether this method will run in a new thread or in the current thread.
+	 *
+	 * @throws MatrixAnswerException On errors that happened before the blocking call started. If an error occurred
+	 * 		afterwards, it will be logged and a new request will be made.
+	 */
+	@Throws(MatrixAnswerException::class)
+	@JvmOverloads
+	fun syncBlocking(timeout : Int = 30000, threaded : Boolean = true)
+	{
+		if (threaded)
+		{
+			thread(start = true) {
+				syncBlocking(timeout, false)
+			}
+			return
+		}
+		
+		synchronized(syncBlockingStopped) {
+			if (!syncBlockingStopped)
+				throw IllegalStateException("Another thread is already waiting for events")
+			syncBlockingStopped = false
+		}
+		
+		if (syncBlockingFilter == null)
+			uploadSyncBlockingFilter()
+		
+		while (!syncBlockingStopped)
+		{
+			try
+			{
+				val params = HashMap<String, Any>()
+				params["access_token"] = token ?: throw NoTokenException()
+				params["timeout"] = timeout;
+				params["filter"] = syncBlockingFilter ?: throw IllegalStateException("For some reason syncBlockingFilter is null while it shouldn't be")
+				params["since"] = next_batch ?: throw IllegalStateException("Please call sync at least once before calling syncBlocking")
+				val res = target.get("_matrix/client/r0/sync", params)
+				checkForError(res)
+				
+				val json = res.json
+				next_batch = json.string("next_batch") ?: throw IllegalJsonException("Missing: 'next_batch'")
+				val rooms = json.obj("rooms") ?: throw IllegalJsonException("Missing: 'rooms'")
+				val join = rooms.obj("join") ?: throw IllegalJsonException("Missing: 'rooms.join'")
+				for (roomId in join.keys.map { RoomId.fromString(it) })
+				{
+					val room = roomsJoined[roomId] ?: continue // TODO the room should be added here
+					val timeline = join.obj("$roomId")?.obj("timeline") ?: throw IllegalJsonException("Missing: 'timeline'")
+					val events = timeline.array<JsonObject>("events") ?: throw IllegalJsonException("Missing: 'timeline.events'")
+					for (event in events)
+						fire(RoomMessageEvent(room, Message.fromJson(room, event)))
+				}
+			}
+			catch (ex : MatrixAnswerException)
+			{
+				logger.warn("syncBlocking received exception", ex)
+			}
+		}
 	}
 	
 	

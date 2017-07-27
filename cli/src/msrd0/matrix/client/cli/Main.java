@@ -138,9 +138,24 @@ public class Main
 			return true;
 		};
 		client.on(ROOM_INVITATION, invitationListener);
+		RoomMessageListener messageListener = (ev) -> {
+			System.out.println("New message in room " + ev.getRoom().getName());
+			try
+			{
+				printMessage(ev.getMsg());
+			}
+			catch (IOException e)
+			{
+				e.printStackTrace(); // #javaIsSoUgly
+			}
+			return true;
+		};
+		client.on(ROOM_MESSAGE, messageListener);
 		
 		// synchronize the client
 		sync();
+		// run blocking synchronization in a new thread
+		client.syncBlocking();
 		
 		Room curr = null;
 		while (true)
@@ -183,6 +198,7 @@ public class Main
 				{
 					for (MatrixId user : curr.getMembers())
 						System.out.println("  -> Member " + user + " (" + client.presence(user).getPresence().name() + ")");
+					printMessages(curr);
 				}
 			}
 			
@@ -192,27 +208,7 @@ public class Main
 					System.out.println("No room selected");
 				else
 				{
-					Messages msgs = curr.retrieveMessages();
-					for (Message msg : msgs)
-					{
-						String body = msg.getBody();
-						if (msg.getMsgtype().equals(MessageTypes.IMAGE))
-						{
-							try
-							{
-								File file = File.createTempFile("matrix", ".png");
-								file.deleteOnExit();
-								ImageIO.write(((ImageMessageContent) msg.getContent()).downloadImage(client), "PNG", file);
-								body = "(" + file.getAbsolutePath() + ") " + body;
-							}
-							catch (MatrixAnswerException mae)
-							{
-								body = "(broken image) " + body;
-							}
-						}
-						System.out.println("  -> " + msg.getAge().format(DateTimeFormatter.ofPattern("dd MMM uuuu HH:mm:ss")) +
-								" [" + msg.getSender() + "] " + body);
-					}
+					printMessages(curr);
 				}
 			}
 			else if (line.equals("send"))
@@ -254,5 +250,33 @@ public class Main
 		client.sync();
 		stopwatch.stop();
 		System.out.println("Synchronization successfull (" + (stopwatch.elapsed(MILLISECONDS) / 1000.0) + " sec)");
+	}
+	
+	private static void printMessage(Message msg) throws IOException
+	{
+		String body = msg.getBody();
+		if (msg.getMsgtype().equals(MessageTypes.IMAGE))
+		{
+			try
+			{
+				File file = File.createTempFile("matrix", ".png");
+				file.deleteOnExit();
+				ImageIO.write(((ImageMessageContent) msg.getContent()).downloadImage(client), "PNG", file);
+				body = "(" + file.getAbsolutePath() + ") " + body;
+			}
+			catch (MatrixAnswerException mae)
+			{
+				body = "(broken image) " + body;
+			}
+		}
+		System.out.println("  -> " + msg.getAge().format(DateTimeFormatter.ofPattern("dd MMM uuuu HH:mm:ss")) +
+				" [" + msg.getSender() + "] " + body);
+	}
+	
+	private static void printMessages(Room room) throws MatrixAnswerException, IOException
+	{
+		Messages msgs = room.retrieveMessages();
+		for (Message msg : msgs)
+			printMessage(msg);
 	}
 }

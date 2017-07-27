@@ -95,7 +95,8 @@ open class Room(
 	}
 	
 	/** The previous batch of the last retrieveMessage call. */
-	private val prev_batch : String? = null
+	var prev_batch : String? = null
+		private set
 	
 	/**
 	 * Retrieves the last `limit` messages, starting now or, if supplied, at `start`.
@@ -113,6 +114,7 @@ open class Room(
 		checkForError(res)
 		
 		val json = res.json
+		prev_batch = json.string("end")
 		val chunk = json.array<JsonObject>("chunk")!!
 		return Messages(json.string("start")!!, json.string("end")!!,
 				chunk.filter{ it.string("type") == "m.room.message" }.map { Message.fromJson(this, it) })

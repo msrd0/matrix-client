@@ -201,13 +201,14 @@ class Message(
 		 * Constructs a message by parsing the supplied json. For a documentation of the json see the matrix
 		 * specifications.
 		 *
-		 * @throws NullPointerException If one of the required json parameters were null (or not present).
+		 * @throws MatrixAnswerException If one of the required json parameters were null (or not present).
 		 */
+		@Throws(MatrixAnswerException::class)
 		@JvmStatic
 		fun fromJson(room : Room, json : JsonObject) : Message
-				= Message(room, MatrixId.fromString(json.string("sender")!!),
-					LocalDateTime.now().minus(json.long("age")!!, MILLIS),
-					MessageContent.fromJson(json.obj("content")!!))
+				= Message(room, MatrixId.fromString(json.string("sender") ?: throw IllegalJsonException("Missing: 'sender'")),
+					LocalDateTime.now().minus(json.long("age") ?: json.obj("unsigned")?.long("age") ?: throw IllegalJsonException("Missing: 'age'"), MILLIS),
+					MessageContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
 	}
 	
 	val body get() = (content as MessageContent).body
