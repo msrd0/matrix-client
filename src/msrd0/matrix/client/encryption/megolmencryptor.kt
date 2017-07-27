@@ -21,20 +21,34 @@ package msrd0.matrix.client.encryption
 
 import com.beust.klaxon.*
 import org.matrix.olm.*
+import java.time.LocalDateTime
 import kotlin.collections.set
 
-class MegolmEncryptor(val olm : OlmEncryption, val roomId : String, val maxTime : String, val maxMessages : String) : RoomEncryptor
+class MegolmEncryptor(val olm : OlmEncryption, val roomId : String, val maxMessages : Int = 0, val maxTime : Long = 0) : RoomEncryptor
 {
 	private var outSession : OlmOutboundGroupSession = OlmOutboundGroupSession()
 	private var inSessions : MutableMap<String, OlmInboundGroupSession> = mutableMapOf(outSession.sessionIdentifier() to OlmInboundGroupSession(outSession.sessionKey()))
 	private var senderSessions : MutableMap<String, String> = mutableMapOf(olm.identityKey to outSession.sessionIdentifier())
 	private var pendingSecrets = true
+	private val startTime : LocalDateTime = LocalDateTime.now()
 	
 	override fun getEncryptedJson(event : JsonObject) : JsonObject
 	{
-		//TODO: test if time is up or max messages have been sent
 		val formattedJson = event.toJsonString(false, true)
+		val nextMessageIndex = outSession.messageIndex()
 		val encryptedJson = outSession.encryptMessage(formattedJson)
+		
+		if (maxMessages != 0)
+		{
+			if (nextMessageIndex >= maxMessages)
+				renew()
+			
+		}
+		if (maxTime != 0L)
+		{
+			if (LocalDateTime.now().minusSeconds(maxTime) <= startTime)
+				renew()
+		}
 		val resultJson = JsonObject()
 		resultJson["type"] = "m.room.encrypted"
 		resultJson["room_id"] = roomId
@@ -67,8 +81,17 @@ class MegolmEncryptor(val olm : OlmEncryption, val roomId : String, val maxTime 
 		return getErrorMessageJson()
 	}
 	
+	fun renew()
+	{
+		outSession = OlmOutboundGroupSession()
+		inSessions[outSession.sessionIdentifier()] = OlmInboundGroupSession(outSession.sessionKey())
+		senderSessions[olm.identityKey] = outSession.sessionIdentifier()
+		pendingSecrets = true
+	}
+	
 	override fun getSecrets() : JsonObject
 	{
+		pendingSecrets = false
 		val megolmJson = JsonObject()
 		megolmJson["algorithm"] = "m.megolm.v1.aes-sha2"
 		megolmJson["room_id"] = roomId
@@ -87,7 +110,8 @@ class MegolmEncryptor(val olm : OlmEncryption, val roomId : String, val maxTime 
 	 * Add session IDs and session keys to this Megolm encryptor
 	 *
 	 * The map must contain ```session_id, session_key``` and ```curve25519``` which is the identity key of the sending
-	 * device. Usually, this information is transmitted by the sending side as ```m.room_key``` event.
+	 * device. Usually, this information is transmitted by the sending side as ```m.room_key``` event. The default behavior
+	 * of transmitting all json variables applies to this method as well.
 	 */
 	override fun addSecrets(secrets : Map<String, String>)
 	{
