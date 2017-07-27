@@ -126,7 +126,7 @@ open class Room(
 	@Throws(MatrixAnswerException::class)
 	fun sendMessage(msg : MessageContent)
 	{
-		val res = client.target.put("_matrix/client/r0/rooms/$id/state/m.room.message",
+		val res = client.target.put("_matrix/client/r0/rooms/$id/send/m.room.message/${client.nextTxnId}",
 				client.token ?: throw NoTokenException(), msg.json)
 		checkForError(res)
 	}
