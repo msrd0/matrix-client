@@ -354,8 +354,8 @@ open class Client(val context : ClientContext) : ListenerRegistration
 	 * a corresponding event will be fired and a new request will be made. If `threaded` is false, this method will
 	 * never return. Otherwise it will run in a new thread.
 	 *
-	 * Please note that at the moment this will only receive message events. To receive everything else please call
-	 * the `sync` method. **This behaviour might change in the future without prior notice!!**
+	 * Please note that at the moment this will only receive room joins, invites and message events. To receive
+	 * everything else please call the `sync` method. **This behaviour might change in the future without prior notice!!**
 	 *
 	 * @param timeout The timeout in milliseconds.
 	 * @param threaded Controls whether this method will run in a new thread or in the current thread.
@@ -402,11 +402,24 @@ open class Client(val context : ClientContext) : ListenerRegistration
 				val join = rooms.obj("join") ?: throw IllegalJsonException("Missing: 'rooms.join'")
 				for (roomId in join.keys.map { RoomId.fromString(it) })
 				{
-					val room = roomsJoined[roomId] ?: continue // TODO the room should be added here
+					if (!roomsJoined.contains(roomId))
+					{
+						val room = Room(this, roomId)
+						roomsJoined[roomId] = room
+						fire(RoomJoinEvent(room))
+					}
+					val room = roomsJoined[roomId] ?: continue
 					val timeline = join.obj("$roomId")?.obj("timeline") ?: throw IllegalJsonException("Missing: 'timeline'")
 					val events = timeline.array<JsonObject>("events") ?: throw IllegalJsonException("Missing: 'timeline.events'")
 					for (event in events)
 						fire(RoomMessageEvent(room, Message.fromJson(room, event)))
+				}
+				val invite = rooms.obj("invite") ?: throw IllegalJsonException("Missing: 'rooms.invite'")
+				for (roomId in invite.keys.map { RoomId.fromString(it) })
+				{
+					val inv = RoomInvitation(this, roomId)
+					roomsInvited.add(inv)
+					fire(RoomInvitationEvent(inv))
 				}
 			}
 			catch (ex : MatrixAnswerException)
