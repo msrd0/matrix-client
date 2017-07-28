@@ -7,7 +7,7 @@ class RoomInvitation(val client : Client, val room : RoomId)
 	@Throws(MatrixAnswerException::class)
 	fun accept()
 	{
-		val res = client.target.post("_matrix/client/r0/rooms/$room/join", client.token ?: throw NoTokenException())
+		val res = client.target.post("_matrix/client/r0/rooms/$room/join", client.token ?: throw NoTokenException(), client.id)
 		checkForError(res)
 	}
 	

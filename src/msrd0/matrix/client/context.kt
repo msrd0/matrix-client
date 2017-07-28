@@ -72,14 +72,6 @@ data class MatrixId(
 }
 
 /**
- * A data class representing a client context.
- */
-data class ClientContext(
-		val hs : HomeServer,
-		val id : MatrixId
-)
-
-/**
  * A data class representing a room id.
  */
 data class RoomId(

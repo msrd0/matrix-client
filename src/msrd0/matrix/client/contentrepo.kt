@@ -66,7 +66,7 @@ object ContentRepo
 	@Throws(MatrixAnswerException::class)
 	fun upload(bytes : ByteArray, mimetype : String, client : Client) : String
 	{
-		val res = client.target.post("_matrix/media/r0/upload", client.token ?: throw NoTokenException(),
+		val res = client.target.post("_matrix/media/r0/upload", client.token ?: throw NoTokenException(), client.id,
 				entity(bytes, MediaType.valueOf(mimetype)))
 		checkForError(res)
 		return res.json.string("content_uri") ?: throw IllegalJsonException("Missing: 'content_uri'")
@@ -81,7 +81,7 @@ object ContentRepo
 	@Throws(MatrixAnswerException::class)
 	fun download(url : MatrixContentUrl, client : Client) : Pair<ByteArray, String>
 	{
-		val res = client.target.get("_matrix/media/r0/download/${url.domain}/${url.mediaId}", client.token ?: throw NoTokenException())
+		val res = client.target.get("_matrix/media/r0/download/${url.domain}/${url.mediaId}", client.token ?: throw NoTokenException(), client.id)
 		val status = res.statusInfo
 		if (status.family != Response.Status.Family.SUCCESSFUL)
 			throw MatrixErrorResponseException("${status.statusCode}", status.reasonPhrase)

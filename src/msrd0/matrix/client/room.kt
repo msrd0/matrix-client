@@ -64,7 +64,7 @@ open class Room(
 	@Throws(MatrixAnswerException::class)
 	protected fun retrieveName()
 	{
-		val res = client.target.get("/_matrix/client/r0/rooms/$id/state/m.room.name", client.token ?: throw NoTokenException())
+		val res = client.target.get("/_matrix/client/r0/rooms/$id/state/m.room.name", client.token ?: throw NoTokenException(), client.id)
 		checkForError(res)
 		
 		name = res.json.string("name") ?: throw IllegalJsonException("Missing: 'name'")
@@ -76,7 +76,7 @@ open class Room(
 	@Throws(MatrixAnswerException::class)
 	protected fun retrieveMembers()
 	{
-		val res = client.target.get("/_matrix/client/r0/rooms/$id/members", client.token ?: throw NoTokenException())
+		val res = client.target.get("/_matrix/client/r0/rooms/$id/members", client.token ?: throw NoTokenException(), client.id)
 		checkForError(res)
 		
 		members.clear()
@@ -127,7 +127,7 @@ open class Room(
 	fun sendMessage(msg : MessageContent)
 	{
 		val res = client.target.put("_matrix/client/r0/rooms/$id/send/m.room.message/${client.nextTxnId}",
-				client.token ?: throw NoTokenException(), msg.json)
+				client.token ?: throw NoTokenException(), client.id, msg.json)
 		checkForError(res)
 	}
 }

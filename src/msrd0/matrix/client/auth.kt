@@ -52,7 +52,7 @@ class Auth(val client : Client, val loginType : LoginType)
 	init
 	{
 		dict["type"] = loginType.type
-		dict["user"] = client.context.id.localpart
+		dict["user"] = client.id.localpart
 	}
 	
 	fun setProperty(key : String, value : String)

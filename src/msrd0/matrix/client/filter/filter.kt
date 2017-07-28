@@ -62,8 +62,8 @@ class Filter : JsonSerializable
 	@Throws(MatrixAnswerException::class)
 	fun upload(client : Client) : String
 	{
-		val res = client.target.post("_matrix/client/r0/user/${client.context.id}/filter",
-				client.token ?: throw NoTokenException(), json)
+		val res = client.target.post("_matrix/client/r0/user/${client.id}/filter",
+				client.token ?: throw NoTokenException(), client.id, json)
 		checkForError(res)
 		return res.json.string("filter_id") ?: throw IllegalJsonException("Missing: 'filter_id'")
 	}

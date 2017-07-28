@@ -34,7 +34,7 @@ import kotlin.concurrent.thread
 /**
  * This class is the http client for the matrix server.
  */
-open class Client(val context : ClientContext) : ListenerRegistration
+open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 {
 	companion object
 	{
@@ -48,6 +48,43 @@ open class Client(val context : ClientContext) : ListenerRegistration
 		 */
 		@JvmStatic
 		val publicTarget : WebTarget = ClientBuilder.newClient().target(URI("https://matrix.org/"))
+		
+		
+		/**
+		 * Registers a new user at the given homeserver.
+		 *
+		 * NOTE: Application Services should supply their token. All other clients should NOT supply a token.
+		 *
+		 * @return A client to the newly created user.
+		 * @throws MatrixAnswerException On errors in the matrix answer.
+		 */
+		@JvmStatic
+		@JvmOverloads
+		@Throws(MatrixAnswerException::class)
+		fun register(localpart : String, hs : HomeServer, password : String? = null, token : String? = null) : Client
+		{
+			var json = JsonObject()
+			json["username"] = localpart
+			if (token == null)
+			{
+				json["password"] = password!!
+				json["bind_email"] = false
+			}
+			else
+				json["type"] = "m.login.application_service"
+			
+			val target = ClientBuilder.newClient().target(hs.base)
+			val res = if (token == null) target.post("_matrix/client/r0/register", json) else target.post("_matrix/client/r0/register", token, null, json)
+			checkForError(res)
+			
+			json = res.json
+			
+			val client = Client(hs, MatrixId.fromString(json.string("user_id") ?: throw IllegalJsonException("Missing: 'user_id'")))
+			client.token = json.string("access_token") ?: throw IllegalJsonException("Missing: 'access_token'")
+			logger.info("Registered new user ${client.id}")
+			return client
+		}
+		
 		
 		/**
 		 * This function checks the given response for error messages and throws an exception
@@ -133,10 +170,10 @@ open class Client(val context : ClientContext) : ListenerRegistration
 	 */
 	@JvmOverloads
 	constructor(domain : String, localpart : String, hsDomain : String = domain, hsBaseUri : URI = URI("https://$hsDomain/"))
-			: this(ClientContext(HomeServer(hsDomain, hsBaseUri), MatrixId(localpart, domain)))
+			: this(HomeServer(hsDomain, hsBaseUri), MatrixId(localpart, domain))
 	
 	/** HTTP Client */
-	internal val target : WebTarget = ClientBuilder.newClient().target(context.hs.base)
+	internal val target : WebTarget = ClientBuilder.newClient().target(hs.base)
 	
 	/** Access Token */
 	var token : String? = null
@@ -187,7 +224,7 @@ open class Client(val context : ClientContext) : ListenerRegistration
 		{
 			token = access_token
 			l.add(Auth(this, LoginType.SUCCESS))
-			logger.debug("$context successfully authenticated")
+			logger.debug("$id successfully authenticated")
 			return l
 		}
 		
@@ -202,7 +239,7 @@ open class Client(val context : ClientContext) : ListenerRegistration
 			{
 				val a = Auth(this, LoginType.fromString(flow.string("type")!!))
 				a.setProperty("type", a.loginType.type)
-				a.setProperty("user", context.id.localpart)
+				a.setProperty("user", id.localpart)
 				l.add(a)
 				continue
 			}
@@ -217,7 +254,7 @@ open class Client(val context : ClientContext) : ListenerRegistration
 			}
 			val a = Auth(this, LoginType.fromString(stages[i]))
 			a.setProperty("type", a.loginType.type)
-			a.setProperty("user", context.id.localpart)
+			a.setProperty("user", id.localpart)
 			if (session != null)
 				a.setProperty("session", session)
 			l.add(a)
@@ -231,7 +268,7 @@ open class Client(val context : ClientContext) : ListenerRegistration
 	 */
 	fun logout()
 	{
-		val res = target.get("_matrix/client/r0/logout", token ?: throw NoTokenException())
+		val res = target.get("_matrix/client/r0/logout", token ?: throw NoTokenException(), id)
 		checkForError(res)
 	}
 	
@@ -384,6 +421,7 @@ open class Client(val context : ClientContext) : ListenerRegistration
 		if (syncBlockingFilter == null)
 			uploadSyncBlockingFilter()
 		
+		logger.debug("starting to sync blocking")
 		while (!syncBlockingStopped)
 		{
 			try
@@ -438,7 +476,7 @@ open class Client(val context : ClientContext) : ListenerRegistration
 	@Throws(MatrixAnswerException::class)
 	fun presence(user : MatrixId) : Presence
 	{
-		val res = target.get("_matrix/client/r0/presence/$user/status", token ?: throw NoTokenException())
+		val res = target.get("_matrix/client/r0/presence/$user/status", token ?: throw NoTokenException(), id)
 		checkForError(res)
 		return Presence.fromJson(user, res.json)
 	}

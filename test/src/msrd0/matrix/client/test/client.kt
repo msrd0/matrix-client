@@ -30,13 +30,12 @@ class ClientTest
 	{
 		val hs = HomeServer("matrix.org", URI("https://matrix.org"))
 		val id = MatrixId("msrd0", "matrix.org")
-		val context = ClientContext(hs, id)
 	}
 	
 	@Test(expectedExceptions = arrayOf(MatrixErrorResponseException::class))
 	fun client_auth()
 	{
-		val client = Client(context)
+		val client = Client(hs, id)
 		val authList = client.auth()
 		assertThat(authList.size, greaterThan(0))
 		val auth = authList.first()

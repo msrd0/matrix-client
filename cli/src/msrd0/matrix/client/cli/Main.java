@@ -97,7 +97,7 @@ public class Main
 		conf.store(new FileWriter(confFile), null);
 		
 		// now create the client
-		client = new Client(new ClientContext(hs, id));
+		client = new Client(hs, id);
 		if (conf.containsKey("token"))
 			client.setToken(conf.getProperty("token"));
 		else

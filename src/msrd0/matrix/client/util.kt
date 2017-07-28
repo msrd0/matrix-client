@@ -36,11 +36,12 @@ interface JsonSerializable
 
 private fun jsonEntity(body : JsonBase)
 		= Entity.entity(body.toJsonString(prettyPrint = false), MediaType.APPLICATION_JSON_TYPE)
+
 /** Run a GET request on the given path. */
 fun WebTarget.get(path : String) : Response
 		= path(path).request().get()
-fun WebTarget.get(path : String, token : String) : Response
-		= path(path).queryParam("access_token", token).request().get()
+fun WebTarget.get(path : String, token : String, userId : MatrixId?) : Response
+		= path(path).queryParam("access_token", token).queryParam("user_id", "$userId").request().get()
 fun WebTarget.get(path : String, args : Map<String, Any>) : Response
 {
 	var t = path(path)
@@ -48,18 +49,20 @@ fun WebTarget.get(path : String, args : Map<String, Any>) : Response
 		t = t.queryParam(key, args[key])
 	return t.request().get()
 }
+
 /** Run a POST request on the given path. */
 fun WebTarget.post(path : String, body : JsonBase = JsonObject()) : Response
 		= path(path).request().post(jsonEntity(body))
-fun WebTarget.post(path : String, token : String, body : JsonBase = JsonObject()) : Response
-		= path(path).queryParam("access_token", token).request().post(jsonEntity(body))
-fun <T> WebTarget.post(path : String, token : String, body : Entity<T>) : Response
-		= path(path).queryParam("access_token", token).request().post(body)
+fun WebTarget.post(path : String, token : String, userId : MatrixId?, body : JsonBase = JsonObject()) : Response
+		= path(path).queryParam("access_token", token).queryParam("user_id", "$userId").request().post(jsonEntity(body))
+fun <T> WebTarget.post(path : String, token : String, userId : MatrixId?, body : Entity<T>) : Response
+		= path(path).queryParam("access_token", token).queryParam("user_id", "$userId").request().post(body)
+
 /** Run a PUT request on the given path. */
 fun WebTarget.put(path : String, body : JsonBase = JsonObject()) : Response
 		= path(path).request().put(jsonEntity(body))
-fun WebTarget.put(path : String, token : String, body : JsonBase = JsonObject()) : Response
-		= path(path).queryParam("access_token", token).request().put(jsonEntity(body))
+fun WebTarget.put(path : String, token : String, userId : MatrixId?, body : JsonBase = JsonObject()) : Response
+		= path(path).queryParam("access_token", token).queryParam("user_id", "$userId").request().put(jsonEntity(body))
 
 /** Return the response body as a byte array. Make sure to call this only once as it will consume the InputStream. */
 val Response.bytes : ByteArray
