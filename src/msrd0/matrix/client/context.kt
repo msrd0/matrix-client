@@ -49,11 +49,11 @@ data class MatrixId(
 		fun fromString(str : String) : MatrixId
 		{
 			val s = str.split(':')
-			if (s.size != 2)
-				throw IllegalArgumentException()
+			if (s.size < 2)
+				throw IllegalArgumentException(str)
 			if (!s[0].startsWith("@"))
-				throw IllegalArgumentException()
-			return MatrixId(s[0].substring(1), s[1])
+				throw IllegalArgumentException(str)
+			return MatrixId(s[0].substring(1), s.subList(1, s.size).joinToString(":"))
 		}
 	}
 	
@@ -89,9 +89,9 @@ data class RoomId(
 		fun fromString(str : String) : RoomId
 		{
 			val s = str.split(':')
-			if (s.size != 2)
-				throw IllegalArgumentException()
-			return RoomId(s[0], s[1])
+			if (s.size < 2)
+				throw IllegalArgumentException(str)
+			return RoomId(s[0], s.subList(1, s.size).joinToString(":"))
 		}
 	}
 	
