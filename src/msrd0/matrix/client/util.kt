@@ -20,10 +20,15 @@
 package msrd0.matrix.client
 
 import com.beust.klaxon.*
-import java.io.*
+import org.apache.commons.io.IOUtils
+import org.slf4j.*
+import java.io.InputStream
 import javax.ws.rs.client.*
 import javax.ws.rs.core.*
-import org.apache.commons.io.IOUtils
+
+
+private val logger : Logger = LoggerFactory.getLogger("msrd0.matrix.client")
+private val accessTokenRegex = Regex("access_token=([^\\s&/?]+)")
 
 
 /**
@@ -40,30 +45,38 @@ private fun jsonEntity(body : JsonBase)
 
 /** Run a GET request on the given path. */
 fun WebTarget.get(path : String) : Response
-		= path(path).request().get()
+		= path(path).log().request().get()
 fun WebTarget.get(path : String, token : String, userId : MatrixId?) : Response
-		= path(path).queryParam("access_token", token).queryParam("user_id", "$userId").request().get()
+		= path(path).queryParam("access_token", token).queryParam("user_id", "$userId").log().request().get()
 fun WebTarget.get(path : String, args : Map<String, Any>) : Response
 {
 	var t = path(path)
 	for (key in args.keys)
 		t = t.queryParam(key, args[key])
-	return t.request().get()
+	return t.log().request().get()
 }
 
 /** Run a POST request on the given path. */
 fun WebTarget.post(path : String, body : JsonBase = JsonObject()) : Response
-		= path(path).request().post(jsonEntity(body))
+		= path(path).log().request().post(jsonEntity(body))
 fun WebTarget.post(path : String, token : String, userId : MatrixId?, body : JsonBase = JsonObject()) : Response
-		= path(path).queryParam("access_token", token).queryParam("user_id", "$userId").request().post(jsonEntity(body))
+		= path(path).queryParam("access_token", token).queryParam("user_id", "$userId").log().request().post(jsonEntity(body))
 fun <T> WebTarget.post(path : String, token : String, userId : MatrixId?, body : Entity<T>) : Response
-		= path(path).queryParam("access_token", token).queryParam("user_id", "$userId").request().post(body)
+		= path(path).queryParam("access_token", token).queryParam("user_id", "$userId").log().request().post(body)
 
 /** Run a PUT request on the given path. */
 fun WebTarget.put(path : String, body : JsonBase = JsonObject()) : Response
-		= path(path).request().put(jsonEntity(body))
+		= path(path).log().request().put(jsonEntity(body))
 fun WebTarget.put(path : String, token : String, userId : MatrixId?, body : JsonBase = JsonObject()) : Response
-		= path(path).queryParam("access_token", token).queryParam("user_id", "$userId").request().put(jsonEntity(body))
+		= path(path).queryParam("access_token", token).queryParam("user_id", "$userId").log().request().put(jsonEntity(body))
+
+/** Log this request */
+fun WebTarget.log() : WebTarget
+{
+	logger.info(uri.toString().replace(accessTokenRegex, "access_token=redacted"))
+	return this
+}
+
 
 /** Return the response body as a byte array. Make sure to call this only once as it will consume the InputStream. */
 val Response.bytes : ByteArray

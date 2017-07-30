@@ -310,6 +310,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 		val params = HashMap<String, Any>()
 		params["filter"] = syncFilter
 		params["access_token"] = token ?: throw NoTokenException()
+		params["user_id"] = "$id"
 		if (next_batch != null)
 			params["since"] = next_batch!!
 		val res = target.get("_matrix/client/r0/sync", params)
@@ -429,6 +430,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 			{
 				val params = HashMap<String, Any>()
 				params["access_token"] = token ?: throw NoTokenException()
+				params["user_id"] = "$id"
 				params["timeout"] = timeout;
 				params["filter"] = syncBlockingFilter ?: throw IllegalStateException("For some reason syncBlockingFilter is null while it shouldn't be")
 				params["since"] = next_batch ?: throw IllegalStateException("Please call sync at least once before calling syncBlocking")
@@ -480,5 +482,53 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 		val res = target.get("_matrix/client/r0/presence/$user/status", token ?: throw NoTokenException(), id)
 		checkForError(res)
 		return Presence.fromJson(user, res.json)
+	}
+	
+	
+	/**
+	 * Send an event to a list of user ids and devices. To send the event to all device ids of a certain
+	 * user id, one can use a wildcard as device id.
+	 *
+	 * @param ev The event content to send.
+	 * @param evType The type of the event, for example `m.new_device`.
+	 * @param devices A map of user id to a collection of devices of that user id.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	fun sendToDevice(ev : MatrixEventContent, evType : String, devices : Map<MatrixId, Collection<String>>)
+	{
+		val evJson = ev.json;
+		val messages = JsonObject()
+		for ((userId, deviceIds) in devices)
+		{
+			val json = JsonObject()
+			for (deviceId in deviceIds)
+				json[deviceId] = evJson
+			messages["$userId"] = json
+		}
+		val json = JsonObject(mapOf("messages" to messages))
+		
+		val res = target.put("_matrix/client/unstable/sendToDevice/$evType/$nextTxnId")
+		checkForError(res)
+	}
+	
+	/**
+	 * Send an event to a list of user ids.
+	 *
+	 * This call is equivalent to calling `sendToDevice` with the given user ids and a wildcard
+	 * as device id.
+	 *
+	 * @param ev The event content to send.
+	 * @param evType The type of the event, for example `m.new_device`.
+	 * @param users A list of user ids.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	fun sendToDevice(ev : MatrixEventContent, evType : String, users : Collection<MatrixId>)
+	{
+		val devices = HashMap<MatrixId, Collection<String>>()
+		for (user in users)
+			devices[user] = listOf("*")
+		sendToDevice(ev, evType, devices)
 	}
 }

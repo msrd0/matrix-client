@@ -187,11 +187,11 @@ open class ImageMessageContent(alt : String) : MessageContent(alt, IMAGE)
  * This class represents a message in a room.
  */
 class Message(
-		val room : Room,
+		room : Room,
 		sender : MatrixId,
 		val age : LocalDateTime,
 		content : MessageContent
-) : MatrixEvent(sender, ROOM_MESSAGE, content)
+) : MatrixRoomEvent<MessageContent>(room, sender, ROOM_MESSAGE, content)
 {
 	constructor(room : Room, sender : MatrixId, age : LocalDateTime, body : String, msgtype : String)
 		: this(room, sender, age, MessageContent(body, msgtype))
@@ -212,8 +212,8 @@ class Message(
 					MessageContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
 	}
 	
-	val body get() = (content as MessageContent).body
-	val msgtype get() = (content as MessageContent).msgtype
+	val body get() = content.body
+	val msgtype get() = content.msgtype
 	
 	override val json : JsonObject get()
 	{
