@@ -20,10 +20,15 @@
 package msrd0.matrix.client.encryption.test
 
 import msrd0.matrix.client.encryption.olm
+import org.hamcrest.Matchers.*
+import org.hamcrest.MatcherAssert.*
 import org.testng.annotations.Test
 
-@Test
-fun version()
+class OlmTest
 {
-	olm.olmLibVersion
+	@Test
+	fun version()
+	{
+		assertThat(olm.olmLibVersion, notNullValue())
+	}
 }
