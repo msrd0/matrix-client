@@ -34,7 +34,7 @@ allprojects {
 	apply plugin: 'net.minecrell.licenser'
 	license {
 		header = project.file('HEADER.txt')
-		include '**/*.kt'
+		include '**/*.kt', '**/*.java'
 		ignoreFailures = true
 	}
 	
