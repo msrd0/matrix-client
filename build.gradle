@@ -7,11 +7,15 @@ buildscript {
 	repositories {
 		mavenLocal()
 		jcenter()
+		maven { url "https://plugins.gradle.org/m2/" }
 	}
 	dependencies {
 		// kotlin
 		classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
 		classpath "org.jetbrains.dokka:dokka-gradle-plugin:+"
+		
+		// licenser
+		classpath "gradle.plugin.net.minecrell:licenser:0.3"
 		
 		// code coverage
 		classpath "com.palantir:jacoco-coverage:0.4.+"
@@ -27,6 +31,13 @@ apply plugin: "com.palantir.jacoco-full-report"
 apply plugin: "com.github.ksoichiro.console.reporter"
 
 allprojects {
+	apply plugin: 'net.minecrell.licenser'
+	license {
+		header = project.file('HEADER.txt')
+		include '**/*.kt'
+		ignoreFailures = true
+	}
+	
 	repositories {
 		mavenLocal()
 		jcenter()
