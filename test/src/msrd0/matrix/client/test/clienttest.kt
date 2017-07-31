@@ -74,4 +74,15 @@ class ClientTest
 		// sync to make sure our token is working
 		client.sync()
 	}
+	
+	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
+	fun create_room()
+	{
+		val client = newClient()
+		val name = "test room"
+		val topic = "room created by gradle tests"
+		val room = client.createRoom(name = name, topic = topic, public = false)
+		assertThat(room.name, equalTo(name))
+		assertThat(room.members, contains(id))
+	}
 }

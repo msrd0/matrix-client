@@ -561,4 +561,29 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 			devices[user] = listOf("*")
 		sendToDevice(ev, evType, devices)
 	}
+	
+	
+	/**
+	 * Create a new room.
+	 *
+	 * @param name If not null, set the `m.room.name` event.
+	 * @param topic If not null, set the `m.room.topic` event.
+	 * @param public If true, this room will be published to the room list.
+	 * @return The created room.
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	@JvmOverloads
+	fun createRoom(name : String? = null, topic : String? = null, public : Boolean = false) : Room
+	{
+		val json = JsonObject()
+		if (name != null)
+			json["name"] = name
+		if (topic != null)
+			json["topic"] = topic
+		json["preset"] = if (public) "public_chat" else "private_chat"
+		val res = target.post("_matrix/client/r0/createRoom", token ?: throw NoTokenException(), id, json)
+		checkForError(res)
+		return Room(this, RoomId.fromString(res.json.string("room_id") ?: throw IllegalJsonException("Missing: 'room_id'")))
+	}
 }
