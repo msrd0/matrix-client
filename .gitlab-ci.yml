@@ -15,7 +15,8 @@ build:
 test:
   stage: test
   services:
-    - msrd0/synapse
+    - name: msrd0/synapse
+      alias: synapse
   script:
     - GRADLE_USER_HOME=.gradle gradle test
     - GRADLE_USER_HOME=.gradle gradle jacocoTestReport
