@@ -26,7 +26,7 @@ import org.testng.annotations.Test
 
 class OlmTest
 {
-	@Test
+	@Test(groups = arrayOf("base"))
 	fun version()
 	{
 		assertThat(olm.olmLibVersion, notNullValue())

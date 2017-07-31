@@ -19,18 +19,44 @@
 
 package msrd0.matrix.client
 
+/**
+ * This exception indicates that no token has been specified while the api call requires one.
+ */
 open class NoTokenException() : IllegalStateException()
 
+/**
+ * This exception indicates that none of the available flows are known or applicable.
+ */
+open class UnsupportedFlowsException : Exception
+{
+	constructor() : super()
+	constructor(msg : String) : super(msg)
+	constructor(flows : Collection<Flow>) : super("$flows")
+}
+
+/**
+ * This exception indicates that there was an error in the matrix answer. Please use one of the subclasses or create
+ * one yourself if no one fits your needs.
+ */
 open class MatrixAnswerException : Exception
 {
 	constructor() : super()
 	constructor(msg : String) : super(msg)
 }
 
+/**
+ * This exception indicates that there is an error in the json. Usually, this means that a required value is missing.
+ */
 open class IllegalJsonException : MatrixAnswerException
 {
 	constructor() : super()
 	constructor(msg : String) : super(msg)
 }
 
-open class MatrixErrorResponseException(val errcode : String, val error : String) : MatrixAnswerException("$errcode: $error")
+/**
+ * This exception indicates that the matrix server has returned with either an error code or an error response.
+ */
+open class MatrixErrorResponseException(
+		val errcode : String,
+		val error : String
+) : MatrixAnswerException("$errcode: $error")

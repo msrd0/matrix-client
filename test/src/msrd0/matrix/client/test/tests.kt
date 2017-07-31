@@ -29,7 +29,7 @@ import org.hamcrest.Matchers.*
  */
 class Tests
 {
-	@Test
+	@Test(groups = arrayOf("base"))
 	fun matrixIdFromString()
 	{
 		val ids = arrayOf(
@@ -43,7 +43,7 @@ class Tests
 		}
 	}
 	
-	@Test
+	@Test(groups = arrayOf("base"))
 	fun roomIdFromString()
 	{
 		val ids = arrayOf(

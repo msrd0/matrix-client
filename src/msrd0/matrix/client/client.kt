@@ -58,24 +58,54 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 		 *
 		 * @return A client to the newly created user.
 		 * @throws MatrixAnswerException On errors in the matrix answer.
+		 * @throws UnsupportedFlowsException If the HS requires additional flows and the `helper` can't provide it.
 		 */
 		@JvmStatic
 		@JvmOverloads
-		@Throws(MatrixAnswerException::class)
-		fun register(localpart : String, hs : HomeServer, password : String? = null, token : String? = null) : Client
+		@Throws(MatrixAnswerException::class, UnsupportedFlowsException::class)
+		fun register(localpart : String, hs : HomeServer, password : String, helper : FlowHelper = DefaultFlowHelper(password)) : Client
 		{
 			var json = JsonObject()
 			json["username"] = localpart
-			if (token == null)
-			{
-				json["password"] = password!!
-				json["bind_email"] = false
-			}
-			else
-				json["type"] = "m.login.application_service"
+			json["password"] = password
+			json["bind_email"] = false
 			
 			val target = ClientBuilder.newClient().target(hs.base)
-			val res = if (token == null) target.post("_matrix/client/r0/register", json) else target.post("_matrix/client/r0/register", token, null, json)
+			var res = target.post("_matrix/client/r0/register", json)
+			
+			while (res.status == 401 && res.json.containsKey("flows"))
+			{
+				val flowResponse = helper.answer(FlowRequest.fromJson(res.json))
+				json["auth"] = flowResponse.json
+				res = target.post("_matrix/client/r0/register", json)
+			}
+			
+			checkForError(res)
+			
+			json = res.json
+			
+			val client = Client(hs, MatrixId.fromString(json.string("user_id") ?: throw IllegalJsonException("Missing: 'user_id'")))
+			client.token = json.string("access_token") ?: throw IllegalJsonException("Missing: 'access_token'")
+			logger.info("Registered new user ${client.id}")
+			return client
+		}
+		
+		/**
+		 * Registers a new user at the given homeserver from an Application Service.
+		 *
+		 * @return A client to the newly created user.
+		 * @throws MatrixAnswerException On errors in the matrix answer.
+		 */
+		@JvmStatic
+		@Throws(MatrixAnswerException::class)
+		fun registerFromAs(localpart : String, hs : HomeServer, token : String) : Client
+		{
+			var json = JsonObject()
+			json["username"] = localpart
+			json["type"] = "m.login.application_service"
+			
+			val target = ClientBuilder.newClient().target(hs.base)
+			val res = target.post("_matrix/client/r0/register", token, null, json)
 			checkForError(res)
 			
 			json = res.json
