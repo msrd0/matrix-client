@@ -33,12 +33,12 @@ class ClientTest
 		val hs = HomeServer("$domain", URI("http://$domain"))
 		val id = MatrixId("test${System.currentTimeMillis()}", "synapse")
 		val password = "Eish2nies9peifaez7uX"
-		var token : String? = null
+		var userData : MatrixUserData? = null
 		
 		fun newClient() : Client
 		{
 			val c = Client(hs, id)
-			c.token = token
+			c.userData = userData
 			return c
 		}
 	}
@@ -49,18 +49,18 @@ class ClientTest
 		val client = Client.register(id.localpart, hs, password)
 		assertThat(client.hs, equalTo(hs))
 		assertThat(client.id, equalTo(id))
-		assertThat(client.token, notNullValue())
+		assertThat(client.userData, notNullValue())
 		
 		// sync to make sure our token is working
 		client.sync()
-		token = client.token
+		userData = client.userData
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
 	fun client_login()
 	{
 		val client = newClient()
-		client.token = null // just make sure we aren't authenticated yet
+		client.userData = null // just make sure we aren't authenticated yet
 		
 		val auth = client.auth(LoginType.PASSWORD)
 		assertThat(auth, notNullValue())
@@ -69,7 +69,7 @@ class ClientTest
 		
 		val res = auth.submit()
 		assertThat(res.filter { it.isSuccess }.size, greaterThan(0))
-		assertThat(client.token, notNullValue())
+		assertThat(client.userData, notNullValue())
 		
 		// sync to make sure our token is working
 		client.sync()
