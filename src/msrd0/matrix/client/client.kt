@@ -23,13 +23,9 @@ import com.beust.klaxon.*
 import msrd0.matrix.client.event.*
 import msrd0.matrix.client.filter.*
 import msrd0.matrix.client.listener.*
+import msrd0.matrix.client.util.*
 import org.slf4j.*
-import java.io.StringReader
 import java.net.URI
-import javax.ws.rs.client.*
-import javax.ws.rs.core.MediaType.*
-import javax.ws.rs.core.Response
-import javax.ws.rs.core.Response.Status.Family.*
 import kotlin.concurrent.thread
 
 /**
@@ -48,7 +44,8 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 		 * should be submitted directly to the homeserver of that user.
 		 */
 		@JvmStatic
-		val publicTarget : WebTarget = ClientBuilder.newClient().target(URI("https://matrix.org/"))
+		val publicTarget : HttpTarget = CxfHttpTarget(URI("https://matrix.org/"),
+				"MatrixClient/${MextrixMatrixClient.VERSION} (${MextrixMatrixClient.URL})")
 		
 		
 		/**
@@ -70,10 +67,10 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 			json["password"] = password
 			json["bind_email"] = false
 			
-			val target = ClientBuilder.newClient().target(hs.base)
+			val target = CxfHttpTarget(hs.base, publicTarget.userAgent)
 			var res = target.post("_matrix/client/r0/register", json)
 			
-			while (res.status == 401 && res.json.containsKey("flows"))
+			while (res.status.status == 401 && res.json.containsKey("flows"))
 			{
 				val flowResponse = helper.answer(FlowRequest.fromJson(res.json))
 				json["auth"] = flowResponse.json
@@ -104,7 +101,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 			json["username"] = localpart
 			json["type"] = "m.login.application_service"
 			
-			val target = ClientBuilder.newClient().target(hs.base)
+			val target = CxfHttpTarget(hs.base, publicTarget.userAgent)
 			val res = target.post("_matrix/client/r0/register", token, null, json)
 			checkForError(res)
 			
@@ -125,7 +122,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 		 */
 		@JvmStatic
 		@Throws(MatrixErrorResponseException::class)
-		fun checkForError(res : Response)
+		fun checkForError(res : HttpResponse)
 		{
 			try
 			{
@@ -141,9 +138,9 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 				logger.warn("Error while checking for error in response", ex)
 			}
 			
-			val status = res.statusInfo
-			if (status.family != SUCCESSFUL)
-				throw MatrixErrorResponseException("${status.statusCode}", status.reasonPhrase)
+			val status = res.status
+			if (status.family != 2)
+				throw MatrixErrorResponseException("${status.status}", status.phrase)
 		}
 		
 		
@@ -204,7 +201,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 			: this(HomeServer(hsDomain, hsBaseUri), MatrixId(localpart, domain))
 	
 	/** HTTP Client */
-	internal val target : WebTarget = ClientBuilder.newClient().target(hs.base)
+	internal val target : HttpTarget = CxfHttpTarget(hs.base, publicTarget.userAgent)
 	
 	/** Access Token */
 	var token : String? = null
@@ -337,7 +334,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 		if (syncFilter.isEmpty())
 			uploadSyncFilter()
 		
-		val params = HashMap<String, Any>()
+		val params = HashMap<String, String>()
 		params["filter"] = syncFilter
 		params["access_token"] = token ?: throw NoTokenException()
 		params["user_id"] = "$id"
@@ -458,10 +455,10 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 		{
 			try
 			{
-				val params = HashMap<String, Any>()
+				val params = HashMap<String, String>()
 				params["access_token"] = token ?: throw NoTokenException()
 				params["user_id"] = "$id"
-				params["timeout"] = timeout;
+				params["timeout"] = "$timeout"
 				params["filter"] = syncBlockingFilter ?: throw IllegalStateException("For some reason syncBlockingFilter is null while it shouldn't be")
 				params["since"] = next_batch ?: throw IllegalStateException("Please call sync at least once before calling syncBlocking")
 				val res = target.get("_matrix/client/r0/sync", params)
@@ -527,7 +524,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 	 */
 	fun sendToDevice(ev : MatrixEventContent, evType : String, devices : Map<MatrixId, Collection<String>>)
 	{
-		val evJson = ev.json;
+		val evJson = ev.json
 		val messages = JsonObject()
 		for ((userId, deviceIds) in devices)
 		{
@@ -538,7 +535,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 		}
 		val json = JsonObject(mapOf("messages" to messages))
 		
-		val res = target.put("_matrix/client/unstable/sendToDevice/$evType/$nextTxnId")
+		val res = target.put("_matrix/client/unstable/sendToDevice/$evType/$nextTxnId", json)
 		checkForError(res)
 	}
 	

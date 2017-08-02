@@ -22,8 +22,6 @@ package msrd0.matrix.client
 import com.beust.klaxon.string
 import msrd0.matrix.client.Client.Companion.checkForError
 import java.util.regex.Pattern
-import javax.ws.rs.client.Entity.*
-import javax.ws.rs.core.*
 
 /**
  * This class represents a matrix content url of format `mxc://example.tld/FHyPlCeYUSFFxlgbQYZmoEoe`.
@@ -68,7 +66,7 @@ object ContentRepo
 	fun upload(bytes : ByteArray, mimetype : String, client : Client) : String
 	{
 		val res = client.target.post("_matrix/media/r0/upload", client.token ?: throw NoTokenException(), client.id,
-				entity(bytes, MediaType.valueOf(mimetype)))
+				bytes, mimetype)
 		checkForError(res)
 		return res.json.string("content_uri") ?: throw IllegalJsonException("Missing: 'content_uri'")
 	}
@@ -83,10 +81,10 @@ object ContentRepo
 	fun download(url : MatrixContentUrl, client : Client) : Pair<ByteArray, String>
 	{
 		val res = client.target.get("_matrix/media/r0/download/${url.domain}/${url.mediaId}", client.token ?: throw NoTokenException(), client.id)
-		val status = res.statusInfo
-		if (status.family != Response.Status.Family.SUCCESSFUL)
-			throw MatrixErrorResponseException("${status.statusCode}", status.reasonPhrase)
-		return Pair<ByteArray, String>(res.bytes, res.getHeaderString("Content-Type"))
+		val status = res.status
+		if (status.family != 2)
+			throw MatrixErrorResponseException("${status.status}", status.phrase)
+		return Pair<ByteArray, String>(res.bytes, res.header("Content-Type"))
 	}
 }
 

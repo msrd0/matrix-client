@@ -19,6 +19,7 @@
 package msrd0.matrix.client
 
 import com.beust.klaxon.*
+import msrd0.matrix.client.util.JsonSerializable
 
 interface FlowHelper
 {
@@ -38,7 +39,7 @@ class DefaultFlowHelper(val password : String? = null) : FlowHelper
 		{
 			if (flow.stages.size != 1)
 				continue
-			val type = flow.stages[0];
+			val type = flow.stages[0]
 			if (type == LoginType.DUMMY.type)
 				return FlowResponse(type, request.session)
 			if (type == LoginType.PASSWORD.type)

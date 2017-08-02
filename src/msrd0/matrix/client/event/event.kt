@@ -21,6 +21,7 @@ package msrd0.matrix.client.event
 
 import com.beust.klaxon.JsonObject
 import msrd0.matrix.client.*
+import msrd0.matrix.client.util.JsonSerializable
 
 abstract class MatrixEventContent : JsonSerializable
 

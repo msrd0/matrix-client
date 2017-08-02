@@ -21,6 +21,7 @@ package msrd0.matrix.client.filter
 
 import com.beust.klaxon.*
 import msrd0.matrix.client.*
+import msrd0.matrix.client.util.JsonSerializable
 
 open class EventFilter : JsonSerializable
 {

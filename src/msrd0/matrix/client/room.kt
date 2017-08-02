@@ -106,11 +106,12 @@ open class Room(
 	@JvmOverloads
 	fun retrieveMessages(limit : Int = 10, start : String? = null) : Messages
 	{
-		val params = HashMap<String, Any>()
+		val params = HashMap<String, String>()
 		params["access_token"] = client.token ?: throw NoTokenException()
 		params["dir"] = "b"
 		if (start != null)
 			params["from"] = start
+		params["limit"] = "$limit"
 		val res = client.target.get("/_matrix/client/r0/rooms/$id/messages", params)
 		checkForError(res)
 		
