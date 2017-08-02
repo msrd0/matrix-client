@@ -22,6 +22,7 @@ package msrd0.matrix.client.test
 import msrd0.matrix.client.*
 import org.hamcrest.MatcherAssert.*
 import org.hamcrest.Matchers.*
+import org.testng.Assert.*
 import org.testng.annotations.Test
 import java.net.URI
 
@@ -30,8 +31,8 @@ class ClientTest
 	companion object
 	{
 		val domain = if (System.getenv().containsKey("CI")) "synapse:8008" else "localhost:8008"
-		val hs = HomeServer("$domain", URI("http://$domain"))
-		val id = MatrixId("test${System.currentTimeMillis()}", "synapse")
+		val hs = HomeServer(domain, URI("http://$domain"))
+		var id = MatrixId("test${System.currentTimeMillis()}", "synapse")
 		val password = "Eish2nies9peifaez7uX"
 		var userData : MatrixUserData? = null
 		
@@ -48,12 +49,13 @@ class ClientTest
 	{
 		val client = Client.register(id.localpart, hs, password)
 		assertThat(client.hs, equalTo(hs))
-		assertThat(client.id, equalTo(id))
-		assertThat(client.userData, notNullValue())
+		assertThat(client.id.localpart, equalTo(id.localpart))
+		assertNotNull(client.userData)
 		
 		// sync to make sure our token is working
 		client.sync()
 		userData = client.userData
+		id = client.id // to make sure the domain is what synapse think it would be
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
@@ -63,16 +65,28 @@ class ClientTest
 		client.userData = null // just make sure we aren't authenticated yet
 		
 		val auth = client.auth(LoginType.PASSWORD)
-		assertThat(auth, notNullValue())
+		assertNotNull(auth)
 		auth!! // this is already covered by the assertion before
 		auth.setProperty("password", password)
 		
 		val res = auth.submit()
 		assertThat(res.filter { it.isSuccess }.size, greaterThan(0))
-		assertThat(client.userData, notNullValue())
+		assertNotNull(client.userData)
 		
 		// sync to make sure our token is working
 		client.sync()
+	}
+	
+	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
+	fun device_update()
+	{
+		val client = newClient()
+		val name = "this device was created by matrix client tests"
+		client.updateDeviceDisplayName(client.deviceId!!, name)
+		
+		val device = client.device(client.deviceId!!)
+		assertNotNull(device)
+		assertThat(device!!.displayName, equalTo(name))
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
