@@ -98,3 +98,11 @@ data class RoomId(
 	
 	override fun toString(): String = "$id:$domain"
 }
+
+/**
+ * A data class that stores user data, e.g. access token and device id.
+ */
+data class MatrixUserData(
+		var token : String,
+		var device_id : String
+)

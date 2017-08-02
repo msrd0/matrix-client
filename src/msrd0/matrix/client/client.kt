@@ -82,7 +82,10 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 			json = res.json
 			
 			val client = Client(hs, MatrixId.fromString(json.string("user_id") ?: throw IllegalJsonException("Missing: 'user_id'")))
-			client.token = json.string("access_token") ?: throw IllegalJsonException("Missing: 'access_token'")
+			client.userData = MatrixUserData(
+					json.string("access_token") ?: throw IllegalJsonException("Missing: 'access_token'"),
+					json.string("device_id") ?: throw IllegalJsonException("Missing: 'device_id'")
+			)
 			logger.info("Registered new user ${client.id}")
 			return client
 		}
@@ -108,7 +111,10 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 			json = res.json
 			
 			val client = Client(hs, MatrixId.fromString(json.string("user_id") ?: throw IllegalJsonException("Missing: 'user_id'")))
-			client.token = json.string("access_token") ?: throw IllegalJsonException("Missing: 'access_token'")
+			client.userData = MatrixUserData(
+					json.string("access_token") ?: throw IllegalJsonException("Missing: 'access_token'"),
+					json.string("device_id") ?: throw IllegalJsonException("Missing: 'device_id'")
+			)
 			logger.info("Registered new user ${client.id}")
 			return client
 		}
@@ -203,8 +209,19 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 	/** HTTP Client */
 	internal val target : HttpTarget = CxfHttpTarget(hs.base, publicTarget.userAgent)
 	
+	
+	/** The user data of this client. */
+	var userData : MatrixUserData? = null
+	
 	/** Access Token */
-	var token : String? = null
+	val token : String?
+		get() = userData?.token
+	
+	/** The device id of this device. */
+	val deviceId : String?
+		get() = userData?.device_id
+	
+	
 	/** The next batch field from sync that should be supplied as the since parameter with the next query. */
 	var next_batch : String? = null
 		protected set
@@ -240,26 +257,27 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 	 * @throws MatrixAnswerException On errors in the matrix answer
 	 */
 	@Throws(MatrixAnswerException::class)
-	internal fun auth(json : JsonObject) : Collection<Auth>
+	internal fun auth(jsono : JsonObject) : Collection<Auth>
 	{
 		val l = HashSet<Auth>()
-		val res = if (json.isEmpty()) target.get("_matrix/client/r0/login") else target.post("_matrix/client/r0/login", json)
+		val res = if (jsono.isEmpty()) target.get("_matrix/client/r0/login") else target.post("_matrix/client/r0/login", jsono)
+		val json = res.json
 		checkForError(res)
 		
 		// if the request contains an access_token field, the auth was successfull
-		val access_token = res.json.string("access_token")
+		val access_token = json.string("access_token")
 		if (access_token != null)
 		{
-			token = access_token
+			userData = MatrixUserData(access_token, json.string("device_id") ?: throw IllegalJsonException("Missing: 'device_id'"))
 			l.add(Auth(this, LoginType.SUCCESS))
 			logger.debug("$id successfully authenticated")
 			return l
 		}
 		
 		// extract interesting values from the json object
-		val completed = res.json.array<String>("completed") ?: JsonArray<String>()
-		val flows = res.json.array<JsonObject>("flows") ?: throw IllegalJsonException("Missing: 'flows'")
-		val session = res.json.string("session")
+		val completed = json.array<String>("completed") ?: JsonArray<String>()
+		val flows = json.array<JsonObject>("flows") ?: throw IllegalJsonException("Missing: 'flows'")
+		val session = json.string("session")
 		
 		flows@ for (flow in flows)
 		{

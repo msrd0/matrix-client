@@ -98,8 +98,8 @@ public class Main
 		
 		// now create the client
 		client = new Client(hs, id);
-		if (conf.containsKey("token"))
-			client.setToken(conf.getProperty("token"));
+		if (conf.containsKey("token") && conf.containsKey("deviceId"))
+			client.setUserData(new MatrixUserData(conf.getProperty("token"), conf.getProperty("deviceId")));
 		else
 		{
 			// the client has to login
@@ -122,6 +122,7 @@ public class Main
 				return;
 			}
 			conf.setProperty("token", client.getToken());
+			conf.setProperty("deviceId", client.getDeviceId());
 		}
 		
 		// store the configuration
