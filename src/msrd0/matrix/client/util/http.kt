@@ -25,7 +25,8 @@ import org.slf4j.*
 import java.lang.Math.*
 import java.net.URI
 import java.nio.charset.StandardCharsets.*
-import javax.ws.rs.client.WebTarget
+
+typealias DefaultHttpTarget = OkHttpTarget
 
 abstract class HttpTarget(
 		val uri : URI,
@@ -113,6 +114,29 @@ abstract class HttpTarget(
 	 * Run a PUT request on the given path with an arbitrary body using the supplied token and user id.
 	 */
 	abstract fun put(path : String, token : String, userId : MatrixId?, body : ByteArray, type : String) : HttpResponse
+	
+	
+	/**
+	 * Run a DELETE request on the given path with a json body.
+	 */
+	open fun delete(path : String, body : JsonBase = JsonObject()) : HttpResponse
+			= delete(path, body.toJsonString(prettyPrint = false).toByteArray(UTF_8), "application/json;charset=utf-8")
+	
+	/**
+	 * Run a DELETE request on the given path with a json body using the supplied token and user id.
+	 */
+	open fun delete(path : String, token : String, userId : MatrixId?, body : JsonBase = JsonObject()) : HttpResponse
+			= delete(path, token, userId, body.toJsonString(prettyPrint = false).toByteArray(UTF_8), "application/json;charset=utf-8")
+	
+	/**
+	 * Run a DELETE request on the given path with an arbitrary body.
+	 */
+	abstract fun delete(path : String, body : ByteArray, type : String) : HttpResponse
+	
+	/**
+	 * Run a DELETE request on the given path with an arbitrary body using the supplied token and user id.
+	 */
+	abstract fun delete(path : String, token : String, userId : MatrixId?, body : ByteArray, type : String) : HttpResponse
 }
 
 data class HttpStatusInfo(
@@ -127,7 +151,7 @@ data class HttpStatusInfo(
 abstract class HttpResponse
 {
 	abstract val status : HttpStatusInfo
-	abstract fun header(name : String) : String
+	abstract fun header(name : String) : String?
 	
 	abstract val bytes : ByteArray
 	abstract val str : String

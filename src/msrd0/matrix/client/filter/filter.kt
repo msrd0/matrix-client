@@ -22,7 +22,7 @@ package msrd0.matrix.client.filter
 import com.beust.klaxon.*
 import msrd0.matrix.client.*
 import msrd0.matrix.client.Client.Companion.checkForError
-import msrd0.matrix.client.util.*
+import msrd0.matrix.client.util.JsonSerializable
 
 enum class EventFormat
 {

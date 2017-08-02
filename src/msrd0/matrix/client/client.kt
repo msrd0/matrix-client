@@ -44,7 +44,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 		 * should be submitted directly to the homeserver of that user.
 		 */
 		@JvmStatic
-		val publicTarget : HttpTarget = CxfHttpTarget(URI("https://matrix.org/"),
+		val publicTarget : HttpTarget = DefaultHttpTarget(URI("https://matrix.org/"),
 				"MatrixClient/${MextrixMatrixClient.VERSION} (${MextrixMatrixClient.URL})")
 		
 		
@@ -67,7 +67,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 			json["password"] = password
 			json["bind_email"] = false
 			
-			val target = CxfHttpTarget(hs.base, publicTarget.userAgent)
+			val target = DefaultHttpTarget(hs.base, publicTarget.userAgent)
 			var res = target.post("_matrix/client/r0/register", json)
 			
 			while (res.status.status == 401 && res.json.containsKey("flows"))
@@ -104,7 +104,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 			json["username"] = localpart
 			json["type"] = "m.login.application_service"
 			
-			val target = CxfHttpTarget(hs.base, publicTarget.userAgent)
+			val target = DefaultHttpTarget(hs.base, publicTarget.userAgent)
 			val res = target.post("_matrix/client/r0/register", token, null, json)
 			checkForError(res)
 			
@@ -207,7 +207,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 			: this(HomeServer(hsDomain, hsBaseUri), MatrixId(localpart, domain))
 	
 	/** HTTP Client */
-	internal val target : HttpTarget = CxfHttpTarget(hs.base, publicTarget.userAgent)
+	internal val target : HttpTarget = DefaultHttpTarget(hs.base, publicTarget.userAgent)
 	
 	
 	/** The user data of this client. */
@@ -540,6 +540,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 	 *
 	 * @throws MatrixAnswerException On errors in the matrix answer.
 	 */
+	@Throws(MatrixAnswerException::class)
 	fun sendToDevice(ev : MatrixEventContent, evType : String, devices : Map<MatrixId, Collection<String>>)
 	{
 		val evJson = ev.json
@@ -569,6 +570,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 	 *
 	 * @throws MatrixAnswerException On errors in the matrix answer.
 	 */
+	@Throws(MatrixAnswerException::class)
 	fun sendToDevice(ev : MatrixEventContent, evType : String, users : Collection<MatrixId>)
 	{
 		val devices = HashMap<MatrixId, Collection<String>>()
