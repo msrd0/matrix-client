@@ -27,6 +27,9 @@ import javax.ws.rs.client.*
 import javax.ws.rs.client.Entity.*
 import javax.ws.rs.core.Response
 
+private fun Invocation.Builder.ua(ua : String) : Invocation.Builder
+		= header("User-Agent", ua)
+
 /**
  * A `HttpTarget` implementation using Apache CXF.
  */
@@ -40,14 +43,15 @@ class CxfHttpTarget(uri : URI, userAgent : String) : HttpTarget(uri, userAgent)
 		for ((key, value) in args)
 			t = t.queryParam(key, value)
 		log("GET", t.uri)
-		return CxfHttpResponse(t.request().get())
+		
+		return CxfHttpResponse(t.request().ua(userAgent).get())
 	}
 	
 	override fun post(path : String, body : ByteArray, type : String) : HttpResponse
 	{
 		val t = target.path(path)
 		log("POST", t.uri)
-		return CxfHttpResponse(t.request().post(entity(body, type)))
+		return CxfHttpResponse(t.request().ua(userAgent).post(entity(body, type)))
 	}
 	
 	override fun post(path : String, token : String, userId : MatrixId?, body : ByteArray, type : String) : HttpResponse
@@ -57,14 +61,14 @@ class CxfHttpTarget(uri : URI, userAgent : String) : HttpTarget(uri, userAgent)
 		if (userId != null)
 			t = t.queryParam("user_id", "$userId")
 		log("POST", t.uri)
-		return CxfHttpResponse(t.request().post(entity(body, type)))
+		return CxfHttpResponse(t.request().ua(userAgent).post(entity(body, type)))
 	}
 	
 	override fun put(path : String, body : ByteArray, type : String) : HttpResponse
 	{
 		val t = target.path(path)
 		log("PUT", t.uri)
-		return CxfHttpResponse(t.request().put(entity(body, type)))
+		return CxfHttpResponse(t.request().ua(userAgent).put(entity(body, type)))
 	}
 	
 	override fun put(path : String, token : String, userId : MatrixId?, body : ByteArray, type : String) : HttpResponse
@@ -74,7 +78,7 @@ class CxfHttpTarget(uri : URI, userAgent : String) : HttpTarget(uri, userAgent)
 		if (userId != null)
 			t = t.queryParam("user_id", "$userId")
 		log("PUT", t.uri)
-		return CxfHttpResponse(t.request().put(entity(body, type)))
+		return CxfHttpResponse(t.request().ua(userAgent).put(entity(body, type)))
 	}
 }
 
