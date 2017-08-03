@@ -219,7 +219,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 	
 	/** The device id of this device. */
 	val deviceId : String?
-		get() = userData?.device_id
+		get() = userData?.deviceId
 	
 	
 	/** The next batch field from sync that should be supplied as the since parameter with the next query. */

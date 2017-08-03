@@ -104,5 +104,5 @@ data class RoomId(
  */
 data class MatrixUserData(
 		var token : String,
-		var device_id : String
+		var deviceId : String
 )
