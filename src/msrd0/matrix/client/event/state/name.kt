@@ -17,10 +17,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
  */
 
-package msrd0.matrix.client.event
+package msrd0.matrix.client.event.state
 
 import com.beust.klaxon.*
 import msrd0.matrix.client.*
+import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_NAME
 
 /**
@@ -65,7 +66,7 @@ class RoomNameEvent(
 		@Throws(IllegalJsonException::class)
 		fun fromJson(room : Room, json : JsonObject) : RoomNameEvent
 				= RoomNameEvent(room, MatrixId.fromString(json.string("sender") ?: throw IllegalJsonException("Missing: 'sender'")),
-					RoomNameEventContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
+				RoomNameEventContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
 	}
 	
 	override val json : JsonObject get() = abstractJson

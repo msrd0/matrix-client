@@ -98,6 +98,7 @@ class ClientTest
 		val topic = "room created by gradle tests"
 		val room = client.createRoom(name = name, topic = topic, public = false)
 		assertThat(room.name, equalTo(name))
+		assertThat(room.topic, equalTo(topic))
 		assertThat(room.members, contains(id))
 		roomId = room.id
 	}
@@ -107,10 +108,20 @@ class ClientTest
 	{
 		val client = newClient()
 		val newName = "updated room name"
+		val newTopic = "updated room topic"
 		var room = Room(client, roomId!!)
+		
 		room.updateName(newName)
-		assertThat(room.name, equalTo(newName)) // test with name in cache
+		room.updateTopic(newTopic)
+		
+		// test with dirty cache
+		assertThat(room.name, equalTo(newName))
+		assertThat(room.topic, equalTo(newTopic))
+		
 		room = Room(client, roomId!!)
-		assertThat(room.name, equalTo(newName)) // test with clean cache
+		
+		// test with clean cache
+		assertThat(room.name, equalTo(newName))
+		assertThat(room.topic, equalTo(newTopic))
 	}
 }

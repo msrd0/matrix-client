@@ -23,6 +23,8 @@ import com.beust.klaxon.*
 import msrd0.matrix.client.Client.Companion.checkForError
 import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_NAME
+import msrd0.matrix.client.event.MatrixEventTypes.ROOM_TOPIC
+import msrd0.matrix.client.event.state.*
 import org.slf4j.*
 
 /**
@@ -42,6 +44,10 @@ open class Room(
 	/** The name of this room or it's id. */
 	var name : String = id.id
 		protected set
+	/** The topic of this room or an empty string. */
+	var topic : String = ""
+		protected set
+	/** The members of this room. */
 	val members = ArrayList<MatrixId>()
 	
 	init
@@ -55,6 +61,15 @@ open class Room(
 				logger.warn("Failed to retrieve room name", ex)
 		}
 		
+		try { retrieveTopic() }
+		catch (ex : MatrixErrorResponseException)
+		{
+			if (ex.errcode == "M_NOT_FOUND")
+			/* The room does not have a topic */
+			else
+				logger.warn("Failed to retrieve room topic", ex)
+		}
+		
 		retrieveMembers()
 	}
 	
@@ -66,7 +81,7 @@ open class Room(
 	@Throws(MatrixAnswerException::class)
 	protected fun retrieveName()
 	{
-		val res = client.target.get("_matrix/client/r0/rooms/$id/state/m.room.name", client.token ?: throw NoTokenException(), client.id)
+		val res = client.target.get("_matrix/client/r0/rooms/$id/state/$ROOM_NAME", client.token ?: throw NoTokenException(), client.id)
 		checkForError(res)
 		
 		name = res.json.string("name") ?: throw IllegalJsonException("Missing: 'name'")
@@ -82,6 +97,32 @@ open class Room(
 	{
 		sendStateEvent(ROOM_NAME, RoomNameEventContent(name))
 		this.name = name
+	}
+	
+	/**
+	 * Retrieves the room's topic.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	protected fun retrieveTopic()
+	{
+		val res = client.target.get("_matrix/client/r0/rooms/$id/state/$ROOM_TOPIC", client.token ?: throw NoTokenException(), client.id)
+		checkForError(res)
+		
+		topic = res.json.string("topic") ?: throw IllegalJsonException("Missing: 'topic'")
+	}
+	
+	/**
+	 * Update the topic of this room.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun updateTopic(topic : String)
+	{
+		sendStateEvent(ROOM_TOPIC, RoomTopicEventContent(topic))
+		this.topic = topic
 	}
 	
 	/**
