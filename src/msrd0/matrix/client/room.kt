@@ -84,7 +84,8 @@ open class Room(
 		val res = client.target.get("_matrix/client/r0/rooms/$id/state/$ROOM_NAME", client.token ?: throw NoTokenException(), client.id)
 		checkForError(res)
 		
-		name = res.json.string("name") ?: throw IllegalJsonException("Missing: 'name'")
+		val content = RoomNameEventContent.fromJson(res.json)
+		name = content.name
 	}
 	
 	/**
@@ -110,7 +111,8 @@ open class Room(
 		val res = client.target.get("_matrix/client/r0/rooms/$id/state/$ROOM_TOPIC", client.token ?: throw NoTokenException(), client.id)
 		checkForError(res)
 		
-		topic = res.json.string("topic") ?: throw IllegalJsonException("Missing: 'topic'")
+		val content = RoomTopicEventContent.fromJson(res.json)
+		topic = content.topic
 	}
 	
 	/**

@@ -38,12 +38,12 @@ class RoomTopicEventContent(val topic : String) : MatrixEventContent()
 		 */
 		@JvmStatic
 		@Throws(IllegalJsonException::class)
-		fun fromJson(json : JsonObject) : RoomNameEventContent
-				= RoomNameEventContent(json.string("topic") ?: throw IllegalJsonException("Missing: 'topic'"))
+		fun fromJson(json : JsonObject) : RoomTopicEventContent
+				= RoomTopicEventContent(json.string("topic") ?: throw IllegalJsonException("Missing: 'topic'"))
 	}
 	
 	override val json : JsonObject get()
-	= JsonObject(mapOf("topic" to topic))
+			= JsonObject(mapOf("topic" to topic))
 }
 
 /**
@@ -52,8 +52,8 @@ class RoomTopicEventContent(val topic : String) : MatrixEventContent()
 class RoomTopicEvent(
 		room : Room,
 		sender : MatrixId,
-		content : RoomNameEventContent
-) : MatrixRoomEvent<RoomNameEventContent>(room, sender, ROOM_TOPIC, content)
+		content : RoomTopicEventContent
+) : MatrixRoomEvent<RoomTopicEventContent>(room, sender, ROOM_TOPIC, content)
 {
 	companion object
 	{
@@ -66,7 +66,7 @@ class RoomTopicEvent(
 		@Throws(IllegalJsonException::class)
 		fun fromJson(room : Room, json : JsonObject) : RoomTopicEvent
 				= RoomTopicEvent(room, MatrixId.fromString(json.string("sender") ?: throw IllegalJsonException("Missing: 'sender'")),
-				RoomTopicEventContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
+					RoomTopicEventContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
 	}
 	
 	override val json : JsonObject get() = abstractJson
