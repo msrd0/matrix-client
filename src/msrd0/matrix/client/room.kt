@@ -22,6 +22,7 @@ package msrd0.matrix.client
 import com.beust.klaxon.*
 import msrd0.matrix.client.Client.Companion.checkForError
 import msrd0.matrix.client.event.*
+import msrd0.matrix.client.event.MatrixEventTypes.ROOM_NAME
 import org.slf4j.*
 
 /**
@@ -60,7 +61,7 @@ open class Room(
 	/**
 	 * Retrieves the room's name.
 	 *
-	 * @throws MatrixAnswerException On errors in the matrix answer
+	 * @throws MatrixAnswerException On errors in the matrix answer.
 	 */
 	@Throws(MatrixAnswerException::class)
 	protected fun retrieveName()
@@ -72,7 +73,21 @@ open class Room(
 	}
 	
 	/**
+	 * Update the name of this room.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun updateName(name : String)
+	{
+		sendStateEvent(ROOM_NAME, RoomNameEventContent(name))
+		this.name = name
+	}
+	
+	/**
 	 * Retrieves the room's members.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
 	 */
 	@Throws(MatrixAnswerException::class)
 	protected fun retrieveMembers()
@@ -101,9 +116,11 @@ open class Room(
 	
 	/**
 	 * Retrieves the last `limit` messages, starting now or, if supplied, at `start`.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
 	 */
-	@Throws(MatrixAnswerException::class)
 	@JvmOverloads
+	@Throws(MatrixAnswerException::class)
 	fun retrieveMessages(limit : Int = 10, start : String? = null) : Messages
 	{
 		val params = HashMap<String, String>()
@@ -124,12 +141,27 @@ open class Room(
 	
 	/**
 	 * Send the message to this room. This message is sent as plain text. There is no encryption going on.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
 	 */
 	@Throws(MatrixAnswerException::class)
 	fun sendMessage(msg : MessageContent)
 	{
 		val res = client.target.put("_matrix/client/r0/rooms/$id/send/m.room.message/${client.nextTxnId}",
 				client.token ?: throw NoTokenException(), client.id, msg.json)
+		checkForError(res)
+	}
+	
+	/**
+	 * Send a state update event. This method should not be used to send messages.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun sendStateEvent(eventType : String, content : MatrixEventContent)
+	{
+		val res = client.target.put("_matrix/client/r0/rooms/$id/state/$eventType",
+				client.token ?: throw NoTokenException(), client.id, content.json)
 		checkForError(res)
 	}
 }

@@ -35,6 +35,7 @@ class ClientTest
 		var id = MatrixId("test${System.currentTimeMillis()}", "synapse")
 		val password = "Eish2nies9peifaez7uX"
 		var userData : MatrixUserData? = null
+		var roomId : RoomId? = null
 		
 		fun newClient() : Client
 		{
@@ -90,7 +91,7 @@ class ClientTest
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
-	fun create_room()
+	fun room_create()
 	{
 		val client = newClient()
 		val name = "test room"
@@ -98,5 +99,18 @@ class ClientTest
 		val room = client.createRoom(name = name, topic = topic, public = false)
 		assertThat(room.name, equalTo(name))
 		assertThat(room.members, contains(id))
+		roomId = room.id
+	}
+	
+	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create"))
+	fun room_update()
+	{
+		val client = newClient()
+		val newName = "updated room name"
+		var room = Room(client, roomId!!)
+		room.updateName(newName)
+		assertThat(room.name, equalTo(newName)) // test with name in cache
+		room = Room(client, roomId!!)
+		assertThat(room.name, equalTo(newName)) // test with clean cache
 	}
 }
