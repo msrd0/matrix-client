@@ -20,11 +20,13 @@
 package msrd0.matrix.client.test
 
 import msrd0.matrix.client.*
+import msrd0.matrix.client.event.ImageMessageContent
 import org.hamcrest.MatcherAssert.*
 import org.hamcrest.Matchers.*
 import org.testng.Assert.*
 import org.testng.annotations.Test
 import java.net.URI
+import javax.imageio.ImageIO
 
 class ClientTest
 {
@@ -123,5 +125,29 @@ class ClientTest
 		// test with clean cache
 		assertThat(room.name, equalTo(newName))
 		assertThat(room.topic, equalTo(newTopic))
+	}
+	
+	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create"))
+	fun room_send_image()
+	{
+		val client = newClient()
+		val room = Room(client, roomId!!)
+		
+		val msg = ImageMessageContent("matrix-logo.png")
+		val img = ImageIO.read(ClassLoader.getSystemResourceAsStream("matrix-logo.png"))
+		msg.uploadImage(img, client)
+		room.sendMessage(msg)
+		
+		val messages = room.retrieveMessages()
+		val filtered = messages.filter { it.body == "matrix-logo.png" }
+		assertThat(filtered.size, greaterThan(0))
+		val content = filtered.first().content
+		assertThat(content, instanceOf(ImageMessageContent::class.java))
+		content as ImageMessageContent
+		assertThat(content.width, equalTo(img.width))
+		assertThat(content.height, equalTo(img.height))
+		val downloaded = content.downloadImage(client)
+		assertThat(downloaded.width, equalTo(img.width))
+		assertThat(downloaded.height, equalTo(img.height))
 	}
 }
