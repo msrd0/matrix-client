@@ -101,6 +101,15 @@ apply plugin: "org.jetbrains.dokka"
 dokka {
 	outputFormat = "javadoc"
 	outputDirectory = "$buildDir/javadoc"
+	
+	jdkVersion = 8
+	impliedPlatforms = ["JVM"]
+	
+	linkMapping {
+		dir = "src/"
+		url = "https://gitlab.com/mextrix/matrix-client/tree/master/src"
+		suffix = "#L"
+	}
 }
 build {
 	dependsOn "dokka"
