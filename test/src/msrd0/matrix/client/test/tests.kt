@@ -56,4 +56,18 @@ class Tests
 			assertThat(id, equalTo(RoomId.fromString(str)))
 		}
 	}
+	
+	@Test(groups = arrayOf("base"))
+	fun roomAliasFromString()
+	{
+		val aliases = arrayOf(
+				Pair("#matrix-dev:matrix.org", RoomAlias("matrix-dev", "matrix.org")),
+				Pair("#test:localhost:8008", RoomAlias("test", "localhost:8008"))
+		)
+		for ((str, alias) in aliases)
+		{
+			assertThat(str, equalTo("$alias"))
+			assertThat(alias, equalTo(RoomAlias.fromString(str)))
+		}
+	}
 }

@@ -23,6 +23,7 @@ import com.beust.klaxon.string
 import msrd0.matrix.client.Client.Companion.checkForError
 import msrd0.matrix.client.Client.Companion.publicTarget
 import java.net.URI
+import javax.print.DocFlavor
 
 /**
  * A data class representing a matrix HomeServer.
@@ -83,7 +84,7 @@ data class RoomId(
 	companion object
 	{
 		/**
-		 * Parses a string like `id:example.tld` and returns a RoomId.
+		 * Parses a string like `!id:example.tld` and returns a RoomId.
 		 *
 		 * @throws IllegalArgumentException If the string doesn't match the format.
 		 */
@@ -98,7 +99,36 @@ data class RoomId(
 		}
 	}
 	
-	override fun toString(): String = "!$id:$domain"
+	override fun toString() : String = "!$id:$domain"
+}
+
+/**
+ * A data class representing a room alias.
+ */
+data class RoomAlias(
+		val alias : String,
+		val domain : String
+)
+{
+	companion object
+	{
+		/**
+		 * Parses a string like `#alias:example.tld` and returns a RoomAlias.
+		 *
+		 * @throws IllegalArgumentException If the string doesn't match the format.
+		 */
+		fun fromString(str : String) : RoomAlias
+		{
+			val s = str.split(':')
+			if (s.size < 2)
+				throw IllegalArgumentException(str)
+			if (!s[0].startsWith("#"))
+				throw IllegalArgumentException(str)
+			return RoomAlias(s[0].substring(1), s.subList(1, s.size).joinToString(":"))
+		}
+	}
+	
+	override fun toString() : String = "#$alias:$domain"
 }
 
 /**
