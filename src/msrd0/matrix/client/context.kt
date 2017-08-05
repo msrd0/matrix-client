@@ -92,11 +92,13 @@ data class RoomId(
 			val s = str.split(':')
 			if (s.size < 2)
 				throw IllegalArgumentException(str)
-			return RoomId(s[0], s.subList(1, s.size).joinToString(":"))
+			if (!s[0].startsWith("!"))
+				throw IllegalArgumentException(str)
+			return RoomId(s[0].substring(1), s.subList(1, s.size).joinToString(":"))
 		}
 	}
 	
-	override fun toString(): String = "$id:$domain"
+	override fun toString(): String = "!$id:$domain"
 }
 
 /**

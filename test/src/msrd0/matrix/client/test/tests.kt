@@ -47,8 +47,8 @@ class Tests
 	fun roomIdFromString()
 	{
 		val ids = arrayOf(
-				Pair("!AikeXjUeFRjsQZJWhb:matrix.org", RoomId("!AikeXjUeFRjsQZJWhb", "matrix.org")),
-				Pair("!AikeXjUeFRjsQZJWhb:localhost:8008", RoomId("!AikeXjUeFRjsQZJWhb", "localhost:8008"))
+				Pair("!AikeXjUeFRjsQZJWhb:matrix.org", RoomId("AikeXjUeFRjsQZJWhb", "matrix.org")),
+				Pair("!AikeXjUeFRjsQZJWhb:localhost:8008", RoomId("AikeXjUeFRjsQZJWhb", "localhost:8008"))
 		)
 		for ((str, id) in ids)
 		{
