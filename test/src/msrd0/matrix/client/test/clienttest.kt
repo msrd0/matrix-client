@@ -81,6 +81,15 @@ class ClientTest
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
+	fun client_update()
+	{
+		val client = newClient()
+		val displayname = "test user"
+		client.updateDisplayname(displayname)
+		assertThat(client.displayname(), equalTo(displayname))
+	}
+	
+	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
 	fun device_update()
 	{
 		val client = newClient()

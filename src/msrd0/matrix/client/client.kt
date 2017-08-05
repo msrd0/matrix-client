@@ -531,6 +531,35 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 	
 	
 	/**
+	 * Retrieve and return the user's display name.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@JvmOverloads
+	@Throws(MatrixAnswerException::class)
+	fun displayname(user : MatrixId = id) : String?
+	{
+		val res = target.get("_matrix/client/r0/profile/$id/displayname") // this api shouldn't require a token
+		checkForError(res)
+		return res.json.string("displayname")
+	}
+	
+	
+	/**
+	 * Update the display name of this user.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun updateDisplayname(displayname : String)
+	{
+		val res = target.put("_matrix/client/r0/profile/$id/displayname", token ?: throw NoTokenException(), id,
+				JsonObject(mapOf("displayname" to displayname)))
+		checkForError(res)
+	}
+	
+	
+	/**
 	 * Send an event to a list of user ids and devices. To send the event to all device ids of a certain
 	 * user id, one can use a wildcard as device id.
 	 *

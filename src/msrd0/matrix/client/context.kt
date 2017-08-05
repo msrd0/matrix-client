@@ -23,7 +23,6 @@ import com.beust.klaxon.string
 import msrd0.matrix.client.Client.Companion.checkForError
 import msrd0.matrix.client.Client.Companion.publicTarget
 import java.net.URI
-import javax.print.DocFlavor
 
 /**
  * A data class representing a matrix HomeServer.
