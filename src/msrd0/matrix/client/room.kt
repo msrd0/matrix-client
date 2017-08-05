@@ -22,6 +22,7 @@ package msrd0.matrix.client
 import com.beust.klaxon.*
 import msrd0.matrix.client.Client.Companion.checkForError
 import msrd0.matrix.client.event.*
+import msrd0.matrix.client.event.MatrixEventTypes.ROOM_ALIASES
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_NAME
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_TOPIC
 import msrd0.matrix.client.event.state.*
@@ -200,11 +201,40 @@ open class Room(
 	 *
 	 * @throws MatrixAnswerException On errors in the matrix answer.
 	 */
+	@JvmOverloads
 	@Throws(MatrixAnswerException::class)
-	fun sendStateEvent(eventType : String, content : MatrixEventContent)
+	fun sendStateEvent(eventType : String, content : MatrixEventContent, stateKey : String = "")
 	{
-		val res = client.target.put("_matrix/client/r0/rooms/$id/state/$eventType",
+		val res = client.target.put("_matrix/client/r0/rooms/$id/state/$eventType/$stateKey",
 				client.token ?: throw NoTokenException(), client.id, content.json)
 		checkForError(res)
 	}
+	
+	/**
+	 * Retrieve the alias list for this room of the given domain. Right now the matrix api doesn't allow to query
+	 * all aliases of all domains.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun retrieveAliases(domain : String) : List<RoomAlias>
+	{
+		val res = client.target.get("_matrix/client/r0/rooms/$id/state/$ROOM_ALIASES/$domain",
+				client.token ?: throw NoTokenException(), client.id)
+		if (res.status.status == 404 && res.json.string("errcode") == "M_NOT_FOUND")
+			return emptyList()
+		checkForError(res)
+		
+		val content = RoomAliasesEventContent.fromJson(res.json)
+		return content.aliases
+	}
+	
+	/**
+	 * Update the alias list for this room.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun updateAliases(domain : String, aliases : List<RoomAlias>)
+			= sendStateEvent(ROOM_ALIASES, RoomAliasesEventContent(aliases), domain)
 }

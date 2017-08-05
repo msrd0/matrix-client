@@ -22,51 +22,52 @@ package msrd0.matrix.client.event.state
 import com.beust.klaxon.*
 import msrd0.matrix.client.*
 import msrd0.matrix.client.event.*
-import msrd0.matrix.client.event.MatrixEventTypes.ROOM_NAME
+import msrd0.matrix.client.event.MatrixEventTypes.ROOM_ALIASES
 
 /**
- * The content of a room name event.
+ * The content of a room aliases event.
  */
-class RoomNameEventContent(val name : String) : MatrixEventContent()
+class RoomAliasesEventContent(val aliases : List<RoomAlias>) : MatrixEventContent()
 {
 	companion object
 	{
 		/**
-		 * Constructs a room name event content by parsing the supplied json.
+		 * Constructs a room aliases event by parsing the supplied json.
 		 *
 		 * @throws IllegalJsonException On errors in the json.
 		 */
 		@JvmStatic
 		@Throws(IllegalJsonException::class)
-		fun fromJson(json : JsonObject) : RoomNameEventContent
-				= RoomNameEventContent(json.string("name") ?: throw IllegalJsonException("Missing: 'name'"))
+		fun fromJson(json : JsonObject) : RoomAliasesEventContent
+				= RoomAliasesEventContent(json.array<String>("aliases")?.map { RoomAlias.fromString(it) }
+					?: throw IllegalJsonException("Missing: 'aliases'"))
 	}
 	
 	override val json : JsonObject get()
-			= JsonObject(mapOf("name" to name))
+			= JsonObject(mapOf("aliases" to JsonArray(aliases.map { "$it" })))
 }
 
 /**
- * A room name event.
+ * A room aliases event.
  */
-class RoomNameEvent(
+class RoomAliasesEvent(
 		room : Room,
 		sender : MatrixId,
-		content : RoomNameEventContent
-) : MatrixRoomEvent<RoomNameEventContent>(room, sender, ROOM_NAME, content)
+		content : RoomAliasesEventContent
+) : MatrixRoomEvent<RoomAliasesEventContent>(room, sender, ROOM_ALIASES, content)
 {
 	companion object
 	{
 		/**
-		 * Constructs a room name event py parsing the supplied json.
+		 * Constructs a room aliases event by parsing the supplied json.
 		 *
 		 * @throws IllegalJsonException On errors in the json.
 		 */
 		@JvmStatic
 		@Throws(IllegalJsonException::class)
-		fun fromJson(room : Room, json : JsonObject) : RoomNameEvent
-				= RoomNameEvent(room, MatrixId.fromString(json.string("sender") ?: throw IllegalJsonException("Missing: 'sender'")),
-					RoomNameEventContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
+		fun fromJson(room : Room, json : JsonObject) : RoomAliasesEvent
+				= RoomAliasesEvent(room, MatrixId.fromString(json.string("sender") ?: throw IllegalJsonException("Missing: 'sender'")),
+					RoomAliasesEventContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
 	}
 	
 	override val json : JsonObject get() = abstractJson
