@@ -539,7 +539,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 	@Throws(MatrixAnswerException::class)
 	fun displayname(user : MatrixId = id) : String?
 	{
-		val res = target.get("_matrix/client/r0/profile/$id/displayname") // this api shouldn't require a token
+		val res = target.get("_matrix/client/r0/profile/$user/displayname") // this api shouldn't require a token
 		checkForError(res)
 		return res.json.string("displayname")
 	}
