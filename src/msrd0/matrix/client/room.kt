@@ -25,6 +25,7 @@ import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_ALIASES
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_CANONICAL_ALIAS
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_NAME
+import msrd0.matrix.client.event.MatrixEventTypes.ROOM_POWER_LEVELS
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_TOPIC
 import msrd0.matrix.client.event.state.*
 import org.slf4j.*
@@ -52,7 +53,7 @@ open class Room(
 	/** The members of this room. */
 	val members = ArrayList<MatrixId>()
 	
-	init
+	init // TODO rather than pulling some properties always and some never a cache would be cool
 	{
 		try { retrieveName() }
 		catch (ex : MatrixErrorResponseException)
@@ -268,4 +269,51 @@ open class Room(
 	@Throws(MatrixAnswerException::class)
 	fun updateCanonicalAlias(alias : RoomAlias)
 			= sendStateEvent(ROOM_CANONICAL_ALIAS, RoomCanonicalAliasEventContent(alias))
+	
+	/**
+	 * Retrieve the power levels for this room. If no such event was found, the default values are returned.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun retrievePowerLevels() : RoomPowerLevels
+	{
+		val res = client.target.get("_matrix/client/r0/rooms/$id/state/$ROOM_POWER_LEVELS",
+				client.token ?: throw NoTokenException(), client.id)
+		if (res.status.status == 404 && res.json.string("errcode") == "M_NOT_FOUND")
+			return RoomPowerLevels()
+		
+		return RoomPowerLevels.fromJson(res.json)
+	}
+	
+	/**
+	 * Update the power levels for this room.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun updatePowerLevels(powerLevels : RoomPowerLevels)
+			= sendStateEvent(ROOM_POWER_LEVELS, powerLevels)
+	
+	/**
+	 * Promote (or demote) a user in this room.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun promote(user : MatrixId, powerLevel : Int)
+			= promote(mapOf(user to powerLevel))
+	
+	/**
+	 * Promote (or demote) a list of users in this room.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun promote(promotions : Map<MatrixId, Int>)
+	{
+		val powerLevels = retrievePowerLevels()
+		promotions.forEach { user, level -> powerLevels.users[user] = level }
+		updatePowerLevels(powerLevels)
+	}
 }

@@ -21,6 +21,8 @@ package msrd0.matrix.client.test
 
 import msrd0.matrix.client.*
 import msrd0.matrix.client.event.ImageMessageContent
+import msrd0.matrix.client.event.state.RoomPowerLevels
+import msrd0.matrix.client.util.emptyMutableMap
 import org.hamcrest.MatcherAssert.*
 import org.hamcrest.Matchers.*
 import org.testng.Assert.*
@@ -113,8 +115,20 @@ class ClientTest
 		assertThat(room.members, contains(id))
 		roomId = room.id
 		
+		// check that there are no aliases right now
 		assertThat(room.retrieveAliases("synapse").size, equalTo(0))
 		assertNull(room.retrieveCanonicalAlias())
+		
+		// check that we have owner power levels in the room. if they changed the owner power level we need to do so
+		// as well.
+		val powerLevels = room.retrievePowerLevels()
+		assertThat(powerLevels.users, hasKey(id))
+		assertThat(powerLevels.users[id], equalTo(RoomPowerLevels.OWNER))
+		
+		// check that all other power levels are default. if they change the default power level of something we need
+		// to do so as well.
+		powerLevels.users.clear()
+		assertThat(powerLevels, equalTo(RoomPowerLevels()))
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create"))
@@ -129,10 +143,15 @@ class ClientTest
 		).map { RoomAlias.fromString(it) }
 		var room = Room(client, roomId!!)
 		
+		var powerLevels = room.retrievePowerLevels()
+		val powerLevelEvent = "msrd0.matrix.client.test.power_level_event" to 7
+		powerLevels.events[powerLevelEvent.first] = powerLevelEvent.second
+		
 		room.updateName(newName)
 		room.updateTopic(newTopic)
 		aliases.forEach { room.addAlias(it) }
 		room.updateCanonicalAlias(aliases.first())
+		room.updatePowerLevels(powerLevels)
 		
 		// test with dirty cache
 		assertThat(room.name, equalTo(newName))
@@ -148,6 +167,9 @@ class ClientTest
 		assertThat(room.retrieveAliases("synapse"), equalTo(aliases))
 		assertNotNull(room.retrieveCanonicalAlias())
 		assertThat(room.retrieveCanonicalAlias(), equalTo(aliases.first()))
+		powerLevels = room.retrievePowerLevels()
+		assertThat(powerLevels.events, hasKey(powerLevelEvent.first))
+		assertThat(powerLevels.events[powerLevelEvent.first], equalTo(powerLevelEvent.second))
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create"))
