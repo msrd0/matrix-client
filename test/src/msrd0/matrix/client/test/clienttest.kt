@@ -112,6 +112,9 @@ class ClientTest
 		assertThat(room.topic, equalTo(topic))
 		assertThat(room.members, contains(id))
 		roomId = room.id
+		
+		assertThat(room.retrieveAliases("synapse").size, equalTo(0))
+		assertNull(room.retrieveCanonicalAlias())
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create"))
@@ -120,12 +123,16 @@ class ClientTest
 		val client = newClient()
 		val newName = "updated room name"
 		val newTopic = "updated room topic"
-		val aliases = listOf("#test-alias:synapse", "#dummy:synapse").map { RoomAlias.fromString(it) }
+		val aliases = listOf(
+				"#test${System.currentTimeMillis()}:synapse",
+				"#dummy${System.currentTimeMillis()}:synapse"
+		).map { RoomAlias.fromString(it) }
 		var room = Room(client, roomId!!)
 		
 		room.updateName(newName)
 		room.updateTopic(newTopic)
-		room.updateAliases("synapse", aliases)
+		aliases.forEach { room.addAlias(it) }
+		room.updateCanonicalAlias(aliases.first())
 		
 		// test with dirty cache
 		assertThat(room.name, equalTo(newName))
@@ -139,6 +146,8 @@ class ClientTest
 		
 		// test those that aren't cached
 		assertThat(room.retrieveAliases("synapse"), equalTo(aliases))
+		assertNotNull(room.retrieveCanonicalAlias())
+		assertThat(room.retrieveCanonicalAlias(), equalTo(aliases.first()))
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create"))

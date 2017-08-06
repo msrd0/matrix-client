@@ -23,6 +23,7 @@ import com.beust.klaxon.*
 import msrd0.matrix.client.Client.Companion.checkForError
 import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_ALIASES
+import msrd0.matrix.client.event.MatrixEventTypes.ROOM_CANONICAL_ALIAS
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_NAME
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_TOPIC
 import msrd0.matrix.client.event.state.*
@@ -230,11 +231,41 @@ open class Room(
 	}
 	
 	/**
-	 * Update the alias list for this room.
+	 * Add a new alias for this room.
 	 *
 	 * @throws MatrixAnswerException On errors in the matrix answer.
 	 */
 	@Throws(MatrixAnswerException::class)
-	fun updateAliases(domain : String, aliases : List<RoomAlias>)
-			= sendStateEvent(ROOM_ALIASES, RoomAliasesEventContent(aliases), domain)
+	fun addAlias(alias : RoomAlias)
+	{
+		val res = client.target.put("_matrix/client/r0/directory/room/$alias", client.token ?: throw NoTokenException(),
+				client.id, JsonObject(mapOf("room_id" to "$id")))
+		checkForError(res)
+	}
+	
+	/**
+	 * Retrieve the canonical alias for this room, or null if it doesn't exist.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun retrieveCanonicalAlias() : RoomAlias?
+	{
+		val res = client.target.get("_matrix/client/r0/rooms/$id/state/$ROOM_CANONICAL_ALIAS",
+				client.token ?: throw NoTokenException(), client.id)
+		if (res.status.status == 404 && res.json.string("errcode") == "M_NOT_FOUND")
+			return null
+		
+		val content = RoomCanonicalAliasEventContent.fromJson(res.json)
+		return content.alias
+	}
+	
+	/**
+	 * Update the canonical alias for this room.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun updateCanonicalAlias(alias : RoomAlias)
+			= sendStateEvent(ROOM_CANONICAL_ALIAS, RoomCanonicalAliasEventContent(alias))
 }
