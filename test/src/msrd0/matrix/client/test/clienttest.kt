@@ -21,7 +21,7 @@ package msrd0.matrix.client.test
 
 import msrd0.matrix.client.*
 import msrd0.matrix.client.event.ImageMessageContent
-import msrd0.matrix.client.event.state.RoomPowerLevels
+import msrd0.matrix.client.event.state.*
 import msrd0.matrix.client.util.emptyMutableMap
 import org.hamcrest.MatcherAssert.*
 import org.hamcrest.Matchers.*
@@ -129,6 +129,10 @@ class ClientTest
 		// to do so as well.
 		powerLevels.users.clear()
 		assertThat(powerLevels, equalTo(RoomPowerLevels()))
+		
+		// make sure the join rule is invite right now so we can change them later
+		room.updateJoinRule(RoomJoinRules.INVITE)
+		assertThat(room.retrieveJoinRule(), equalTo(RoomJoinRules.INVITE))
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create"))
@@ -152,6 +156,7 @@ class ClientTest
 		aliases.forEach { room.addAlias(it) }
 		room.updateCanonicalAlias(aliases.first())
 		room.updatePowerLevels(powerLevels)
+		room.updateJoinRule(RoomJoinRules.PUBLIC)
 		
 		// test with dirty cache
 		assertThat(room.name, equalTo(newName))
@@ -170,6 +175,7 @@ class ClientTest
 		powerLevels = room.retrievePowerLevels()
 		assertThat(powerLevels.events, hasKey(powerLevelEvent.first))
 		assertThat(powerLevels.events[powerLevelEvent.first], equalTo(powerLevelEvent.second))
+		assertThat(room.retrieveJoinRule(), equalTo(RoomJoinRules.PUBLIC))
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create"))

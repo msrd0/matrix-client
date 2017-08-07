@@ -24,6 +24,7 @@ import msrd0.matrix.client.Client.Companion.checkForError
 import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_ALIASES
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_CANONICAL_ALIAS
+import msrd0.matrix.client.event.MatrixEventTypes.ROOM_JOIN_RULES
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_NAME
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_POWER_LEVELS
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_TOPIC
@@ -316,4 +317,29 @@ open class Room(
 		promotions.forEach { user, level -> powerLevels.users[user] = level }
 		updatePowerLevels(powerLevels)
 	}
+	
+	/**
+	 * Retrieve the join rule for this room.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun retrieveJoinRule() : String
+	{
+		val res = client.target.get("_matrix/client/r0/rooms/$id/state/$ROOM_JOIN_RULES",
+				client.token ?: throw NoTokenException(), client.id)
+		checkForError(res)
+		
+		val content = RoomJoinRulesEventContent.fromJson(res.json)
+		return content.joinRule
+	}
+	
+	/**
+	 * Update the join rule for this room.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun updateJoinRule(joinRule : String)
+			= sendStateEvent(ROOM_JOIN_RULES, RoomJoinRulesEventContent(joinRule))
 }
