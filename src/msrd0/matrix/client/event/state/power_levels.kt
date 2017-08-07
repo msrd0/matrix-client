@@ -30,15 +30,15 @@ import msrd0.matrix.client.util.emptyMutableMap
  */
 object DefaultPowerLevels
 {
-	@JvmStatic val BAN = 50
-	@JvmStatic val EVENTS_DEFAULT = 0
-	@JvmStatic val INVITE = 0 // synapse says 0, the spec says 50
-	@JvmStatic val KICK = 50
-	@JvmStatic val REDACT = 50
-	@JvmStatic val STATE_DEFAULT = 50
-	@JvmStatic val USERS_DEFAULT = 0
+	@JvmField val BAN = 50
+	@JvmField val EVENTS_DEFAULT = 0
+	@JvmField val INVITE = 0 // synapse says 0, the spec says 50
+	@JvmField val KICK = 50
+	@JvmField val REDACT = 50
+	@JvmField val STATE_DEFAULT = 50
+	@JvmField val USERS_DEFAULT = 0
 	
-	@JvmStatic val EVENTS = mapOf(
+	@JvmField val EVENTS = mapOf(
 			// mods
 			ROOM_AVATAR to 50,
 			ROOM_CANONICAL_ALIAS to 50,
