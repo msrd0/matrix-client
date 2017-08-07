@@ -24,6 +24,7 @@ import msrd0.matrix.client.Client.Companion.checkForError
 import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_ALIASES
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_CANONICAL_ALIAS
+import msrd0.matrix.client.event.MatrixEventTypes.ROOM_HISTORY_VISIBILITY
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_JOIN_RULES
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_NAME
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_POWER_LEVELS
@@ -342,4 +343,29 @@ open class Room(
 	@Throws(MatrixAnswerException::class)
 	fun updateJoinRule(joinRule : String)
 			= sendStateEvent(ROOM_JOIN_RULES, RoomJoinRulesEventContent(joinRule))
+	
+	/**
+	 * Retrieve the history visibility for this room.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun retrieveHistoryVisibility() : String
+	{
+		val res = client.target.get("_matrix/client/r0/rooms/$id/state/$ROOM_HISTORY_VISIBILITY",
+				client.token ?: throw NoTokenException(), client.id)
+		checkForError(res)
+		
+		val content = RoomHistoryVisibilityEventContent.fromJson(res.json)
+		return content.historyVisibility
+	}
+	
+	/**
+	 * Update the history visibility of this room.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun updateHistoryVisibility(historyVisibility : String)
+			= sendStateEvent(ROOM_HISTORY_VISIBILITY, RoomHistoryVisibilityEventContent(historyVisibility))
 }

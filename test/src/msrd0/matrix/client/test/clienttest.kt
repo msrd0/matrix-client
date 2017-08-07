@@ -130,9 +130,13 @@ class ClientTest
 		powerLevels.users.clear()
 		assertThat(powerLevels, equalTo(RoomPowerLevels()))
 		
-		// make sure the join rule is invite right now so we can change them later
+		// make sure the join rule is invite right now so we can change it later
 		room.updateJoinRule(RoomJoinRules.INVITE)
 		assertThat(room.retrieveJoinRule(), equalTo(RoomJoinRules.INVITE))
+		
+		// make sure the history visibility is shared so we can change it later
+		room.updateHistoryVisibility(RoomHistoryVisibility.SHARED)
+		assertThat(room.retrieveHistoryVisibility(), equalTo(RoomHistoryVisibility.SHARED))
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create"))
@@ -157,6 +161,7 @@ class ClientTest
 		room.updateCanonicalAlias(aliases.first())
 		room.updatePowerLevels(powerLevels)
 		room.updateJoinRule(RoomJoinRules.PUBLIC)
+		room.updateHistoryVisibility(RoomHistoryVisibility.WORLD_READABLE)
 		
 		// test with dirty cache
 		assertThat(room.name, equalTo(newName))
@@ -176,6 +181,7 @@ class ClientTest
 		assertThat(powerLevels.events, hasKey(powerLevelEvent.first))
 		assertThat(powerLevels.events[powerLevelEvent.first], equalTo(powerLevelEvent.second))
 		assertThat(room.retrieveJoinRule(), equalTo(RoomJoinRules.PUBLIC))
+		assertThat(room.retrieveHistoryVisibility(), equalTo(RoomHistoryVisibility.WORLD_READABLE))
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create"))

@@ -22,6 +22,10 @@ package msrd0.matrix.client.event.state
 import com.beust.klaxon.*
 import msrd0.matrix.client.*
 import msrd0.matrix.client.event.*
+import msrd0.matrix.client.event.MatrixEventTypes.ROOM_AVATAR
+import msrd0.matrix.client.event.MatrixEventTypes.ROOM_CANONICAL_ALIAS
+import msrd0.matrix.client.event.MatrixEventTypes.ROOM_HISTORY_VISIBILITY
+import msrd0.matrix.client.event.MatrixEventTypes.ROOM_NAME
 import msrd0.matrix.client.event.MatrixEventTypes.ROOM_POWER_LEVELS
 import msrd0.matrix.client.util.emptyMutableMap
 
@@ -39,11 +43,13 @@ object DefaultPowerLevels
 	@JvmStatic val USERS_DEFAULT = 0
 	
 	@JvmStatic val EVENTS = mapOf(
-			"m.room.avatar" to 50,
-			"m.room.history_visibility" to 100,
-			"m.room.canonical_alias" to 50,
-			"m.room.name" to 50,
-			"m.room.power_levels" to 100
+			// mods
+			ROOM_AVATAR to 50,
+			ROOM_CANONICAL_ALIAS to 50,
+			ROOM_NAME to 50,
+			// admins / owners
+			ROOM_HISTORY_VISIBILITY to 100,
+			ROOM_POWER_LEVELS to 100
 	)
 }
 

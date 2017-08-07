@@ -54,6 +54,12 @@ object MatrixEventTypes
 	val ROOM_ENCRYPTION = "m.room.encryption"
 	
 	/**
+	 * This event controls whether users can view an event before they joined the room.
+	 */
+	@JvmField
+	val ROOM_HISTORY_VISIBILITY = "m.room.history_visibility"
+	
+	/**
 	 * This event updates the join rules of the room. A room may be public which means everyone can join, or private
 	 * which means that one need an invitation to join.
 	 */
