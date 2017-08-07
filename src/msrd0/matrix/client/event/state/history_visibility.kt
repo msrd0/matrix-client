@@ -22,22 +22,7 @@ package msrd0.matrix.client.event.state
 import com.beust.klaxon.*
 import msrd0.matrix.client.*
 import msrd0.matrix.client.event.*
-import msrd0.matrix.client.event.MatrixEventTypes.ROOM_HISTORY_VISIBILITY
-
-object RoomHistoryVisibility
-{
-	/** All events may be shared with anyone, no matter if they ever joined the room. */
-	@JvmStatic val WORLD_READABLE = "world_readable"
-	/**
-	 * All events may be shared with all who joined the room, no matter if they joined before or after
-	 * the event was sent.
-	 */
-	@JvmStatic val SHARED = "shared"
-	/** Those events sent after the invitation may be shared with the invitee. */
-	@JvmStatic val INVITED = "invited"
-	/** Those events sent after a particular member joined may be shared with that member. */
-	@JvmStatic val JOINED = "joined"
-}
+import msrd0.matrix.client.event.MatrixEventTypes.*
 
 /**
  * The content of a room history visibility event.

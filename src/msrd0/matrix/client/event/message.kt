@@ -21,9 +21,8 @@ package msrd0.matrix.client.event
 
 import com.beust.klaxon.*
 import msrd0.matrix.client.*
-import msrd0.matrix.client.event.MatrixEventTypes.ROOM_MESSAGE
-import msrd0.matrix.client.event.MessageTypes.IMAGE
-import msrd0.matrix.client.event.MessageTypes.TEXT
+import msrd0.matrix.client.event.MatrixEventTypes.*
+import msrd0.matrix.client.event.MessageTypes.*
 import java.awt.image.RenderedImage
 import java.io.*
 import java.time.LocalDateTime
@@ -31,15 +30,6 @@ import java.time.temporal.ChronoUnit.*
 import java.util.*
 import java.util.regex.Pattern
 import javax.imageio.ImageIO
-
-object MessageTypes
-{
-	@JvmField
-	var TEXT = "m.text"
-	
-	@JvmField
-	var IMAGE = "m.image"
-}
 
 /**
  * The content of a message. Every message has a body and a message type. While you can use this class directly, the

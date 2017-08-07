@@ -50,6 +50,9 @@ dependencies {
 	compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
 	compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
 	
+	// java lombok annotations
+	compileOnly "org.projectlombok:lombok:1.16.+"
+	
 	// apache commons
 	compile 'commons-io:commons-io:2.5'
 	
@@ -74,7 +77,7 @@ dependencies {
 sourceSets {
 	main {
 		kotlin.srcDirs = ['src/']
-		java.srcDirs = []
+		java.srcDirs = ['src/']
 		resources.srcDirs = ['res/']
 	}
 	test {

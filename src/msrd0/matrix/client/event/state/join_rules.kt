@@ -22,19 +22,7 @@ package msrd0.matrix.client.event.state
 import com.beust.klaxon.*
 import msrd0.matrix.client.*
 import msrd0.matrix.client.event.*
-import msrd0.matrix.client.event.MatrixEventTypes.ROOM_JOIN_RULES
-
-object RoomJoinRules
-{
-	/** Anybody can join without prior action. */
-	@JvmStatic val PUBLIC  = "public"
-	/** Reserved. */
-	@JvmStatic val KNOCK   = "knock"
-	/** Anybody who wants to join need to receive an invitation. */
-	@JvmStatic val INVITE  = "invite"
-	/** Reserved. */
-	@JvmStatic val PRIVATE = "private"
-}
+import msrd0.matrix.client.event.MatrixEventTypes.*
 
 /**
  * The content of a room join rules event.

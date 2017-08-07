@@ -17,107 +17,98 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
  */
 
-package msrd0.matrix.client.event
+package msrd0.matrix.client.event;
 
-object MatrixEventTypes
+import static lombok.AccessLevel.PRIVATE;
+
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor(access = PRIVATE)
+public class MatrixEventTypes
 {
 	// ### room state events ###########################################################################################
 	
 	/**
 	 * Event to update the list of known aliases for a certain room.
 	 */
-	@JvmField
-	val ROOM_ALIASES = "m.room.aliases"
+	public static final String ROOM_ALIASES = "m.room.aliases";
 	
 	/**
 	 * This event sets the room's avatar.
 	 */
-	@JvmField
-	val ROOM_AVATAR = "m.room.avatar"
+	public static final String ROOM_AVATAR = "m.room.avatar";
 	
 	/**
 	 * Event to update the canonical alias of the room.
 	 */
-	@JvmField
-	val ROOM_CANONICAL_ALIAS = "m.room.canonical_alias"
+	public static final String ROOM_CANONICAL_ALIAS = "m.room.canonical_alias";
 	
 	/**
 	 * The first event in a room. It acts as the root event.
 	 */
-	@JvmField
-	val ROOM_CREATE = "m.room.create"
+	public static final String ROOM_CREATE = "m.room.create";
 	
 	/**
 	 * This event defines how this room should be encrypted.
 	 */
-	@JvmField
-	val ROOM_ENCRYPTION = "m.room.encryption"
+	public static final String ROOM_ENCRYPTION = "m.room.encryption";
 	
 	/**
 	 * This event controls whether users can view an event before they joined the room.
 	 */
-	@JvmField
-	val ROOM_HISTORY_VISIBILITY = "m.room.history_visibility"
+	public static final String ROOM_HISTORY_VISIBILITY = "m.room.history_visibility";
 	
 	/**
 	 * This event updates the join rules of the room. A room may be public which means everyone can join, or private
 	 * which means that one need an invitation to join.
 	 */
-	@JvmField
-	val ROOM_JOIN_RULES = "m.room.join_rules"
+	public static final String ROOM_JOIN_RULES = "m.room.join_rules";
 	
 	/**
 	 * This event is used to exchange keys for e2e-encryption. It should be encrypted as a `ROOM_ENCRYPTED` event.
 	 */
-	@JvmField
-	val ROOM_KEY = "m.room_key"
+	public static final String ROOM_KEY = "m.room_key";
 	
 	/**
 	 * This event adjusts the membership of a user in a room.
 	 */
-	@JvmField
-	val ROOM_MEMBER = "m.room.member"
+	public static final String ROOM_MEMBER = "m.room.member";
 	
 	/**
 	 * This event sets the room's name.
 	 */
-	@JvmField
-	val ROOM_NAME = "m.room.name"
+	public static final String ROOM_NAME = "m.room.name";
 	
 	/**
 	 * This event updates the power levels that members need to perform certain actions.
 	 */
-	@JvmField
-	val ROOM_POWER_LEVELS = "m.room.power_levels"
+	public static final String ROOM_POWER_LEVELS = "m.room.power_levels";
 	
 	/**
 	 * This event sets the room's topic.
 	 */
-	@JvmField
-	val ROOM_TOPIC = "m.room.topic"
+	public static final String ROOM_TOPIC = "m.room.topic";
+	
 	
 	// ### message events ##############################################################################################
 	
 	/**
 	 * A new, encrypted message in a room.
 	 */
-	@JvmField
-	val ROOM_ENCRYPTED = "m.room.encrypted"
+	public static final String ROOM_ENCRYPTED = "m.room.encrypted";
 	
 	/**
 	 * A new, unencrypted message in a room.
 	 */
-	@JvmField
-	val ROOM_MESSAGE = "m.room.message"
+	public static final String ROOM_MESSAGE = "m.room.message";
 	
 	/**
 	 * A redacted message in a room.
 	 */
-	@JvmField
-	val ROOM_REDACTION = "m.room.redaction"
+	public static final String ROOM_REDACTION = "m.room.redaction";
+	
 	
 	// ### other events ################################################################################################
 	
-	@JvmField
-	val DEVICE_NEW = "m.new_device"
+	public static final String DEVICE_NEW = "m.new_device";
 }

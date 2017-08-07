@@ -22,7 +22,7 @@ package msrd0.matrix.client.event.state
 import com.beust.klaxon.*
 import msrd0.matrix.client.*
 import msrd0.matrix.client.event.*
-import msrd0.matrix.client.event.MatrixEventTypes.ROOM_CANONICAL_ALIAS
+import msrd0.matrix.client.event.MatrixEventTypes.*
 
 /**
  * The content of a room canonical alias event.

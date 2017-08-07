@@ -22,7 +22,6 @@ package msrd0.matrix.client.test
 import msrd0.matrix.client.*
 import msrd0.matrix.client.event.ImageMessageContent
 import msrd0.matrix.client.event.state.*
-import msrd0.matrix.client.util.emptyMutableMap
 import org.hamcrest.MatcherAssert.*
 import org.hamcrest.Matchers.*
 import org.testng.Assert.*
