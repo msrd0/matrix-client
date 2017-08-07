@@ -93,13 +93,13 @@ data class RoomPowerLevels(
 				)
 		
 		/** The power level of a user. */
-		@JvmStatic val USER = 0
+		@JvmField val USER = 0
 		/** The power level of a moderator. */
-		@JvmStatic val MODERATOR = 50
+		@JvmField val MODERATOR = 50
 		/** The power level of an administrator. */
-		@JvmStatic val ADMINISTRATOR = 100
+		@JvmField val ADMINISTRATOR = 100
 		/** The power level of an owner. */
-		@JvmStatic val OWNER = 100
+		@JvmField val OWNER = 100
 	}
 	
 	// just for java interop
