@@ -19,6 +19,7 @@
 
 package msrd0.matrix.client.encryption
 
+import msrd0.matrix.client.encryption.EncryptionAlgorithms.*
 import com.beust.klaxon.*
 import msrd0.matrix.client.event.MatrixEventTypes.*
 import org.matrix.olm.*
@@ -55,7 +56,7 @@ class MegolmEncryptor(val olm : OlmEncryption, val roomId : String, val maxMessa
 		resultJson["room_id"] = roomId
 		resultJson.mapNested("content.sender_key", olm.identityKey)
 		resultJson.mapNested("content.ciphertext", encryptedJson)
-		resultJson.mapNested("content.algorithm", "m.megolm.v1.aes-sha2")
+		resultJson.mapNested("content.algorithm", MEGOLM_AES_SHA2)
 		resultJson.mapNested("content.device_id", olm.deviceId)
 		return resultJson
 	}
@@ -64,7 +65,7 @@ class MegolmEncryptor(val olm : OlmEncryption, val roomId : String, val maxMessa
 	{
 		if (event["type"] == ROOM_ENCRYPTED && event["room_id"] == roomId)
 		{
-			if (event.getNested("content.algorithm") == "m.megolm.v1.aes-sha2")
+			if (event.getNested("content.algorithm") == MEGOLM_AES_SHA2)
 			{
 				val senderKey = event.getNested("content.sender_key")
 				val sessionId = event.getNested("content.session_id")
@@ -94,7 +95,7 @@ class MegolmEncryptor(val olm : OlmEncryption, val roomId : String, val maxMessa
 	{
 		pendingSecrets = false
 		val megolmJson = JsonObject()
-		megolmJson["algorithm"] = "m.megolm.v1.aes-sha2"
+		megolmJson["algorithm"] = MEGOLM_AES_SHA2
 		megolmJson["room_id"] = roomId
 		megolmJson["session_id"] = outSession.sessionIdentifier()
 		megolmJson["session_key"] = outSession.sessionKey()
