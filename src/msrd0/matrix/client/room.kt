@@ -32,7 +32,8 @@ import org.slf4j.*
 open class Room(
 		val client : Client,
 		val id : RoomId
-) {
+) : RoomCache()
+{
 	override fun toString() = "Room(name=$name, id=$id)"
 	
 	companion object
@@ -40,26 +41,52 @@ open class Room(
 		val logger : Logger = LoggerFactory.getLogger(Room::class.java)
 	}
 	
+	/**
+	 * Retrieve a state event. If the event was found, its json is returned. Otherwise, null is returned.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@JvmOverloads
+	@Throws(MatrixAnswerException::class)
+	fun retrieveStateEvent(eventType : String, stateKey : String = "") : JsonObject?
+	{
+		val res = client.target.get("_matrix/client/r0/rooms/$id/state/$eventType/$stateKey",
+				client.token ?: throw NoTokenException(), client.id)
+		if (res.status.status == 404 && res.json.string("errcode") == "M_NOT_FOUND")
+			return null
+		checkForError(res)
+		return res.json
+	}
+	
+	/**
+	 * Send a state event. This method should not be used to send messages.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@JvmOverloads
+	@Throws(MatrixAnswerException::class)
+	fun sendStateEvent(eventType : String, content : MatrixEventContent, stateKey : String = "")
+	{
+		val res = client.target.put("_matrix/client/r0/rooms/$id/state/$eventType/$stateKey",
+				client.token ?: throw NoTokenException(), client.id, content.json)
+		checkForError(res)
+	}
+	
 	/** The name of this room or it's id. */
-	var name : String = id.id
-		protected set
+	var name : String by RoomEventDelegate(
+			{ RoomNameEventContent.fromJson(retrieveStateEvent(ROOM_NAME) ?: return@RoomEventDelegate id.id).name },
+			{ sendStateEvent(ROOM_NAME, RoomNameEventContent(it))})
 	/** The topic of this room or an empty string. */
 	var topic : String = ""
 		protected set
 	/** The members of this room. */
 	val members = ArrayList<MatrixId>()
+	/** The encryption algorithm of this room, or null if not encrypted. */
+	var encryptionAlgorithm : String? = null
+		protected set
 	
 	init // TODO rather than pulling some properties always and some never a cache would be cool
 	{
-		try { retrieveName() }
-		catch (ex : MatrixErrorResponseException)
-		{
-			if (ex.errcode == "M_NOT_FOUND")
-				/* The room does not have a name */
-			else
-				logger.warn("Failed to retrieve room name", ex)
-		}
-		
 		try { retrieveTopic() }
 		catch (ex : MatrixErrorResponseException)
 		{
@@ -70,33 +97,6 @@ open class Room(
 		}
 		
 		retrieveMembers()
-	}
-	
-	/**
-	 * Retrieves the room's name.
-	 *
-	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 */
-	@Throws(MatrixAnswerException::class)
-	protected fun retrieveName()
-	{
-		val res = client.target.get("_matrix/client/r0/rooms/$id/state/$ROOM_NAME", client.token ?: throw NoTokenException(), client.id)
-		checkForError(res)
-		
-		val content = RoomNameEventContent.fromJson(res.json)
-		name = content.name
-	}
-	
-	/**
-	 * Update the name of this room.
-	 *
-	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 */
-	@Throws(MatrixAnswerException::class)
-	fun updateName(name : String)
-	{
-		sendStateEvent(ROOM_NAME, RoomNameEventContent(name))
-		this.name = name
 	}
 	
 	/**
@@ -124,6 +124,17 @@ open class Room(
 	{
 		sendStateEvent(ROOM_TOPIC, RoomTopicEventContent(topic))
 		this.topic = topic
+	}
+	
+	/**
+	 * Retrieve the room's encryption algorithm, or null if the room is not encrypted.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun retrieveEncryptionAlgorithm()
+	{
+	
 	}
 	
 	/**
@@ -191,20 +202,6 @@ open class Room(
 	{
 		val res = client.target.put("_matrix/client/r0/rooms/$id/send/m.room.message/${client.nextTxnId}",
 				client.token ?: throw NoTokenException(), client.id, msg.json)
-		checkForError(res)
-	}
-	
-	/**
-	 * Send a state update event. This method should not be used to send messages.
-	 *
-	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 */
-	@JvmOverloads
-	@Throws(MatrixAnswerException::class)
-	fun sendStateEvent(eventType : String, content : MatrixEventContent, stateKey : String = "")
-	{
-		val res = client.target.put("_matrix/client/r0/rooms/$id/state/$eventType/$stateKey",
-				client.token ?: throw NoTokenException(), client.id, content.json)
 		checkForError(res)
 	}
 	

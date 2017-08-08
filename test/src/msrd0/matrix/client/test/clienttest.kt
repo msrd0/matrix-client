@@ -174,7 +174,7 @@ class ClientTest
 		val powerLevelEvent = "msrd0.matrix.client.test.power_level_event" to 7
 		powerLevels.events[powerLevelEvent.first] = powerLevelEvent.second
 		
-		room.updateName(newName)
+		room.name = newName
 		room.updateTopic(newTopic)
 		aliases.forEach { room.addAlias(it) }
 		room.updateCanonicalAlias(aliases.first())
