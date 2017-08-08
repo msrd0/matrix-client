@@ -22,13 +22,7 @@ package msrd0.matrix.client
 import com.beust.klaxon.*
 import msrd0.matrix.client.Client.Companion.checkForError
 import msrd0.matrix.client.event.*
-import msrd0.matrix.client.event.MatrixEventTypes.ROOM_ALIASES
-import msrd0.matrix.client.event.MatrixEventTypes.ROOM_CANONICAL_ALIAS
-import msrd0.matrix.client.event.MatrixEventTypes.ROOM_HISTORY_VISIBILITY
-import msrd0.matrix.client.event.MatrixEventTypes.ROOM_JOIN_RULES
-import msrd0.matrix.client.event.MatrixEventTypes.ROOM_NAME
-import msrd0.matrix.client.event.MatrixEventTypes.ROOM_POWER_LEVELS
-import msrd0.matrix.client.event.MatrixEventTypes.ROOM_TOPIC
+import msrd0.matrix.client.event.MatrixEventTypes.*
 import msrd0.matrix.client.event.state.*
 import org.slf4j.*
 
@@ -368,4 +362,31 @@ open class Room(
 	@Throws(MatrixAnswerException::class)
 	fun updateHistoryVisibility(historyVisibility : String)
 			= sendStateEvent(ROOM_HISTORY_VISIBILITY, RoomHistoryVisibilityEventContent(historyVisibility))
+	
+	
+	/**
+	 * Retrieve the avatar of this room. Returns null if there is no avatar.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun retrieveAvatar() : Avatar?
+	{
+		val res = client.target.get("_matrix/client/r0/rooms/$id/state/$ROOM_AVATAR",
+				client.token ?: throw NoTokenException(), client.id)
+		if (res.status.status == 404 && res.json.string("errcode") == "M_NOT_FOUND")
+			return null
+		checkForError(res)
+		
+		return Avatar.fromJson(res.json)
+	}
+	
+	/**
+	 * Update the avatar of this room.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun updateAvatar(avatar : Avatar)
+			= sendStateEvent(ROOM_AVATAR, avatar)
 }

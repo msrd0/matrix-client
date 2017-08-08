@@ -26,6 +26,7 @@ import org.hamcrest.MatcherAssert.*
 import org.hamcrest.Matchers.*
 import org.testng.Assert.*
 import org.testng.annotations.Test
+import java.awt.image.RenderedImage
 import java.net.URI
 import javax.imageio.ImageIO
 
@@ -40,12 +41,22 @@ class ClientTest
 		var userData : MatrixUserData? = null
 		var roomId : RoomId? = null
 		
+		val testImage : RenderedImage = ImageIO.read(ClassLoader.getSystemResourceAsStream("matrix-logo.png"))
+		var testAvatar : Avatar? = null
+		
 		fun newClient() : Client
 		{
 			val c = Client(hs, id)
 			c.userData = userData
 			return c
 		}
+	}
+	
+	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
+	fun avatar()
+	{
+		val client = newClient()
+		testAvatar = Avatar.fromImage(testImage, client)
 	}
 	
 	@Test(groups = arrayOf("api"))
@@ -81,20 +92,19 @@ class ClientTest
 		client.sync()
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
+	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register", "avatar"))
 	fun client_update()
 	{
 		val client = newClient()
 		val displayname = "test user"
-		val avatar = Avatar.fromImage(ImageIO.read(ClassLoader.getSystemResourceAsStream("matrix-logo.png")), client)
 		client.updateDisplayname(displayname)
-		client.updateAvatar(avatar)
+		client.updateAvatar(testAvatar!!)
 		assertThat(client.displayname(), equalTo(displayname))
-		val avatar0 = client.avatar()
-		assertNotNull(avatar0)
-		avatar0 as Avatar // asserted not null
-		assertThat(avatar0.url, equalTo(avatar.url))
-		assertThat(ContentRepo.download(avatar0.url, client).first.size.toLong(), equalTo(avatar.info!!.size))
+		val avatar = client.avatar()
+		assertNotNull(avatar)
+		avatar as Avatar // asserted not null
+		assertThat(avatar.url, equalTo(testAvatar!!.url))
+		assertThat(ContentRepo.download(avatar.url, client).first.size.toLong(), equalTo(testAvatar!!.info!!.size))
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
@@ -121,6 +131,9 @@ class ClientTest
 		assertThat(room.members, contains(id))
 		roomId = room.id
 		
+		// the room shouldn't have an avatar right now
+		assertNull(room.retrieveAvatar())
+		
 		// check that there are no aliases right now
 		assertThat(room.retrieveAliases("synapse").size, equalTo(0))
 		assertNull(room.retrieveCanonicalAlias())
@@ -145,7 +158,7 @@ class ClientTest
 		assertThat(room.retrieveHistoryVisibility(), equalTo(RoomHistoryVisibility.SHARED))
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create"))
+	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create", "avatar"))
 	fun room_update()
 	{
 		val client = newClient()
@@ -168,6 +181,7 @@ class ClientTest
 		room.updatePowerLevels(powerLevels)
 		room.updateJoinRule(RoomJoinRules.PUBLIC)
 		room.updateHistoryVisibility(RoomHistoryVisibility.WORLD_READABLE)
+		room.updateAvatar(testAvatar!!)
 		
 		// test with dirty cache
 		assertThat(room.name, equalTo(newName))
@@ -188,6 +202,12 @@ class ClientTest
 		assertThat(powerLevels.events[powerLevelEvent.first], equalTo(powerLevelEvent.second))
 		assertThat(room.retrieveJoinRule(), equalTo(RoomJoinRules.PUBLIC))
 		assertThat(room.retrieveHistoryVisibility(), equalTo(RoomHistoryVisibility.WORLD_READABLE))
+		val avatar = room.retrieveAvatar()
+		assertNotNull(avatar)
+		avatar as Avatar // asserted not null
+		assertThat(avatar.url, equalTo(testAvatar!!.url))
+		assertThat(ContentRepo.download(avatar.url, client).first.size.toLong(), equalTo(testAvatar!!.info!!.size))
+		
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create"))
@@ -197,7 +217,7 @@ class ClientTest
 		val room = Room(client, roomId!!)
 		
 		val msg = ImageMessageContent("matrix-logo.png")
-		val img = ImageIO.read(ClassLoader.getSystemResourceAsStream("matrix-logo.png"))
+		val img = testImage
 		msg.uploadImage(img, client)
 		room.sendMessage(msg)
 		
