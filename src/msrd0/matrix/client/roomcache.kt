@@ -28,6 +28,12 @@ import kotlin.reflect.KProperty
 open class RoomCache
 {
 	internal val cache : MutableMap<String, Any?> = emptyMutableMap()
+	
+	/**
+	 * Clear the room's internal cache. This will remove all cached state events from this room, making it to retrieve
+	 * them as soon as you request them again.
+	 */
+	fun clearCache() = cache.clear()
 }
 
 /**
@@ -86,7 +92,7 @@ class RoomEventStateKeyMap<V>(
 /**
  * Delegate for room properties from a state event with multiple state keys.
  */
-class RoomEventStateKeyDelegate <V>(
+class RoomEventStateKeyDelegate<V>(
 		val retrieve : Room.(String) -> V,
 		val update : Room.(String, V) -> Unit
 )

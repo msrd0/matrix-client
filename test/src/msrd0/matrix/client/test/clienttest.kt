@@ -168,7 +168,7 @@ class ClientTest
 				"#test${System.currentTimeMillis()}:synapse",
 				"#dummy${System.currentTimeMillis()}:synapse"
 		).map { RoomAlias.fromString(it) }
-		var room = Room(client, roomId!!)
+		val room = Room(client, roomId!!)
 		
 		var powerLevels = room.powerLevels
 		val powerLevelEvent = "msrd0.matrix.client.test.power_level_event" to 7
@@ -183,17 +183,10 @@ class ClientTest
 		room.historyVisibility = RoomHistoryVisibility.WORLD_READABLE
 		room.avatar = testAvatar
 		
-		// test with dirty cache
+		room.clearCache()
+		
 		assertThat(room.name, equalTo(newName))
 		assertThat(room.topic, equalTo(newTopic))
-		
-		room = Room(client, roomId!!)
-		
-		// test with clean cache
-		assertThat(room.name, equalTo(newName))
-		assertThat(room.topic, equalTo(newTopic))
-		
-		// test those that aren't cached
 		assertThat(room.aliases["synapse"], equalTo(aliases))
 		assertNotNull(room.canonicalAlias)
 		assertThat(room.canonicalAlias, equalTo(aliases.first()))
