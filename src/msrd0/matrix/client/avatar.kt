@@ -20,6 +20,8 @@
 package msrd0.matrix.client
 
 import com.beust.klaxon.*
+import msrd0.matrix.client.event.MatrixEventContent
+import msrd0.matrix.client.util.JsonSerializable
 import java.awt.image.*
 import java.io.*
 import javax.imageio.ImageIO
@@ -29,7 +31,7 @@ data class AvatarInfo(
 		val height : Int,
 		val size : Long,
 		val mimetype : String
-)
+) : JsonSerializable
 {
 	companion object
 	{
@@ -37,20 +39,28 @@ data class AvatarInfo(
 		@Throws(IllegalJsonException::class)
 		fun fromJson(json : JsonObject) : AvatarInfo
 				= AvatarInfo(
-					json.int("width") ?: throw IllegalJsonException("Missing: 'width'"),
-					json.int("height") ?: throw IllegalJsonException("Missing: 'height'"),
+					json.int("w") ?: throw IllegalJsonException("Missing: 'w'"),
+					json.int("h") ?: throw IllegalJsonException("Missing: 'h'"),
 					json.long("size") ?: throw IllegalJsonException("Missing: 'size'"),
 					json.string("mimetype") ?: throw IllegalJsonException("Missing: 'mimetype'")
 				)
 	}
 	
 	// TODO add support for thumbnails
-}
+	
+	override val json : JsonObject get()
+			= JsonObject(mapOf(
+				"w" to width,
+				"h" to height,
+				"size" to size,
+				"mimetype" to mimetype
+			))
+}	
 
 class Avatar @JvmOverloads constructor(
 		val url : String,
 		var info : AvatarInfo? = null
-)
+) : MatrixEventContent()
 {
 	companion object
 	{
@@ -99,5 +109,14 @@ class Avatar @JvmOverloads constructor(
 				throw MatrixInfoMismatchException("height", info!!.height, img.height)
 		}
 		return img
+	}
+	
+	override val json : JsonObject get()
+	{
+		val json = JsonObject()
+		json["url"] = url
+		if (info != null)
+			json["info"] = info!!.json
+		return json
 	}
 }
