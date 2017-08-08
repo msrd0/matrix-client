@@ -86,8 +86,15 @@ class ClientTest
 	{
 		val client = newClient()
 		val displayname = "test user"
+		val avatar = Avatar.fromImage(ImageIO.read(ClassLoader.getSystemResourceAsStream("matrix-logo.png")), client)
 		client.updateDisplayname(displayname)
+		client.updateAvatar(avatar)
 		assertThat(client.displayname(), equalTo(displayname))
+		val avatar0 = client.avatar()
+		assertNotNull(avatar0)
+		avatar0 as Avatar // asserted not null
+		assertThat(avatar0.url, equalTo(avatar.url))
+		assertThat(ContentRepo.download(avatar0.url, client).first.size.toLong(), equalTo(avatar.info!!.size))
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))

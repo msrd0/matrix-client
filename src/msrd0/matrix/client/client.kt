@@ -540,10 +540,11 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 	fun displayname(user : MatrixId = id) : String?
 	{
 		val res = target.get("_matrix/client/r0/profile/$user/displayname") // this api shouldn't require a token
+		if (res.status.status == 404)
+			return null
 		checkForError(res)
 		return res.json.string("displayname")
 	}
-	
 	
 	/**
 	 * Update the display name of this user.
@@ -555,6 +556,36 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 	{
 		val res = target.put("_matrix/client/r0/profile/$id/displayname", token ?: throw NoTokenException(), id,
 				JsonObject(mapOf("displayname" to displayname)))
+		checkForError(res)
+	}
+	
+	
+	/**
+	 * Retrieve and return the user's avatar.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@JvmOverloads
+	@Throws(MatrixAnswerException::class)
+	fun avatar(user : MatrixId = id) : Avatar?
+	{
+		val res = target.get("_matrix/client/r0/profile/$user/avatar_url") // this api shouldn't require a token
+		if (res.status.status == 404)
+			return null
+		checkForError(res)
+		return Avatar(res.json.string("avatar_url") ?: return null)
+	}
+	
+	/**
+	 * Update the avatar of this user.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun updateAvatar(avatar : Avatar)
+	{
+		val res = target.put("_matrix/client/unstable/profile/$id/avatar_url", token ?: throw NoTokenException(), id,
+				JsonObject(mapOf("avatar_url" to avatar.url)))
 		checkForError(res)
 	}
 	

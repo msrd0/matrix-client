@@ -86,8 +86,19 @@ object ContentRepo
 			throw MatrixErrorResponseException("${status.status}", status.phrase)
 		return Pair<ByteArray, String>(res.bytes, res.header("Content-Type") ?: throw MatrixAnswerException("Missing Content-Type header"))
 	}
+	
+	/**
+	 * Download the content with the specified url.
+	 *
+	 * @return A pair of the bytes and the mimetype.
+	 */
+	@JvmStatic
+	@Throws(MatrixAnswerException::class)
+	fun download(url : String, client : Client)
+			= download(MatrixContentUrl.fromString(url), client)
 }
 
 // extend the client with the content repo functions
-fun Client.upload(bytes : ByteArray, mimetype : String) = ContentRepo.upload(bytes, mimetype, this)
-fun Client.download(url : MatrixContentUrl) = ContentRepo.download(url, this)
+@Throws(MatrixAnswerException::class) fun Client.upload(bytes : ByteArray, mimetype : String) = ContentRepo.upload(bytes, mimetype, this)
+@Throws(MatrixAnswerException::class) fun Client.download(url : MatrixContentUrl) = ContentRepo.download(url, this)
+@Throws(MatrixAnswerException::class) fun Client.download(url : String) = ContentRepo.download(url, this)

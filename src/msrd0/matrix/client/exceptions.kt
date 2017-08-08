@@ -60,3 +60,13 @@ open class MatrixErrorResponseException(
 		val errcode : String,
 		val error : String
 ) : MatrixAnswerException("$errcode: $error")
+
+/**
+ * This exception indicates that information sent with an event doesn't match with those that was downloaded. This
+ * might happen when for example the info of an avatar tell a different image size than the downloaded image.
+ */
+open class MatrixInfoMismatchException(
+		val variable : String,
+		val expected : Any,
+		val actual : Any
+) : MatrixAnswerException("Mismatch for '$variable': Expected '$expected' but was '$actual'")

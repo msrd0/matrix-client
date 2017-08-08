@@ -61,12 +61,27 @@ data class MatrixId(
 	/**
 	 * The displayname of this matrix user.
 	 */
-	@get:[Throws(MatrixAnswerException::class)]
+	@get:Throws(MatrixAnswerException::class)
 	val displayname : String? get()
 	{
 		val res = publicTarget.get("_matrix/client/r0/profile/$this/displayname")
+		if (res.status.status == 404)
+			return null
 		checkForError(res)
 		return res.json.string("displayname")
+	}
+	
+	/**
+	 * The avatar of this matrix user.
+	 */
+	@get:Throws(MatrixAnswerException::class)
+	val avatar : Avatar? get()
+	{
+		val res = publicTarget.get("_matrix/client/r0/profile/$this/avatar_url")
+		if (res.status.status == 404)
+			return null
+		checkForError(res)
+		return Avatar(res.json.string("avatar_url") ?: return null)
 	}
 	
 	override fun toString() : String = "@$localpart:$domain"
