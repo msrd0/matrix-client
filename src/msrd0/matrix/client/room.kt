@@ -48,11 +48,11 @@ open class Room(
 	 */
 	@JvmOverloads
 	@Throws(MatrixAnswerException::class)
-	fun retrieveStateEvent(eventType : String, stateKey : String = "") : JsonObject?
+	fun retrieveStateEvent(eventType : String, stateKey : String = "", canBeNotFound : Boolean = true) : JsonObject?
 	{
 		val res = client.target.get("_matrix/client/r0/rooms/$id/state/$eventType/$stateKey",
 				client.token ?: throw NoTokenException(), client.id)
-		if (res.status.status == 404 && res.json.string("errcode") == "M_NOT_FOUND")
+		if (canBeNotFound && res.status.status == 404 && res.json.string("errcode") == "M_NOT_FOUND")
 			return null
 		checkForError(res)
 		return res.json
@@ -75,66 +75,58 @@ open class Room(
 	/** The name of this room or it's id. */
 	var name : String by RoomEventDelegate(
 			{ RoomNameEventContent.fromJson(retrieveStateEvent(ROOM_NAME) ?: return@RoomEventDelegate id.id).name },
-			{ sendStateEvent(ROOM_NAME, RoomNameEventContent(it))})
+			{ sendStateEvent(ROOM_NAME, RoomNameEventContent(it))}
+	)
+	
 	/** The topic of this room or an empty string. */
-	var topic : String = ""
-		protected set
+	var topic : String by RoomEventDelegate(
+			{ RoomTopicEventContent.fromJson(retrieveStateEvent(ROOM_TOPIC) ?: return@RoomEventDelegate "").topic },
+			{ sendStateEvent(ROOM_TOPIC, RoomTopicEventContent(it)) }
+	)
+	
+	/** The avatar of this room or null. */
+	var avatar : Avatar? by RoomEventDelegate(
+			{ Avatar.fromJson(retrieveStateEvent(ROOM_AVATAR) ?: return@RoomEventDelegate null) },
+			{ sendStateEvent(ROOM_AVATAR, it!!) }
+	)
+	
+	/** All room aliases sorted by their homeserver. */
+	val aliases by RoomEventStateKeyDelegate<List<RoomAlias>>(
+			{ hs -> RoomAliasesEventContent.fromJson(retrieveStateEvent(ROOM_ALIASES, hs) ?: return@RoomEventStateKeyDelegate emptyList()).aliases },
+			{ hs, aliasList -> sendStateEvent(ROOM_ALIASES, RoomAliasesEventContent(aliasList), hs) }
+	)
+	
+	/** The canonical alias of this room or null. */
+	var canonicalAlias : RoomAlias? by RoomEventDelegate(
+			{ RoomCanonicalAliasEventContent.fromJson(retrieveStateEvent(ROOM_CANONICAL_ALIAS) ?: return@RoomEventDelegate null).alias },
+			{ sendStateEvent(ROOM_CANONICAL_ALIAS, RoomCanonicalAliasEventContent(it!!)) }
+	)
+	
+	/** The power levels of this room. */
+	// TODO the power levels should be updated when we change the respective properties, not only through assignment
+	var powerLevels : RoomPowerLevels by RoomEventDelegate(
+			{ RoomPowerLevels.fromJson(retrieveStateEvent(ROOM_POWER_LEVELS) ?: return@RoomEventDelegate RoomPowerLevels()) },
+			{ sendStateEvent(ROOM_POWER_LEVELS, it) }
+	)
+	
+	/** The join rule of this room. */
+	var joinRule : String by RoomEventDelegate(
+			{ RoomJoinRulesEventContent.fromJson(retrieveStateEvent(ROOM_JOIN_RULES, canBeNotFound = false)!!).joinRule },
+			{ sendStateEvent(ROOM_JOIN_RULES, RoomJoinRulesEventContent(it)) }
+	)
+	
+	/** The history visibility of this room. */
+	var historyVisibility : String by RoomEventDelegate(
+			{ RoomHistoryVisibilityEventContent.fromJson(retrieveStateEvent(ROOM_HISTORY_VISIBILITY, canBeNotFound = false)!!).historyVisibility },
+			{ sendStateEvent(ROOM_HISTORY_VISIBILITY, RoomHistoryVisibilityEventContent(it)) }
+	)
+	
 	/** The members of this room. */
 	val members = ArrayList<MatrixId>()
-	/** The encryption algorithm of this room, or null if not encrypted. */
-	var encryptionAlgorithm : String? = null
-		protected set
 	
-	init // TODO rather than pulling some properties always and some never a cache would be cool
+	init
 	{
-		try { retrieveTopic() }
-		catch (ex : MatrixErrorResponseException)
-		{
-			if (ex.errcode == "M_NOT_FOUND")
-			/* The room does not have a topic */
-			else
-				logger.warn("Failed to retrieve room topic", ex)
-		}
-		
 		retrieveMembers()
-	}
-	
-	/**
-	 * Retrieves the room's topic.
-	 *
-	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 */
-	@Throws(MatrixAnswerException::class)
-	protected fun retrieveTopic()
-	{
-		val res = client.target.get("_matrix/client/r0/rooms/$id/state/$ROOM_TOPIC", client.token ?: throw NoTokenException(), client.id)
-		checkForError(res)
-		
-		val content = RoomTopicEventContent.fromJson(res.json)
-		topic = content.topic
-	}
-	
-	/**
-	 * Update the topic of this room.
-	 *
-	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 */
-	@Throws(MatrixAnswerException::class)
-	fun updateTopic(topic : String)
-	{
-		sendStateEvent(ROOM_TOPIC, RoomTopicEventContent(topic))
-		this.topic = topic
-	}
-	
-	/**
-	 * Retrieve the room's encryption algorithm, or null if the room is not encrypted.
-	 *
-	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 */
-	@Throws(MatrixAnswerException::class)
-	fun retrieveEncryptionAlgorithm()
-	{
-	
 	}
 	
 	/**
@@ -205,24 +197,6 @@ open class Room(
 		checkForError(res)
 	}
 	
-	/**
-	 * Retrieve the alias list for this room of the given domain. Right now the matrix api doesn't allow to query
-	 * all aliases of all domains.
-	 *
-	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 */
-	@Throws(MatrixAnswerException::class)
-	fun retrieveAliases(domain : String) : List<RoomAlias>
-	{
-		val res = client.target.get("_matrix/client/r0/rooms/$id/state/$ROOM_ALIASES/$domain",
-				client.token ?: throw NoTokenException(), client.id)
-		if (res.status.status == 404 && res.json.string("errcode") == "M_NOT_FOUND")
-			return emptyList()
-		checkForError(res)
-		
-		val content = RoomAliasesEventContent.fromJson(res.json)
-		return content.aliases
-	}
 	
 	/**
 	 * Add a new alias for this room.
@@ -236,57 +210,6 @@ open class Room(
 				client.id, JsonObject(mapOf("room_id" to "$id")))
 		checkForError(res)
 	}
-	
-	/**
-	 * Retrieve the canonical alias for this room, or null if it doesn't exist.
-	 *
-	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 */
-	@Throws(MatrixAnswerException::class)
-	fun retrieveCanonicalAlias() : RoomAlias?
-	{
-		val res = client.target.get("_matrix/client/r0/rooms/$id/state/$ROOM_CANONICAL_ALIAS",
-				client.token ?: throw NoTokenException(), client.id)
-		if (res.status.status == 404 && res.json.string("errcode") == "M_NOT_FOUND")
-			return null
-		
-		val content = RoomCanonicalAliasEventContent.fromJson(res.json)
-		return content.alias
-	}
-	
-	/**
-	 * Update the canonical alias for this room.
-	 *
-	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 */
-	@Throws(MatrixAnswerException::class)
-	fun updateCanonicalAlias(alias : RoomAlias)
-			= sendStateEvent(ROOM_CANONICAL_ALIAS, RoomCanonicalAliasEventContent(alias))
-	
-	/**
-	 * Retrieve the power levels for this room. If no such event was found, the default values are returned.
-	 *
-	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 */
-	@Throws(MatrixAnswerException::class)
-	fun retrievePowerLevels() : RoomPowerLevels
-	{
-		val res = client.target.get("_matrix/client/r0/rooms/$id/state/$ROOM_POWER_LEVELS",
-				client.token ?: throw NoTokenException(), client.id)
-		if (res.status.status == 404 && res.json.string("errcode") == "M_NOT_FOUND")
-			return RoomPowerLevels()
-		
-		return RoomPowerLevels.fromJson(res.json)
-	}
-	
-	/**
-	 * Update the power levels for this room.
-	 *
-	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 */
-	@Throws(MatrixAnswerException::class)
-	fun updatePowerLevels(powerLevels : RoomPowerLevels)
-			= sendStateEvent(ROOM_POWER_LEVELS, powerLevels)
 	
 	/**
 	 * Promote (or demote) a user in this room.
@@ -305,85 +228,8 @@ open class Room(
 	@Throws(MatrixAnswerException::class)
 	fun promote(promotions : Map<MatrixId, Int>)
 	{
-		val powerLevels = retrievePowerLevels()
-		promotions.forEach { user, level -> powerLevels.users[user] = level }
-		updatePowerLevels(powerLevels)
+		val pl = powerLevels
+		promotions.forEach { user, level -> pl.users[user] = level }
+		powerLevels = pl
 	}
-	
-	/**
-	 * Retrieve the join rule for this room.
-	 *
-	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 */
-	@Throws(MatrixAnswerException::class)
-	fun retrieveJoinRule() : String
-	{
-		val res = client.target.get("_matrix/client/r0/rooms/$id/state/$ROOM_JOIN_RULES",
-				client.token ?: throw NoTokenException(), client.id)
-		checkForError(res)
-		
-		val content = RoomJoinRulesEventContent.fromJson(res.json)
-		return content.joinRule
-	}
-	
-	/**
-	 * Update the join rule for this room.
-	 *
-	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 */
-	@Throws(MatrixAnswerException::class)
-	fun updateJoinRule(joinRule : String)
-			= sendStateEvent(ROOM_JOIN_RULES, RoomJoinRulesEventContent(joinRule))
-	
-	/**
-	 * Retrieve the history visibility for this room.
-	 *
-	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 */
-	@Throws(MatrixAnswerException::class)
-	fun retrieveHistoryVisibility() : String
-	{
-		val res = client.target.get("_matrix/client/r0/rooms/$id/state/$ROOM_HISTORY_VISIBILITY",
-				client.token ?: throw NoTokenException(), client.id)
-		checkForError(res)
-		
-		val content = RoomHistoryVisibilityEventContent.fromJson(res.json)
-		return content.historyVisibility
-	}
-	
-	/**
-	 * Update the history visibility of this room.
-	 *
-	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 */
-	@Throws(MatrixAnswerException::class)
-	fun updateHistoryVisibility(historyVisibility : String)
-			= sendStateEvent(ROOM_HISTORY_VISIBILITY, RoomHistoryVisibilityEventContent(historyVisibility))
-	
-	
-	/**
-	 * Retrieve the avatar of this room. Returns null if there is no avatar.
-	 *
-	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 */
-	@Throws(MatrixAnswerException::class)
-	fun retrieveAvatar() : Avatar?
-	{
-		val res = client.target.get("_matrix/client/r0/rooms/$id/state/$ROOM_AVATAR",
-				client.token ?: throw NoTokenException(), client.id)
-		if (res.status.status == 404 && res.json.string("errcode") == "M_NOT_FOUND")
-			return null
-		checkForError(res)
-		
-		return Avatar.fromJson(res.json)
-	}
-	
-	/**
-	 * Update the avatar of this room.
-	 *
-	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 */
-	@Throws(MatrixAnswerException::class)
-	fun updateAvatar(avatar : Avatar)
-			= sendStateEvent(ROOM_AVATAR, avatar)
 }

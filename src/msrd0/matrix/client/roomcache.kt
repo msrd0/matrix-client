@@ -22,12 +22,18 @@ package msrd0.matrix.client
 import msrd0.matrix.client.util.emptyMutableMap
 import kotlin.reflect.KProperty
 
+/**
+ * Superclass of `Room` with a cache property. Used by the delegates for cached properties.
+ */
 open class RoomCache
 {
-	internal var cache : MutableMap<String, Any?> = emptyMutableMap()
+	internal val cache : MutableMap<String, Any?> = emptyMutableMap()
 }
 
-class RoomCacheEventDelegate <in R : RoomCache, T>(
+/**
+ * Delegate for room properties from a state event with only one state key.
+ */
+class RoomEventDelegate <in R : RoomCache, T>(
 		val retrieve : R.() -> T,
 		val update : R.(T) -> Unit
 )
@@ -52,4 +58,50 @@ class RoomCacheEventDelegate <in R : RoomCache, T>(
 	}
 }
 
-typealias RoomEventDelegate<T> = RoomCacheEventDelegate<Room, T>
+/**
+ * A map-like class with a get and set operator to use with `RoomEventStateKeyDelegate`.
+ */
+class RoomEventStateKeyMap<V>(
+		val retrieve : (String) -> V,
+		val update : (String, V) -> Unit
+)
+{
+	private val cache : MutableMap<String, V> = emptyMutableMap()
+	
+	operator fun get(key : String) : V
+	{
+		if (!cache.containsKey(key))
+			cache[key] = retrieve(key)
+		
+		return cache[key]!!
+	}
+	
+	operator fun set(key : String, value : V)
+	{
+		update(key, value)
+		cache[key] = value
+	}
+}
+
+/**
+ * Delegate for room properties from a state event with multiple state keys.
+ */
+class RoomEventStateKeyDelegate <V>(
+		val retrieve : Room.(String) -> V,
+		val update : Room.(String, V) -> Unit
+)
+{
+	operator fun getValue(self : Room, property : KProperty<*>) : RoomEventStateKeyMap<V>
+	{
+		val name = property.name
+		
+		if (!self.cache.containsKey(name))
+			self.cache[name] = RoomEventStateKeyMap<V>(
+					{ key -> retrieve(self, key) },
+					{ key, value -> update(self, key, value) }
+			)
+		
+		@Suppress("UNCHECKED_CAST")
+		return self.cache[name] as RoomEventStateKeyMap<V>
+	}
+}

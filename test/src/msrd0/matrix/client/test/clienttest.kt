@@ -132,15 +132,15 @@ class ClientTest
 		roomId = room.id
 		
 		// the room shouldn't have an avatar right now
-		assertNull(room.retrieveAvatar())
+		assertNull(room.avatar)
 		
 		// check that there are no aliases right now
-		assertThat(room.retrieveAliases("synapse").size, equalTo(0))
-		assertNull(room.retrieveCanonicalAlias())
+		assertThat(room.aliases["synapse"].size, equalTo(0))
+		assertNull(room.canonicalAlias)
 		
 		// check that we have owner power levels in the room. if they changed the owner power level we need to do so
 		// as well.
-		val powerLevels = room.retrievePowerLevels()
+		val powerLevels = room.powerLevels
 		assertThat(powerLevels.users, hasKey(id))
 		assertThat(powerLevels.users[id], equalTo(RoomPowerLevels.OWNER))
 		
@@ -150,12 +150,12 @@ class ClientTest
 		assertThat(powerLevels, equalTo(RoomPowerLevels()))
 		
 		// make sure the join rule is invite right now so we can change it later
-		room.updateJoinRule(RoomJoinRules.INVITE)
-		assertThat(room.retrieveJoinRule(), equalTo(RoomJoinRules.INVITE))
+		room.joinRule = RoomJoinRules.INVITE
+		assertThat(room.joinRule, equalTo(RoomJoinRules.INVITE))
 		
 		// make sure the history visibility is shared so we can change it later
-		room.updateHistoryVisibility(RoomHistoryVisibility.SHARED)
-		assertThat(room.retrieveHistoryVisibility(), equalTo(RoomHistoryVisibility.SHARED))
+		room.historyVisibility = RoomHistoryVisibility.SHARED
+		assertThat(room.historyVisibility, equalTo(RoomHistoryVisibility.SHARED))
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create", "avatar"))
@@ -170,18 +170,18 @@ class ClientTest
 		).map { RoomAlias.fromString(it) }
 		var room = Room(client, roomId!!)
 		
-		var powerLevels = room.retrievePowerLevels()
+		var powerLevels = room.powerLevels
 		val powerLevelEvent = "msrd0.matrix.client.test.power_level_event" to 7
 		powerLevels.events[powerLevelEvent.first] = powerLevelEvent.second
 		
 		room.name = newName
-		room.updateTopic(newTopic)
+		room.topic = newTopic
 		aliases.forEach { room.addAlias(it) }
-		room.updateCanonicalAlias(aliases.first())
-		room.updatePowerLevels(powerLevels)
-		room.updateJoinRule(RoomJoinRules.PUBLIC)
-		room.updateHistoryVisibility(RoomHistoryVisibility.WORLD_READABLE)
-		room.updateAvatar(testAvatar!!)
+		room.canonicalAlias = aliases.first()
+		room.powerLevels = powerLevels
+		room.joinRule = RoomJoinRules.PUBLIC
+		room.historyVisibility = RoomHistoryVisibility.WORLD_READABLE
+		room.avatar = testAvatar
 		
 		// test with dirty cache
 		assertThat(room.name, equalTo(newName))
@@ -194,15 +194,15 @@ class ClientTest
 		assertThat(room.topic, equalTo(newTopic))
 		
 		// test those that aren't cached
-		assertThat(room.retrieveAliases("synapse"), equalTo(aliases))
-		assertNotNull(room.retrieveCanonicalAlias())
-		assertThat(room.retrieveCanonicalAlias(), equalTo(aliases.first()))
-		powerLevels = room.retrievePowerLevels()
+		assertThat(room.aliases["synapse"], equalTo(aliases))
+		assertNotNull(room.canonicalAlias)
+		assertThat(room.canonicalAlias, equalTo(aliases.first()))
+		powerLevels = room.powerLevels
 		assertThat(powerLevels.events, hasKey(powerLevelEvent.first))
 		assertThat(powerLevels.events[powerLevelEvent.first], equalTo(powerLevelEvent.second))
-		assertThat(room.retrieveJoinRule(), equalTo(RoomJoinRules.PUBLIC))
-		assertThat(room.retrieveHistoryVisibility(), equalTo(RoomHistoryVisibility.WORLD_READABLE))
-		val avatar = room.retrieveAvatar()
+		assertThat(room.joinRule, equalTo(RoomJoinRules.PUBLIC))
+		assertThat(room.historyVisibility, equalTo(RoomHistoryVisibility.WORLD_READABLE))
+		val avatar = room.avatar
 		assertNotNull(avatar)
 		avatar as Avatar // asserted not null
 		assertThat(avatar.url, equalTo(testAvatar!!.url))
