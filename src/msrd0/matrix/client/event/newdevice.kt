@@ -40,7 +40,7 @@ class NewDeviceEventContent(
 class NewDeviceEvent(
 		sender : MatrixId,
 		content : NewDeviceEventContent
-) : MatrixEvent<NewDeviceEventContent>(sender, DEVICE_NEW, content)
+) : MatrixToDeviceEvent<NewDeviceEventContent>(sender, DEVICE_NEW, content)
 {
 	override val json : JsonObject get() = abstractJson
 }

@@ -68,7 +68,7 @@ class RoomKeyEventContent(
 class RoomKeyEvent(
 		sender : MatrixId,
 		content : RoomKeyEventContent
-) : MatrixEvent<RoomKeyEventContent>(sender, ROOM_KEY, content)
+) : MatrixToDeviceEvent<RoomKeyEventContent>(sender, ROOM_KEY, content)
 {
 	companion object
 	{

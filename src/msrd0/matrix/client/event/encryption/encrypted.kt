@@ -75,7 +75,7 @@ class EncryptedEventContent(
 class EncryptedEvent(
 		sender : MatrixId,
 		content : EncryptedEventContent
-) : MatrixEvent<EncryptedEventContent>(sender, ROOM_ENCRYPTED, content)
+) : MatrixToDeviceEvent<EncryptedEventContent>(sender, ROOM_ENCRYPTED, content)
 {
 	companion object
 	{
