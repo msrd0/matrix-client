@@ -20,7 +20,7 @@
 package msrd0.matrix.client.encryption
 
 import com.beust.klaxon.JsonObject
-import msrd0.matrix.client.event.encryption.EncryptedEventContent
+import msrd0.matrix.client.event.encryption.*
 
 interface RoomEncryptor
 {
@@ -55,7 +55,7 @@ interface RoomEncryptor
 	 * Other devices might need additional information to be able to decrypt events that have been encrypted previously
 	 * by this class.
 	 */
-	fun getSecrets() : JsonObject
+	fun getSecrets() : RoomKeyEventContent
 	
 	/**
 	 * Indicates whether underlying encryption parameters have changed.

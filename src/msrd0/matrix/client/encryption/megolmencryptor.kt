@@ -21,13 +21,19 @@ package msrd0.matrix.client.encryption
 
 import msrd0.matrix.client.event.encryption.RoomEncryptionAlgorithms.*
 import com.beust.klaxon.*
+import msrd0.matrix.client.RoomId
 import msrd0.matrix.client.event.MatrixEventTypes.*
-import msrd0.matrix.client.event.encryption.EncryptedEventContent
+import msrd0.matrix.client.event.encryption.*
 import org.matrix.olm.*
 import java.time.LocalDateTime
 import kotlin.collections.set
 
-class MegolmEncryptor(val olm : OlmEncryption, val roomId : String, val maxMessages : Int = 0, val maxTime : Long = 0) : RoomEncryptor
+class MegolmEncryptor(
+		val olm : OlmEncryption,
+		val roomId : RoomId,
+		val maxMessages : Int = 0,
+		val maxTime : Long = 0
+) : RoomEncryptor
 {
 	private var outSession : OlmOutboundGroupSession = OlmOutboundGroupSession()
 	private var inSessions : MutableMap<String, OlmInboundGroupSession> = mutableMapOf(outSession.sessionIdentifier() to OlmInboundGroupSession(outSession.sessionKey()))
@@ -88,19 +94,15 @@ class MegolmEncryptor(val olm : OlmEncryption, val roomId : String, val maxMessa
 		pendingSecrets = true
 	}
 	
-	override fun getSecrets() : JsonObject
+	override fun getSecrets() : RoomKeyEventContent
 	{
 		pendingSecrets = false
-		val megolmJson = JsonObject()
-		megolmJson["algorithm"] = MEGOLM_AES_SHA2
-		megolmJson["room_id"] = roomId
-		megolmJson["session_id"] = outSession.sessionIdentifier()
-		megolmJson["session_key"] = outSession.sessionKey()
-		val eventJson = JsonObject()
-		eventJson["type"] = ROOM_KEY
-		eventJson["content"] = megolmJson
-		pendingSecrets = false
-		return eventJson
+		return RoomKeyEventContent(
+				algorithm = MEGOLM_AES_SHA2,
+				roomId = roomId,
+				sessionId = outSession.sessionIdentifier(),
+				sessionKey = outSession.sessionKey()
+		)
 	}
 	
 	override fun hasPendingSecrets() : Boolean = pendingSecrets
