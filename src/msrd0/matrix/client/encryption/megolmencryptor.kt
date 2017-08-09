@@ -19,7 +19,7 @@
 
 package msrd0.matrix.client.encryption
 
-import msrd0.matrix.client.encryption.EncryptionAlgorithms.*
+import msrd0.matrix.client.event.encryption.RoomEncryptionAlgorithms.*
 import com.beust.klaxon.*
 import msrd0.matrix.client.event.MatrixEventTypes.*
 import org.matrix.olm.*

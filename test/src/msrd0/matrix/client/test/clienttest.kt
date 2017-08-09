@@ -21,6 +21,7 @@ package msrd0.matrix.client.test
 
 import msrd0.matrix.client.*
 import msrd0.matrix.client.event.ImageMessageContent
+import msrd0.matrix.client.event.encryption.RoomEncryptionAlgorithms
 import msrd0.matrix.client.event.state.*
 import org.hamcrest.MatcherAssert.*
 import org.hamcrest.Matchers.*
@@ -131,6 +132,9 @@ class ClientTest
 		assertThat(room.members, contains(id))
 		roomId = room.id
 		
+		// by default room shouldn't be encrypted
+		assertNull(room.encryptionAlgorithm)
+		
 		// the room shouldn't have an avatar right now
 		assertNull(room.avatar)
 		
@@ -225,5 +229,17 @@ class ClientTest
 		val downloaded = content.downloadImage(client)
 		assertThat(downloaded.width, equalTo(img.width))
 		assertThat(downloaded.height, equalTo(img.height))
+	}
+	
+	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_send_image", "room_update"))
+	fun room_encrypt()
+	{
+		val client = newClient()
+		val room = Room(client, roomId!!)
+		
+		room.encryptionAlgorithm = RoomEncryptionAlgorithms.MEGOLM_AES_SHA2
+		room.clearCache()
+		assertNotNull(room.encryptionAlgorithm)
+		assertThat(room.encryptionAlgorithm, equalTo(RoomEncryptionAlgorithms.MEGOLM_AES_SHA2))
 	}
 }

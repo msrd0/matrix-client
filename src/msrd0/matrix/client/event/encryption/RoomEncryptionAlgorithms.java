@@ -17,14 +17,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
  */
 
-package msrd0.matrix.client.encryption;
+package msrd0.matrix.client.event.encryption;
 
 import static lombok.AccessLevel.*;
 
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = PRIVATE)
-public class EncryptionAlgorithms
+public class RoomEncryptionAlgorithms
 {
 	/**
 	 * Version 1 of the OLM ratchet. This uses:

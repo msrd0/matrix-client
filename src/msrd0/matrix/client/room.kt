@@ -23,6 +23,7 @@ import com.beust.klaxon.*
 import msrd0.matrix.client.Client.Companion.checkForError
 import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.MatrixEventTypes.*
+import msrd0.matrix.client.event.encryption.*
 import msrd0.matrix.client.event.state.*
 import org.slf4j.*
 
@@ -119,6 +120,12 @@ open class Room(
 	var historyVisibility : String by RoomEventDelegate(
 			{ RoomHistoryVisibilityEventContent.fromJson(retrieveStateEvent(ROOM_HISTORY_VISIBILITY, canBeNotFound = false)!!).historyVisibility },
 			{ sendStateEvent(ROOM_HISTORY_VISIBILITY, RoomHistoryVisibilityEventContent(it)) }
+	)
+	
+	/** The encryption algorithm of this room or null if not encrypted. */
+	var encryptionAlgorithm : String? by RoomEventDelegate(
+			{ RoomEncryptionEventContent.fromJson(retrieveStateEvent(ROOM_ENCRYPTION) ?: return@RoomEventDelegate null).algorithm },
+			{ sendStateEvent(ROOM_ENCRYPTION, RoomEncryptionEventContent(it!!)) }
 	)
 	
 	/** The members of this room. */
