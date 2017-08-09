@@ -22,6 +22,7 @@ package msrd0.matrix.client.encryption
 import msrd0.matrix.client.event.encryption.RoomEncryptionAlgorithms.*
 import com.beust.klaxon.*
 import msrd0.matrix.client.event.MatrixEventTypes.*
+import msrd0.matrix.client.event.encryption.RoomEncryptedEventContent
 import org.matrix.olm.*
 import java.time.LocalDateTime
 import kotlin.collections.set
@@ -34,7 +35,7 @@ class MegolmEncryptor(val olm : OlmEncryption, val roomId : String, val maxMessa
 	private var pendingSecrets = true
 	private val startTime : LocalDateTime = LocalDateTime.now()
 	
-	override fun getEncryptedJson(event : JsonObject) : JsonObject
+	override fun getEncryptedJson(event : JsonObject) : RoomEncryptedEventContent
 	{
 		val formattedJson = event.toJsonString(false, true)
 		val nextMessageIndex = outSession.messageIndex()
@@ -51,32 +52,28 @@ class MegolmEncryptor(val olm : OlmEncryption, val roomId : String, val maxMessa
 			if (LocalDateTime.now().minusSeconds(maxTime) <= startTime)
 				renew()
 		}
-		val resultJson = JsonObject()
-		resultJson["type"] = ROOM_ENCRYPTED
-		resultJson["room_id"] = roomId
-		resultJson.mapNested("content.sender_key", olm.identityKey)
-		resultJson.mapNested("content.ciphertext", encryptedJson)
-		resultJson.mapNested("content.algorithm", MEGOLM_AES_SHA2)
-		resultJson.mapNested("content.device_id", olm.deviceId)
-		return resultJson
+		
+		return RoomEncryptedEventContent(
+				algorithm = MEGOLM_AES_SHA2,
+				ciphertext = encryptedJson,
+				senderKey = olm.identityKey,
+				deviceId = olm.deviceId
+		)
 	}
 	
-	override fun getDecryptedJson(event : JsonObject) : JsonObject
+	override fun getDecryptedJson(event : RoomEncryptedEventContent) : JsonObject
 	{
-		if (event["type"] == ROOM_ENCRYPTED && event["room_id"] == roomId)
+		if (event.algorithm == MEGOLM_AES_SHA2)
 		{
-			if (event.getNested("content.algorithm") == MEGOLM_AES_SHA2)
+			val senderKey = event.senderKey
+			val sessionId = event.sessionId
+			if (senderSessions[senderKey] == sessionId)
 			{
-				val senderKey = event.getNested("content.sender_key")
-				val sessionId = event.getNested("content.session_id")
-				if (senderSessions[senderKey] == sessionId)
+				val inSession = inSessions[sessionId]
+				if (inSession != null)
 				{
-					val inSession = inSessions[sessionId]
-					if (inSession != null)
-					{
-						val string : String = inSession.decryptMessage(event.getNested("content.ciphertext") as String).mDecryptedMessage
-						return Parser().parse(StringBuilder(string)) as JsonObject
-					}
+					val string : String = inSession.decryptMessage(event.ciphertext).mDecryptedMessage
+					return Parser().parse(StringBuilder(string)) as JsonObject
 				}
 			}
 		}
@@ -103,7 +100,7 @@ class MegolmEncryptor(val olm : OlmEncryption, val roomId : String, val maxMessa
 		eventJson["type"] = ROOM_KEY
 		eventJson["content"] = megolmJson
 		pendingSecrets = false
-		return megolmJson
+		return eventJson
 	}
 	
 	override fun hasPendingSecrets() : Boolean = pendingSecrets
