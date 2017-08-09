@@ -52,8 +52,8 @@ open class MessageContent(
 		@Throws(MatrixAnswerException::class)
 		fun fromJson(json : JsonObject) : MessageContent
 		{
-			val type = json.string("msgtype") ?: throw IllegalJsonException("Missing: 'msgtype'")
-			val body = json.string("body") ?: throw IllegalJsonException("Missing: 'body'")
+			val type = json.string("msgtype") ?: missing("msgtype")
+			val body = json.string("body") ?: missing("body")
 			
 			if (type == TEXT)
 				return TextMessageContent(body)
@@ -62,8 +62,8 @@ open class MessageContent(
 			{
 				val content = ImageMessageContent(body)
 				content.loadFromJson(
-						json.obj("info") ?: throw IllegalJsonException("Missing: 'info'"),
-						json.string("url") ?: throw IllegalJsonException("Missing: 'url'")
+						json.obj("info") ?: missing("info"),
+						json.string("url") ?: missing("url")
 				)
 				return content
 			}
@@ -116,10 +116,10 @@ open class ImageMessageContent(alt : String) : MessageContent(alt, IMAGE)
 	open fun loadFromJson(info : JsonObject, url : String)
 	{
 		this.url = url
-		this.mimetype = info.string("mimetype") ?: throw IllegalJsonException("Missing: 'mimetype'")
-		this.width = info.int("w") ?: throw IllegalJsonException("Missing: 'w'")
-		this.height = info.int("h") ?: throw IllegalJsonException("Missing: 'h'")
-		this.size = info.int("size") ?: throw IllegalJsonException("Missing: 'size'")
+		this.mimetype = info.string("mimetype") ?: missing("mimetype")
+		this.width = info.int("w") ?: missing("w")
+		this.height = info.int("h") ?: missing("h")
+		this.size = info.int("size") ?: missing("size")
 	}
 	
 	/**
@@ -193,9 +193,9 @@ class Message(
 		@Throws(MatrixAnswerException::class)
 		@JvmStatic
 		fun fromJson(room : Room, json : JsonObject) : Message
-				= Message(room, MatrixId.fromString(json.string("sender") ?: throw IllegalJsonException("Missing: 'sender'")),
-					LocalDateTime.now().minus(json.long("age") ?: json.obj("unsigned")?.long("age") ?: throw IllegalJsonException("Missing: 'age'"), MILLIS),
-					MessageContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
+				= Message(room, MatrixId.fromString(json.string("sender") ?: missing("sender")),
+					LocalDateTime.now().minus(json.long("age") ?: json.obj("unsigned")?.long("age") ?: missing("age"), MILLIS),
+					MessageContent.fromJson(json.obj("content") ?: missing("content")))
 	}
 	
 	val body get() = content.body

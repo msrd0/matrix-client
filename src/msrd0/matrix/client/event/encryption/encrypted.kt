@@ -46,8 +46,8 @@ class EncryptedEventContent(
 		@Throws(IllegalJsonException::class)
 		fun fromJson(json : JsonObject) : EncryptedEventContent
 				= EncryptedEventContent(
-					algorithm = json.string("algorithm") ?: throw IllegalJsonException("Missing: 'algorithm'"),
-					ciphertext = json.string("ciphertext") ?: throw IllegalJsonException("Missing: 'ciphertext'"),
+					algorithm = json.string("algorithm") ?: missing("algorithm"),
+					ciphertext = json.string("ciphertext") ?: missing("ciphertext"),
 					deviceId = json.string("device_id"),
 					senderKey = json.string("sender_key"),
 					sessionId = json.string("session_id")
@@ -87,8 +87,8 @@ class EncryptedEvent(
 		@JvmStatic
 		@Throws(IllegalJsonException::class)
 		fun fromJson(json : JsonObject) : EncryptedEvent
-				= EncryptedEvent(MatrixId.fromString(json.string("sender") ?: throw IllegalJsonException("Missing: 'sender'")),
-					EncryptedEventContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
+				= EncryptedEvent(MatrixId.fromString(json.string("sender") ?: missing("sender")),
+					EncryptedEventContent.fromJson(json.obj("content") ?: missing("content")))
 	}
 	
 	override val json : JsonObject get() = abstractJson
@@ -113,8 +113,8 @@ class EncryptedRoomEvent(
 		@JvmStatic
 		@Throws(IllegalJsonException::class)
 		fun fromJson(room : Room, json : JsonObject) : EncryptedRoomEvent
-				= EncryptedRoomEvent(room, MatrixId.fromString(json.string("sender") ?: throw IllegalJsonException("Missing: 'sender'")),
-					EncryptedEventContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
+				= EncryptedRoomEvent(room, MatrixId.fromString(json.string("sender") ?: missing("sender")),
+					EncryptedEventContent.fromJson(json.obj("content") ?: missing("content")))
 	}
 	
 	override val json : JsonObject get() = abstractJson

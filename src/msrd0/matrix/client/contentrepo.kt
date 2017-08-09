@@ -68,7 +68,7 @@ object ContentRepo
 		val res = client.target.post("_matrix/media/r0/upload", client.token ?: throw NoTokenException(), client.id,
 				bytes, mimetype)
 		checkForError(res)
-		return res.json.string("content_uri") ?: throw IllegalJsonException("Missing: 'content_uri'")
+		return res.json.string("content_uri") ?: missing("content_uri")
 	}
 	
 	/**

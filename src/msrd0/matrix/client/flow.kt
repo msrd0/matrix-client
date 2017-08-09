@@ -65,7 +65,7 @@ data class Flow(val stages : List<String>)
 		@JvmStatic
 		@Throws(IllegalJsonException::class)
 		fun fromJson(json : JsonObject) : Flow
-			= Flow(json.array<String>("stages") ?: throw IllegalJsonException("Missing: 'stages'"))
+			= Flow(json.array<String>("stages") ?: missing("stages"))
 	}
 }
 
@@ -90,8 +90,8 @@ open class FlowRequest(
 		@Throws(IllegalJsonException::class)
 		fun fromJson(json : JsonObject) : FlowRequest
 		{
-			val session = json.string("session") ?: throw IllegalJsonException("Missing: 'session'")
-			val flows = json.array<JsonObject>("flows")?.map { Flow.fromJson(it) } ?: throw IllegalJsonException("Missing: 'flows'")
+			val session = json.string("session") ?: missing("session")
+			val flows = json.array<JsonObject>("flows")?.map { Flow.fromJson(it) } ?: missing("flows")
 			val completed : List<String> = json.array("completed") ?: emptyList()
 			return FlowRequest(session, flows, completed)
 		}

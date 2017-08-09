@@ -54,11 +54,11 @@ class DeviceKeys(
 		@Throws(IllegalJsonException::class)
 		fun fromJson(json : JsonObject) : DeviceKeys
 				= DeviceKeys(
-					userId = MatrixId.fromString(json.string("user_id") ?: throw IllegalJsonException("Missing: 'user_id'")),
-					deviceId = json.string("device_id") ?: throw IllegalJsonException("Missing: 'device_id'"),
-					algorithms = json.array("algorithms") ?: throw IllegalJsonException("Missing: 'algorithms'"),
-					keys = json.obj("keys")?.mapValues { it.value as String } ?: throw IllegalJsonException("Missing: 'keys'"),
-					signatures = DeviceKeySignatures.fromJson(json.obj("signatures") ?: throw IllegalJsonException("Missing: 'signatures'"))
+					userId = MatrixId.fromString(json.string("user_id") ?: missing("user_id")),
+					deviceId = json.string("device_id") ?: missing("device_id"),
+					algorithms = json.array("algorithms") ?: missing("algorithms"),
+					keys = json.obj("keys")?.mapValues { it.value as String } ?: missing("keys"),
+					signatures = DeviceKeySignatures.fromJson(json.obj("signatures") ?: missing("signatures"))
 				)
 	}
 	

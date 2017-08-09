@@ -45,10 +45,10 @@ class RoomKeyEventContent(
 		@Throws(IllegalJsonException::class)
 		fun fromJson(json : JsonObject) : RoomKeyEventContent
 				= RoomKeyEventContent(
-					algorithm = json.string("algorithm") ?: throw IllegalJsonException("Missing: 'algorithm'"),
-					roomId = RoomId.fromString(json.string("room_id") ?: throw IllegalJsonException("Missing: 'room_id'")),
-					sessionId = json.string("session_id") ?: throw IllegalJsonException("Missing: 'session_id'"),
-					sessionKey = json.string("session_key") ?: throw IllegalJsonException("Missing: 'session_key'")
+					algorithm = json.string("algorithm") ?: missing("algorithm"),
+					roomId = RoomId.fromString(json.string("room_id") ?: missing("room_id")),
+					sessionId = json.string("session_id") ?: missing("session_id"),
+					sessionKey = json.string("session_key") ?: missing("session_key")
 				)
 	}
 	
@@ -80,8 +80,8 @@ class RoomKeyEvent(
 		@JvmStatic
 		@Throws(IllegalJsonException::class)
 		fun fromJson(json : JsonObject) : RoomKeyEvent
-				= RoomKeyEvent(MatrixId.fromString(json.string("sender") ?: throw IllegalJsonException("Missing: 'sender'")),
-					RoomKeyEventContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
+				= RoomKeyEvent(MatrixId.fromString(json.string("sender") ?: missing("sender")),
+					RoomKeyEventContent.fromJson(json.obj("content") ?: missing("content")))
 	}
 	
 	override val json : JsonObject get() = abstractJson

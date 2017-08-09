@@ -40,7 +40,7 @@ class RoomAliasesEventContent(val aliases : List<RoomAlias>) : MatrixEventConten
 		@Throws(IllegalJsonException::class)
 		fun fromJson(json : JsonObject) : RoomAliasesEventContent
 				= RoomAliasesEventContent(json.array<String>("aliases")?.map { RoomAlias.fromString(it) }
-					?: throw IllegalJsonException("Missing: 'aliases'"))
+					?: missing("aliases"))
 	}
 	
 	override val json : JsonObject get()
@@ -66,8 +66,8 @@ class RoomAliasesEvent(
 		@JvmStatic
 		@Throws(IllegalJsonException::class)
 		fun fromJson(room : Room, json : JsonObject) : RoomAliasesEvent
-				= RoomAliasesEvent(room, MatrixId.fromString(json.string("sender") ?: throw IllegalJsonException("Missing: 'sender'")),
-					RoomAliasesEventContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
+				= RoomAliasesEvent(room, MatrixId.fromString(json.string("sender") ?: missing("sender")),
+					RoomAliasesEventContent.fromJson(json.obj("content") ?: missing("content")))
 	}
 	
 	override val json : JsonObject get() = abstractJson

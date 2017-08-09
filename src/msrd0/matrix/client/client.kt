@@ -81,10 +81,10 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 			
 			json = res.json
 			
-			val client = Client(hs, MatrixId.fromString(json.string("user_id") ?: throw IllegalJsonException("Missing: 'user_id'")))
+			val client = Client(hs, MatrixId.fromString(json.string("user_id") ?: missing("user_id")))
 			client.userData = MatrixUserData(
-					json.string("access_token") ?: throw IllegalJsonException("Missing: 'access_token'"),
-					json.string("device_id") ?: throw IllegalJsonException("Missing: 'device_id'")
+					json.string("access_token") ?: missing("access_token"),
+					json.string("device_id") ?: missing("device_id")
 			)
 			logger.info("Registered new user ${client.id}")
 			return client
@@ -110,10 +110,10 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 			
 			json = res.json
 			
-			val client = Client(hs, MatrixId.fromString(json.string("user_id") ?: throw IllegalJsonException("Missing: 'user_id'")))
+			val client = Client(hs, MatrixId.fromString(json.string("user_id") ?: missing("user_id")))
 			client.userData = MatrixUserData(
-					json.string("access_token") ?: throw IllegalJsonException("Missing: 'access_token'"),
-					json.string("device_id") ?: throw IllegalJsonException("Missing: 'device_id'")
+					json.string("access_token") ?: missing("access_token"),
+					json.string("device_id") ?: missing("device_id")
 			)
 			logger.info("Registered new user ${client.id}")
 			return client
@@ -268,7 +268,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 		val access_token = json.string("access_token")
 		if (access_token != null)
 		{
-			userData = MatrixUserData(access_token, json.string("device_id") ?: throw IllegalJsonException("Missing: 'device_id'"))
+			userData = MatrixUserData(access_token, json.string("device_id") ?: missing("device_id"))
 			l.add(Auth(this, LoginType.SUCCESS))
 			logger.debug("$id successfully authenticated")
 			return l
@@ -276,7 +276,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 		
 		// extract interesting values from the json object
 		val completed = json.array<String>("completed") ?: JsonArray<String>()
-		val flows = json.array<JsonObject>("flows") ?: throw IllegalJsonException("Missing: 'flows'")
+		val flows = json.array<JsonObject>("flows") ?: missing("flows")
 		val session = json.string("session")
 		
 		flows@ for (flow in flows)
@@ -361,12 +361,12 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 		val res = target.get("_matrix/client/r0/sync", params)
 		checkForError(res)
 		
-		next_batch = res.json.string("next_batch") ?: throw IllegalJsonException("Missing: 'next_batch'")
+		next_batch = res.json.string("next_batch") ?: missing("next_batch")
 		
 		// parse all rooms and add them
-		val rooms = res.json.obj("rooms") ?: throw IllegalJsonException("Missing: 'rooms'")
-		val roomsJoined = rooms.obj("join") ?: throw IllegalJsonException("Missing: 'rooms.join'")
-		val roomsInvited = rooms.obj("invite") ?: throw IllegalJsonException("Missing: 'rooms.invite'")
+		val rooms = res.json.obj("rooms") ?: missing("rooms")
+		val roomsJoined = rooms.obj("join") ?: missing("rooms.join")
+		val roomsInvited = rooms.obj("invite") ?: missing("rooms.invite")
 		
 		for (room in roomsJoined.keys.map { Room(this, RoomId.fromString(it)) })
 		{
@@ -483,9 +483,9 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 				checkForError(res)
 				
 				val json = res.json
-				next_batch = json.string("next_batch") ?: throw IllegalJsonException("Missing: 'next_batch'")
-				val rooms = json.obj("rooms") ?: throw IllegalJsonException("Missing: 'rooms'")
-				val join = rooms.obj("join") ?: throw IllegalJsonException("Missing: 'rooms.join'")
+				next_batch = json.string("next_batch") ?: missing("next_batch")
+				val rooms = json.obj("rooms") ?: missing("rooms")
+				val join = rooms.obj("join") ?: missing("rooms.join")
 				for (roomId in join.keys.map { RoomId.fromString(it) })
 				{
 					if (!roomsJoined.contains(roomId))
@@ -495,12 +495,12 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 						fire(RoomJoinEvent(room))
 					}
 					val room = roomsJoined[roomId] ?: continue
-					val timeline = join.obj("$roomId")?.obj("timeline") ?: throw IllegalJsonException("Missing: 'timeline'")
-					val events = timeline.array<JsonObject>("events") ?: throw IllegalJsonException("Missing: 'timeline.events'")
+					val timeline = join.obj("$roomId")?.obj("timeline") ?: missing("timeline")
+					val events = timeline.array<JsonObject>("events") ?: missing("timeline.events")
 					for (event in events)
 						fire(RoomMessageEvent(room, Message.fromJson(room, event)))
 				}
-				val invite = rooms.obj("invite") ?: throw IllegalJsonException("Missing: 'rooms.invite'")
+				val invite = rooms.obj("invite") ?: missing("rooms.invite")
 				for (roomId in invite.keys.map { RoomId.fromString(it) })
 				{
 					val inv = RoomInvitation(this, roomId)
@@ -652,7 +652,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 		checkForError(res)
 		return res.json.array<JsonObject>("devices")
 				?.map { Device.fromJson(it) }
-				?: throw IllegalJsonException("Missing: 'devices'")
+				?: missing("devices")
 	}
 	
 	/**
@@ -729,6 +729,6 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 		json["preset"] = if (public) "public_chat" else "private_chat"
 		val res = target.post("_matrix/client/r0/createRoom", token ?: throw NoTokenException(), id, json)
 		checkForError(res)
-		return Room(this, RoomId.fromString(res.json.string("room_id") ?: throw IllegalJsonException("Missing: 'room_id'")))
+		return Room(this, RoomId.fromString(res.json.string("room_id") ?: missing("room_id")))
 	}
 }

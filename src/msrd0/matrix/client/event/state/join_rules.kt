@@ -39,7 +39,7 @@ class RoomJoinRulesEventContent(val joinRule : String) : MatrixEventContent()
 		@JvmStatic
 		@Throws(IllegalJsonException::class)
 		fun fromJson(json : JsonObject) : RoomJoinRulesEventContent
-				= RoomJoinRulesEventContent(json.string("join_rule") ?: throw IllegalJsonException("Missing: 'join_rule'"))
+				= RoomJoinRulesEventContent(json.string("join_rule") ?: missing("join_rule"))
 	}
 	
 	override val json : JsonObject get()
@@ -65,8 +65,8 @@ class RoomJoinRulesEvent(
 		@JvmStatic
 		@Throws(IllegalJsonException::class)
 		fun fromJson(room : Room, json : JsonObject) : RoomJoinRulesEvent
-				= RoomJoinRulesEvent(room, MatrixId.fromString(json.string("sender") ?: throw IllegalJsonException("Missing: 'sender'")),
-					RoomJoinRulesEventContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
+				= RoomJoinRulesEvent(room, MatrixId.fromString(json.string("sender") ?: missing("sender")),
+					RoomJoinRulesEventContent.fromJson(json.obj("content") ?: missing("content")))
 	}
 	
 	override val json : JsonObject get() = abstractJson

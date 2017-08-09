@@ -39,7 +39,7 @@ class RoomTopicEventContent(val topic : String) : MatrixEventContent()
 		@JvmStatic
 		@Throws(IllegalJsonException::class)
 		fun fromJson(json : JsonObject) : RoomTopicEventContent
-				= RoomTopicEventContent(json.string("topic") ?: throw IllegalJsonException("Missing: 'topic'"))
+				= RoomTopicEventContent(json.string("topic") ?: missing("topic"))
 	}
 	
 	override val json : JsonObject get()
@@ -65,8 +65,8 @@ class RoomTopicEvent(
 		@JvmStatic
 		@Throws(IllegalJsonException::class)
 		fun fromJson(room : Room, json : JsonObject) : RoomTopicEvent
-				= RoomTopicEvent(room, MatrixId.fromString(json.string("sender") ?: throw IllegalJsonException("Missing: 'sender'")),
-					RoomTopicEventContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
+				= RoomTopicEvent(room, MatrixId.fromString(json.string("sender") ?: missing("sender")),
+					RoomTopicEventContent.fromJson(json.obj("content") ?: missing("content")))
 	}
 	
 	override val json : JsonObject get() = abstractJson

@@ -140,8 +140,8 @@ class RoomPowerLevelsEvent(
 		@JvmStatic
 		@Throws(IllegalJsonException::class)
 		fun fromJson(room : Room, json : JsonObject) : RoomPowerLevelsEvent
-				= RoomPowerLevelsEvent(room, MatrixId.fromString(json.string("sender") ?: throw IllegalJsonException("Missing: 'sender'")),
-					RoomPowerLevels.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
+				= RoomPowerLevelsEvent(room, MatrixId.fromString(json.string("sender") ?: missing("sender")),
+					RoomPowerLevels.fromJson(json.obj("content") ?: missing("content")))
 	}
 	
 	override val json : JsonObject get() = abstractJson

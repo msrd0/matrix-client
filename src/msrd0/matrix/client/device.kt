@@ -43,10 +43,10 @@ data class Device(
 		@Throws(IllegalJsonException::class)
 		fun fromJson(json : JsonObject) : Device
 		{
-			val deviceId = json.string("device_id") ?: throw IllegalJsonException("Missing: 'device_id'")
-			val displayName = json.string("display_name") ?: throw IllegalJsonException("Missing: 'display_name'")
-			val lastSeenIp = json.string("last_seen_ip") ?: throw IllegalJsonException("Missing: 'last_seen_ip'")
-			val lastSeenTs = json.long("last_seen_ts") ?: throw IllegalJsonException("Missing: 'last_seen_ts'")
+			val deviceId = json.string("device_id") ?: missing("device_id")
+			val displayName = json.string("display_name") ?: missing("display_name")
+			val lastSeenIp = json.string("last_seen_ip") ?: missing("last_seen_ip")
+			val lastSeenTs = json.long("last_seen_ts") ?: missing("last_seen_ts")
 			return Device(deviceId, displayName, lastSeenIp,
 					Instant.ofEpochMilli(lastSeenTs).atZone(ZoneId.systemDefault()))
 		}

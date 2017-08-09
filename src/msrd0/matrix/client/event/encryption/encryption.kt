@@ -39,7 +39,7 @@ class RoomEncryptionEventContent(val algorithm : String) : MatrixEventContent()
 		@JvmStatic
 		@Throws(IllegalJsonException::class)
 		fun fromJson(json : JsonObject) : RoomEncryptionEventContent
-				= RoomEncryptionEventContent(json.string("algorithm") ?: throw IllegalJsonException("Missing: 'algorithm'"))
+				= RoomEncryptionEventContent(json.string("algorithm") ?: missing("algorithm"))
 	}
 	
 	override val json : JsonObject get()
@@ -65,8 +65,8 @@ class RoomEncryptionEvent(
 		@JvmStatic
 		@Throws(IllegalJsonException::class)
 		fun fromJson(room : Room, json : JsonObject) : RoomEncryptionEvent
-				= RoomEncryptionEvent(room, MatrixId.fromString(json.string("sender") ?: throw IllegalJsonException("Missing: 'sender'")),
-					RoomEncryptionEventContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
+				= RoomEncryptionEvent(room, MatrixId.fromString(json.string("sender") ?: missing("sender")),
+					RoomEncryptionEventContent.fromJson(json.obj("content") ?: missing("content")))
 	}
 	
 	override val json : JsonObject get() = abstractJson
