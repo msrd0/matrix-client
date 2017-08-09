@@ -42,7 +42,5 @@ class NewDeviceEvent(
 		content : NewDeviceEventContent
 ) : MatrixEvent<NewDeviceEventContent>(sender, DEVICE_NEW, content)
 {
-	override val json : JsonObject
-		get() = TODO("not implemented")
-	
+	override val json : JsonObject get() = abstractJson
 }

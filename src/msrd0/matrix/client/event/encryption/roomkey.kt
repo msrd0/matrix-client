@@ -1,0 +1,88 @@
+/*
+ * matrix-client
+ * Copyright (C) 2017 Dominic Meiser
+ * Copyright (C) 2017 Julius Lehmann
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
+ */
+
+package msrd0.matrix.client.event.encryption
+
+import com.beust.klaxon.*
+import msrd0.matrix.client.*
+import msrd0.matrix.client.event.*
+import msrd0.matrix.client.event.MatrixEventTypes.*
+
+/**
+ * The content of a room key event.
+ */
+class RoomKeyEventContent(
+		val algorithm : String,
+		val roomId : RoomId,
+		val sessionId : String,
+		val sessionKey : String
+) : MatrixEventContent()
+{
+	companion object
+	{
+		/**
+		 * Constructs a room key event content by parsing the supplied json.
+		 *
+		 * @throws IllegalJsonException On errors in the json.
+		 */
+		@JvmStatic
+		@Throws(IllegalJsonException::class)
+		fun fromJson(json : JsonObject) : RoomKeyEventContent
+				= RoomKeyEventContent(
+					algorithm = json.string("algorithm") ?: throw IllegalJsonException("Missing: 'algorithm'"),
+					roomId = RoomId.fromString(json.string("room_id") ?: throw IllegalJsonException("Missing: 'room_id'")),
+					sessionId = json.string("session_id") ?: throw IllegalJsonException("Missing: 'session_id'"),
+					sessionKey = json.string("session_key") ?: throw IllegalJsonException("Missing: 'session_key'")
+				)
+	}
+	
+	override val json : JsonObject get()
+			= JsonObject(mapOf(
+				"algorithm" to algorithm,
+				"room_id" to "$roomId",
+				"session_id" to sessionId,
+				"session_key" to sessionKey
+			))
+}
+
+/**
+ * A room key event. This is NOT a room event. It is sent directly to a device, usually encapsulated in an encrypted
+ * event.
+ */
+class RoomKeyEvent(
+		sender : MatrixId,
+		content : RoomKeyEventContent
+) : MatrixEvent<RoomKeyEventContent>(sender, ROOM_KEY, content)
+{
+	companion object
+	{
+		/**
+		 * Construct a room key event by parsing the supplied json.
+		 *
+		 * @throws IllegalJsonException On errors in the json.
+		 */
+		@JvmStatic
+		@Throws(IllegalJsonException::class)
+		fun fromJson(json : JsonObject) : RoomKeyEvent
+				= RoomKeyEvent(MatrixId.fromString(json.string("sender") ?: throw IllegalJsonException("Missing: 'sender'")),
+					RoomKeyEventContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
+	}
+	
+	override val json : JsonObject get() = abstractJson
+}

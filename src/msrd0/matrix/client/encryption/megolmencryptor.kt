@@ -22,7 +22,7 @@ package msrd0.matrix.client.encryption
 import msrd0.matrix.client.event.encryption.RoomEncryptionAlgorithms.*
 import com.beust.klaxon.*
 import msrd0.matrix.client.event.MatrixEventTypes.*
-import msrd0.matrix.client.event.encryption.RoomEncryptedEventContent
+import msrd0.matrix.client.event.encryption.EncryptedEventContent
 import org.matrix.olm.*
 import java.time.LocalDateTime
 import kotlin.collections.set
@@ -35,7 +35,7 @@ class MegolmEncryptor(val olm : OlmEncryption, val roomId : String, val maxMessa
 	private var pendingSecrets = true
 	private val startTime : LocalDateTime = LocalDateTime.now()
 	
-	override fun getEncryptedJson(event : JsonObject) : RoomEncryptedEventContent
+	override fun getEncryptedJson(event : JsonObject) : EncryptedEventContent
 	{
 		val formattedJson = event.toJsonString(false, true)
 		val nextMessageIndex = outSession.messageIndex()
@@ -53,7 +53,7 @@ class MegolmEncryptor(val olm : OlmEncryption, val roomId : String, val maxMessa
 				renew()
 		}
 		
-		return RoomEncryptedEventContent(
+		return EncryptedEventContent(
 				algorithm = MEGOLM_AES_SHA2,
 				ciphertext = encryptedJson,
 				senderKey = olm.identityKey,
@@ -61,7 +61,7 @@ class MegolmEncryptor(val olm : OlmEncryption, val roomId : String, val maxMessa
 		)
 	}
 	
-	override fun getDecryptedJson(event : RoomEncryptedEventContent) : JsonObject
+	override fun getDecryptedJson(event : EncryptedEventContent) : JsonObject
 	{
 		if (event.algorithm == MEGOLM_AES_SHA2)
 		{

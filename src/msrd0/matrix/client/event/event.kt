@@ -35,7 +35,7 @@ abstract class MatrixEvent<out C : MatrixEventContent>(
 	
 	var event_id : String? = null
 	
-	val abstractJson : JsonObject get()
+	open val abstractJson : JsonObject get()
 	{
 		val json = JsonObject()
 		json["sender"] = sender.toString()
@@ -47,6 +47,20 @@ abstract class MatrixEvent<out C : MatrixEventContent>(
 
 abstract class MatrixRoomEvent<out C : MatrixEventContent>(
 		val room : Room,
+		sender : MatrixId,
+		type : String,
+		content : C
+) : MatrixEvent<C>(sender, type, content)
+{
+	override val abstractJson : JsonObject get()
+	{
+		val json = super.abstractJson
+		json["room_id"] = "${room.id}"
+		return json
+	}
+}
+
+abstract class MatrixToDeviceEvent<out C : MatrixEventContent>(
 		sender : MatrixId,
 		type : String,
 		content : C

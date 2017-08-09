@@ -20,7 +20,7 @@
 package msrd0.matrix.client.encryption
 
 import com.beust.klaxon.JsonObject
-import msrd0.matrix.client.event.encryption.RoomEncryptedEventContent
+import msrd0.matrix.client.event.encryption.EncryptedEventContent
 
 interface RoomEncryptor
 {
@@ -39,7 +39,7 @@ interface RoomEncryptor
 	/**
 	 * Encrypts a room event. After encryption has finished, the result should be sent as is to the corresponding room.
 	 */
-	fun getEncryptedJson(event : JsonObject) : RoomEncryptedEventContent
+	fun getEncryptedJson(event : JsonObject) : EncryptedEventContent
 	
 	/**
 	 * Decrypts a room event.
@@ -47,7 +47,7 @@ interface RoomEncryptor
 	 * If an event can not be decrypted correctly, this method will throw an exception. To be able to decrypt all events
 	 * successfully all known secrets should be passed to [addSecrets] to ensure successful decryption of all events.
 	 */
-	fun getDecryptedJson(event : RoomEncryptedEventContent) : JsonObject
+	fun getDecryptedJson(event : EncryptedEventContent) : JsonObject
 	
 	/**
 	 * Returns the secrets that need to be transmitted to other devices

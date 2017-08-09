@@ -201,12 +201,7 @@ class Message(
 	val body get() = content.body
 	val msgtype get() = content.msgtype
 	
-	override val json : JsonObject get()
-	{
-		val json = abstractJson
-		json["room_id"] = room.id.toString()
-		return json
-	}
+	override val json : JsonObject get() = abstractJson
 }
 
 class Messages(

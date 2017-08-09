@@ -20,13 +20,14 @@
 package msrd0.matrix.client.event.encryption
 
 import com.beust.klaxon.*
-import msrd0.matrix.client.IllegalJsonException
-import msrd0.matrix.client.event.MatrixEventContent
+import msrd0.matrix.client.*
+import msrd0.matrix.client.event.*
+import msrd0.matrix.client.event.MatrixEventTypes.*
 
 /**
  * The content of a room encrypted event.
  */
-class RoomEncryptedEventContent(
+class EncryptedEventContent(
 		val algorithm : String,
 		val ciphertext : String,
 		val deviceId : String? = null,
@@ -43,8 +44,8 @@ class RoomEncryptedEventContent(
 		 */
 		@JvmStatic
 		@Throws(IllegalJsonException::class)
-		fun fromJson(json : JsonObject) : RoomEncryptedEventContent
-				= RoomEncryptedEventContent(
+		fun fromJson(json : JsonObject) : EncryptedEventContent
+				= EncryptedEventContent(
 					algorithm = json.string("algorithm") ?: throw IllegalJsonException("Missing: 'algorithm'"),
 					ciphertext = json.string("ciphertext") ?: throw IllegalJsonException("Missing: 'ciphertext'"),
 					deviceId = json.string("device_id"),
@@ -66,4 +67,55 @@ class RoomEncryptedEventContent(
 			json["session_id"] = sessionId
 		return json
 	}
+}
+
+/**
+ * A to-device encrypted event.
+ */
+class EncryptedEvent(
+		sender : MatrixId,
+		content : EncryptedEventContent
+) : MatrixEvent<EncryptedEventContent>(sender, ROOM_ENCRYPTED, content)
+{
+	companion object
+	{
+		/**
+		 * Constructs a new encrypted event by parsing the supplied json.
+		 *
+		 * @throws IllegalJsonException On errors in the json.
+		 */
+		@JvmStatic
+		@Throws(IllegalJsonException::class)
+		fun fromJson(json : JsonObject) : EncryptedEvent
+				= EncryptedEvent(MatrixId.fromString(json.string("sender") ?: throw IllegalJsonException("Missing: 'sender'")),
+					EncryptedEventContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
+	}
+	
+	override val json : JsonObject get() = abstractJson
+}
+
+/**
+ * A room encrypted event.
+ */
+class EncryptedRoomEvent(
+		room : Room,
+		sender : MatrixId,
+		content : EncryptedEventContent
+) : MatrixRoomEvent<EncryptedEventContent>(room, sender, ROOM_ENCRYPTED, content)
+{
+	companion object
+	{
+		/**
+		 * Constructs a new encrypted event by parsing the supplied json.
+		 *
+		 * @throws IllegalJsonException On errors in the json.
+		 */
+		@JvmStatic
+		@Throws(IllegalJsonException::class)
+		fun fromJson(room : Room, json : JsonObject) : EncryptedRoomEvent
+				= EncryptedRoomEvent(room, MatrixId.fromString(json.string("sender") ?: throw IllegalJsonException("Missing: 'sender'")),
+					EncryptedEventContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
+	}
+	
+	override val json : JsonObject get() = abstractJson
 }
