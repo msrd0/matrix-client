@@ -21,6 +21,7 @@ package msrd0.matrix.client
 
 import com.beust.klaxon.*
 import msrd0.matrix.client.Client.Companion.checkForError
+import msrd0.matrix.client.encryption.*
 import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.MatrixEventTypes.*
 import msrd0.matrix.client.event.encryption.*
@@ -32,7 +33,8 @@ import org.slf4j.*
  */
 open class Room(
 		val client : Client,
-		val id : RoomId
+		val id : RoomId,
+		var roomEncryptor : RoomEncryptor = Room.newRoomEncryptor(client, id)
 ) : RoomCache()
 {
 	override fun toString() = "Room(name=$name, id=$id)"
@@ -40,6 +42,13 @@ open class Room(
 	companion object
 	{
 		val logger : Logger = LoggerFactory.getLogger(Room::class.java)
+		
+		fun newRoomEncryptor(client : Client, id : RoomId) : RoomEncryptor
+		{
+			val olm = OlmEncryption(client.deviceId ?: throw IllegalStateException("Client has no device id"))
+			val megolm = MegolmEncryptor(olm, id)
+			return megolm
+		}
 	}
 	
 	/**
@@ -187,8 +196,7 @@ open class Room(
 		val json = res.json
 		prev_batch = json.string("end")
 		val chunk = json.array<JsonObject>("chunk")!!
-		return Messages(json.string("start")!!, json.string("end")!!,
-				chunk.filter{ it.string("type") == "m.room.message" }.map { Message.fromJson(this, it) })
+		return Messages.fromJson(this, json.string("start")!!, json.string("end")!!, chunk)
 	}
 	
 	/**

@@ -22,10 +22,9 @@ package msrd0.matrix.client.encryption
 import com.beust.klaxon.string
 import org.matrix.olm.OlmAccount
 
-abstract class OlmEncryption(val deviceId : String)
+open class OlmEncryption(val deviceId : String)
 {
 	val account : OlmAccount = OlmAccount()
 	val identityKey : String = account.identityKeys().string("curve25519") ?: ""
 	val signingKey : String = account.identityKeys().string("ed25519") ?: ""
-	val deviceid : String = ""
 }

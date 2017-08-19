@@ -23,6 +23,7 @@ import com.beust.klaxon.*
 import msrd0.matrix.client.*
 import msrd0.matrix.client.event.MatrixEventTypes.*
 import msrd0.matrix.client.event.MessageTypes.*
+import msrd0.matrix.client.event.encryption.EncryptedRoomEvent
 import java.awt.image.RenderedImage
 import java.io.*
 import java.time.LocalDateTime
@@ -209,3 +210,26 @@ class Messages(
 		val end : String,
 		messages : Collection<Message> = Collections.emptyList()
 ) : ArrayList<Message>(messages)
+{
+	companion object
+	{
+		fun fromJson(room : Room, start : String, end : String, json : JsonArray<JsonObject>) : Messages
+		{
+			val msgs = Messages(start, end)
+			for (msg in json)
+			{
+				when (msg.string("type"))
+				{
+					ROOM_MESSAGE -> msgs.add(Message.fromJson(room, msg))
+					ROOM_ENCRYPTED -> {
+						val encrypted = EncryptedRoomEvent.fromJson(room, msg)
+						msgs.add(Message(room, encrypted.sender,
+								LocalDateTime.now().minus(msg.long("age") ?: msg.obj("unsigned")?.long("age") ?: missing("age"), MILLIS),
+								MessageContent.fromJson(room.roomEncryptor.getDecryptedJson(encrypted.content))))
+					}
+				}
+			}
+			return msgs
+		}
+	}
+}
