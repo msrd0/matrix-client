@@ -212,6 +212,39 @@ open class Room(
 	}
 	
 	/**
+	 * Invite a user with known matrix id to this room. Please note that the user will not participate in the room until
+	 * he hasn't accepted the invitation.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun invite(user : MatrixId)
+	{
+		val res = client.target.post("_matrix/client/r0/rooms/$id/invite", client.token ?: throw NoTokenException(),
+				client.id, JsonObject(mapOf("user_id" to "$user")))
+		checkForError(res)
+	}
+	
+	/**
+	 * Invite a user with a third-party address to this room. Please note that the user will not participate in the room
+	 * until he hasn't accepted the invitation.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@JvmOverloads
+	@Throws(MatrixAnswerException::class)
+	fun invite(address : String, medium : String = "email", idServer : String = "vector.im")
+	{
+		val res = client.target.post("_matrix/client/r0/rooms/$id/invite", client.token ?: throw NoTokenException(),
+				client.id, JsonObject(mapOf(
+					"address" to address,
+					"medium" to medium,
+					"id_server" to idServer
+				)))
+		checkForError(res)
+	}
+	
+	/**
 	 * Promote (or demote) a user in this room.
 	 *
 	 * @throws MatrixAnswerException On errors in the matrix answer.
