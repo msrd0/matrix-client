@@ -196,7 +196,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 	var lastTxnId : Long = -1
 	
 	/** The next transaction id to use by this client. */
-	val nextTxnId : Long
+	open val nextTxnId : Long
 		get() = ++lastTxnId
 	
 	/**
