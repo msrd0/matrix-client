@@ -192,8 +192,8 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 	internal fun fire(ev : Event)
 			= queue.enqueue(ev)
 	
-	/** The last transaction id used by this client. */
-	private var lastTxnId : Long = -1
+	/** The last transaction id used by this client. Use `nextTxnId` if you need a new one. */
+	var lastTxnId : Long = -1
 	
 	/** The next transaction id to use by this client. */
 	val nextTxnId : Long
