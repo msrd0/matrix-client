@@ -20,7 +20,7 @@
 package msrd0.matrix.client
 
 import com.beust.klaxon.*
-import msrd0.matrix.client.Client.Companion.checkForError
+import msrd0.matrix.client.MatrixClient.Companion.checkForError
 import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.MatrixEventTypes.*
 import msrd0.matrix.client.event.state.*
@@ -30,7 +30,7 @@ import org.slf4j.*
  * This class represents a matrix room.
  */
 open class Room(
-		val client : Client,
+		val client : MatrixClient,
 		val id : RoomId
 ) : RoomCache()
 {

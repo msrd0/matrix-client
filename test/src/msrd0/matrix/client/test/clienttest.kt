@@ -30,7 +30,7 @@ import java.awt.image.RenderedImage
 import java.net.URI
 import javax.imageio.ImageIO
 
-class ClientTest
+class MatrixClientTest
 {
 	companion object
 	{
@@ -44,9 +44,9 @@ class ClientTest
 		val testImage : RenderedImage = ImageIO.read(ClassLoader.getSystemResourceAsStream("matrix-logo.png"))
 		var testAvatar : Avatar? = null
 		
-		fun newClient() : Client
+		fun newClient() : MatrixClient
 		{
-			val c = Client(hs, id)
+			val c = MatrixClient(hs, id)
 			c.userData = userData
 			return c
 		}
@@ -62,7 +62,7 @@ class ClientTest
 	@Test(groups = arrayOf("api"))
 	fun client_register()
 	{
-		val client = Client.register(id.localpart, hs, password)
+		val client = MatrixClient.register(id.localpart, hs, password)
 		assertThat(client.hs, equalTo(hs))
 		assertThat(client.id.localpart, equalTo(id.localpart))
 		assertNotNull(client.userData)

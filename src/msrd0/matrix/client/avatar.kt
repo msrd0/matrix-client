@@ -77,7 +77,7 @@ class Avatar @JvmOverloads constructor(
 		
 		@JvmStatic
 		@Throws(MatrixAnswerException::class)
-		fun fromImage(image : RenderedImage, client : Client) : Avatar
+		fun fromImage(image : RenderedImage, client : MatrixClient) : Avatar
 		{
 			val baos = ByteArrayOutputStream()
 			ImageIO.write(image, "PNG", baos)
@@ -89,7 +89,7 @@ class Avatar @JvmOverloads constructor(
 	}
 	
 	@Throws(MatrixAnswerException::class)
-	fun downloadImage(client : Client) : BufferedImage
+	fun downloadImage(client : MatrixClient) : BufferedImage
 	{
 		val res = client.download(url)
 		if (info != null)

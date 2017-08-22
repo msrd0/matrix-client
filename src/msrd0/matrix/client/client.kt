@@ -31,11 +31,11 @@ import kotlin.concurrent.thread
 /**
  * This class is the http client for the matrix server.
  */
-open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
+open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 {
 	companion object
 	{
-		private val logger : Logger = LoggerFactory.getLogger(Client::class.java)
+		private val logger : Logger = LoggerFactory.getLogger(MatrixClient::class.java)
 		
 		
 		
@@ -60,7 +60,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 		@JvmStatic
 		@JvmOverloads
 		@Throws(MatrixAnswerException::class, UnsupportedFlowsException::class)
-		fun register(localpart : String, hs : HomeServer, password : String, helper : FlowHelper = DefaultFlowHelper(password)) : Client
+		fun register(localpart : String, hs : HomeServer, password : String, helper : FlowHelper = DefaultFlowHelper(password)) : MatrixClient
 		{
 			var json = JsonObject()
 			json["username"] = localpart
@@ -81,7 +81,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 			
 			json = res.json
 			
-			val client = Client(hs, MatrixId.fromString(json.string("user_id") ?: throw IllegalJsonException("Missing: 'user_id'")))
+			val client = MatrixClient(hs, MatrixId.fromString(json.string("user_id") ?: throw IllegalJsonException("Missing: 'user_id'")))
 			client.userData = MatrixUserData(
 					json.string("access_token") ?: throw IllegalJsonException("Missing: 'access_token'"),
 					json.string("device_id") ?: throw IllegalJsonException("Missing: 'device_id'")
@@ -98,7 +98,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 		 */
 		@JvmStatic
 		@Throws(MatrixAnswerException::class)
-		fun registerFromAs(localpart : String, hs : HomeServer, token : String) : Client
+		fun registerFromAs(localpart : String, hs : HomeServer, token : String) : MatrixClient
 		{
 			var json = JsonObject()
 			json["username"] = localpart
@@ -110,7 +110,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 			
 			json = res.json
 			
-			val client = Client(hs, MatrixId.fromString(json.string("user_id") ?: throw IllegalJsonException("Missing: 'user_id'")))
+			val client = MatrixClient(hs, MatrixId.fromString(json.string("user_id") ?: throw IllegalJsonException("Missing: 'user_id'")))
 			client.userData = MatrixUserData(
 					json.string("access_token") ?: throw IllegalJsonException("Missing: 'access_token'"),
 					json.string("device_id") ?: throw IllegalJsonException("Missing: 'device_id'")
@@ -206,7 +206,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 	constructor(domain : String, localpart : String, hsDomain : String = domain, hsBaseUri : URI = URI("https://$hsDomain/"))
 			: this(HomeServer(hsDomain, hsBaseUri), MatrixId(localpart, domain))
 	
-	/** HTTP Client */
+	/** HTTP MatrixClient */
 	internal val target : HttpTarget = DefaultHttpTarget(hs.base, publicTarget.userAgent)
 	
 	
@@ -731,4 +731,12 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 		checkForError(res)
 		return Room(this, RoomId.fromString(res.json.string("room_id") ?: throw IllegalJsonException("Missing: 'room_id'")))
 	}
+}
+
+@Deprecated("Use MatrixClient instead")
+open class Client(hs : HomeServer, id : MatrixId) : MatrixClient(hs, id)
+{
+	@JvmOverloads
+	constructor(domain : String, localpart : String, hsDomain : String = domain, hsBaseUri : URI = URI("https://$hsDomain/"))
+			: this(HomeServer(hsDomain, hsBaseUri), MatrixId(localpart, domain))
 }

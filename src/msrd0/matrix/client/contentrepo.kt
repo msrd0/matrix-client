@@ -20,7 +20,7 @@
 package msrd0.matrix.client
 
 import com.beust.klaxon.string
-import msrd0.matrix.client.Client.Companion.checkForError
+import msrd0.matrix.client.MatrixClient.Companion.checkForError
 import java.util.regex.Pattern
 
 /**
@@ -63,7 +63,7 @@ object ContentRepo
 	 */
 	@JvmStatic
 	@Throws(MatrixAnswerException::class)
-	fun upload(bytes : ByteArray, mimetype : String, client : Client) : String
+	fun upload(bytes : ByteArray, mimetype : String, client : MatrixClient) : String
 	{
 		val res = client.target.post("_matrix/media/r0/upload", client.token ?: throw NoTokenException(), client.id,
 				bytes, mimetype)
@@ -78,7 +78,7 @@ object ContentRepo
 	 */
 	@JvmStatic
 	@Throws(MatrixAnswerException::class)
-	fun download(url : MatrixContentUrl, client : Client) : Pair<ByteArray, String>
+	fun download(url : MatrixContentUrl, client : MatrixClient) : Pair<ByteArray, String>
 	{
 		val res = client.target.get("_matrix/media/r0/download/${url.domain}/${url.mediaId}", client.token ?: throw NoTokenException(), client.id)
 		val status = res.status
@@ -94,11 +94,11 @@ object ContentRepo
 	 */
 	@JvmStatic
 	@Throws(MatrixAnswerException::class)
-	fun download(url : String, client : Client)
+	fun download(url : String, client : MatrixClient)
 			= download(MatrixContentUrl.fromString(url), client)
 }
 
 // extend the client with the content repo functions
-@Throws(MatrixAnswerException::class) fun Client.upload(bytes : ByteArray, mimetype : String) = ContentRepo.upload(bytes, mimetype, this)
-@Throws(MatrixAnswerException::class) fun Client.download(url : MatrixContentUrl) = ContentRepo.download(url, this)
-@Throws(MatrixAnswerException::class) fun Client.download(url : String) = ContentRepo.download(url, this)
+@Throws(MatrixAnswerException::class) fun MatrixClient.upload(bytes : ByteArray, mimetype : String) = ContentRepo.upload(bytes, mimetype, this)
+@Throws(MatrixAnswerException::class) fun MatrixClient.download(url : MatrixContentUrl) = ContentRepo.download(url, this)
+@Throws(MatrixAnswerException::class) fun MatrixClient.download(url : String) = ContentRepo.download(url, this)

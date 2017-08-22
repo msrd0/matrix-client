@@ -128,7 +128,7 @@ open class ImageMessageContent(alt : String) : MessageContent(alt, IMAGE)
 	 * @throws MatrixAnswerException On errors in the answer.
 	 */
 	@Throws(MatrixAnswerException::class)
-	open fun uploadImage(img : RenderedImage, client : Client)
+	open fun uploadImage(img : RenderedImage, client : MatrixClient)
 	{
 		width = img.width
 		height = img.height
@@ -149,7 +149,7 @@ open class ImageMessageContent(alt : String) : MessageContent(alt, IMAGE)
 	 * @throws IOException On errors when reading the image.
 	 */
 	@Throws(MatrixAnswerException::class, IOException::class)
-	open fun downloadImage(client : Client) : RenderedImage
+	open fun downloadImage(client : MatrixClient) : RenderedImage
 	{
 		val res = client.download(MatrixContentUrl.fromString(url ?: throw IllegalStateException("url is null")))
 		return ImageIO.read(ByteArrayInputStream(res.first))

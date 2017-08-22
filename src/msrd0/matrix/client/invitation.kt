@@ -19,9 +19,9 @@
 
 package msrd0.matrix.client
 
-import msrd0.matrix.client.Client.Companion.checkForError
+import msrd0.matrix.client.MatrixClient.Companion.checkForError
 
-class RoomInvitation(val client : Client, val room : RoomId)
+class RoomInvitation(val client : MatrixClient, val room : RoomId)
 {
 	@Throws(MatrixAnswerException::class)
 	fun accept()

@@ -51,7 +51,7 @@ public class Main
 		return sysin.readLine().trim();
 	}
 
-	private static Client client;
+	private static MatrixClient client;
 	
 	public static void main(String args[]) throws Exception
 	{
@@ -97,7 +97,7 @@ public class Main
 		conf.store(new FileWriter(confFile), null);
 		
 		// now create the client
-		client = new Client(hs, id);
+		client = new MatrixClient(hs, id);
 		if (conf.containsKey("token") && conf.containsKey("deviceId"))
 			client.setUserData(new MatrixUserData(conf.getProperty("token"), conf.getProperty("deviceId")));
 		else
@@ -241,7 +241,7 @@ public class Main
 		conf.store(new FileWriter(confFile), null);
 		
 		// stop the client's event queue
-		Client.stopEventQueue();
+		MatrixClient.stopEventQueue();
 	}
 	
 	private static void sync() throws MatrixAnswerException
