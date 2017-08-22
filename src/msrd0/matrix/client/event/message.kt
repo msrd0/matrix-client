@@ -56,7 +56,13 @@ open class MessageContent(
 			val body = json.string("body") ?: throw IllegalJsonException("Missing: 'body'")
 			
 			if (type == TEXT)
+			{
+				if (json.containsKey("format"))
+					return FormattedTextMessageContent(body,
+							json.string("format") ?: throw IllegalJsonException("Missing: 'format'"),
+							json.string("formatted_body") ?: throw IllegalJsonException("Missing: 'formatted_body'"))
 				return TextMessageContent(body)
+			}
 			
 			if (type == IMAGE)
 			{
@@ -85,6 +91,24 @@ open class MessageContent(
  * The content of a text message.
  */
 open class TextMessageContent(body : String) : MessageContent(body, TEXT)
+
+/**
+ * The content of a formattet text message.
+ */
+open class FormattedTextMessageContent(
+		body : String,
+		val format : String,
+		val formattedBody : String
+) : TextMessageContent(body)
+{
+	override val json : JsonObject get()
+	{
+		val json = super.json
+		json["format"] = format
+		json["formatted_body"] = formattedBody
+		return json
+	}
+}
 
 /**
  * The content of an image message. Please make sure to call `uploadImage` before trying to send events of this type.
