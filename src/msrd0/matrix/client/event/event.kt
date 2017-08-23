@@ -25,22 +25,24 @@ import msrd0.matrix.client.util.JsonSerializable
 
 abstract class MatrixEventContent : JsonSerializable
 
-abstract class MatrixEvent<out C : MatrixEventContent>(
+abstract class MatrixEvent<out C : MatrixEventContent>
+@JvmOverloads
+constructor(
 		val sender : MatrixId,
 		val type : String,
-		val content : C
+		val content : C,
+		val timestamp : Long? = null,
+		val eventId : String? = null
 ) : JsonSerializable
 {
-	var timestamp : Long? = null
-	
-	var event_id : String? = null
-	
 	val abstractJson : JsonObject get()
 	{
 		val json = JsonObject()
 		json["sender"] = sender.toString()
 		json["type"] = type
 		json["content"] = content.json
+		if (eventId != null)
+			json["event_id"] = eventId
 		return json
 	}
 }
