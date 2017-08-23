@@ -49,25 +49,8 @@ class RoomJoinRulesEventContent(val joinRule : String) : MatrixEventContent()
 /**
  * A room join rules event.
  */
-class RoomJoinRulesEvent(
-		room : Room,
-		sender : MatrixId,
-		content : RoomJoinRulesEventContent
-) : MatrixRoomEvent<RoomJoinRulesEventContent>(room, sender, ROOM_JOIN_RULES, content)
-{
-	companion object
-	{
-		/**
-		 * Constructs a room join rules event py parsing the supplied json.
-		 *
-		 * @throws IllegalJsonException On errors in the json.
-		 */
-		@JvmStatic
-		@Throws(IllegalJsonException::class)
-		fun fromJson(room : Room, json : JsonObject) : RoomJoinRulesEvent
-				= RoomJoinRulesEvent(room, MatrixId.fromString(json.string("sender") ?: throw IllegalJsonException("Missing: 'sender'")),
-					RoomJoinRulesEventContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
-	}
-	
-	override val json : JsonObject get() = abstractJson
-}
+class RoomJoinRulesEvent
+@Throws(IllegalJsonException::class)
+constructor(room : Room, json : JsonObject)
+	: MatrixRoomEvent<RoomJoinRulesEventContent>(room, json,
+		RoomJoinRulesEventContent.fromJson(json.obj("content") ?: missing("content")))

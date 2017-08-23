@@ -49,25 +49,8 @@ class RoomHistoryVisibilityEventContent(val historyVisibility : String) : Matrix
 /**
  * A room history visibility event.
  */
-class RoomHistoryVisibilityEvent(
-		room : Room,
-		sender : MatrixId,
-		content : RoomHistoryVisibilityEventContent
-) : MatrixRoomEvent<RoomHistoryVisibilityEventContent>(room, sender, ROOM_HISTORY_VISIBILITY, content)
-{
-	companion object
-	{
-		/**
-		 * Constructs a room history visibility event py parsing the supplied json.
-		 *
-		 * @throws IllegalJsonException On errors in the json.
-		 */
-		@JvmStatic
-		@Throws(IllegalJsonException::class)
-		fun fromJson(room : Room, json : JsonObject) : RoomHistoryVisibilityEvent
-				= RoomHistoryVisibilityEvent(room, MatrixId.fromString(json.string("sender") ?: throw IllegalJsonException("Missing: 'sender'")),
-					RoomHistoryVisibilityEventContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
-	}
-	
-	override val json : JsonObject get() = abstractJson
-}
+class RoomHistoryVisibilityEvent
+@Throws(IllegalJsonException::class)
+constructor(room : Room, json : JsonObject)
+	: MatrixRoomEvent<RoomHistoryVisibilityEventContent>(room, json,
+		RoomHistoryVisibilityEventContent.fromJson(json.obj("content") ?: missing("content")))

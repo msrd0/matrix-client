@@ -498,7 +498,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 					val timeline = join.obj("$roomId")?.obj("timeline") ?: throw IllegalJsonException("Missing: 'timeline'")
 					val events = timeline.array<JsonObject>("events") ?: throw IllegalJsonException("Missing: 'timeline.events'")
 					for (event in events)
-						fire(RoomMessageEvent(room, Message.fromJson(room, event)))
+						fire(RoomMessageEvent(room, Message(room, event)))
 				}
 				val invite = rooms.obj("invite") ?: throw IllegalJsonException("Missing: 'rooms.invite'")
 				for (roomId in invite.keys.map { RoomId.fromString(it) })

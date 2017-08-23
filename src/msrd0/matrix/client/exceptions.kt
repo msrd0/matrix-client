@@ -54,6 +54,14 @@ open class IllegalJsonException : MatrixAnswerException
 }
 
 /**
+ * Utility function to throw an `IllegalJsonException` saying that the json misses a key.
+ */
+@Throws(IllegalJsonException::class)
+fun missing(key : String) : Nothing
+		= throw IllegalJsonException("Missing: '$key'")
+
+
+/**
  * This exception indicates that the matrix server has returned with either an error code or an error response.
  */
 open class MatrixErrorResponseException(

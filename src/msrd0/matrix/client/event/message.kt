@@ -196,41 +196,14 @@ open class ImageMessageContent(alt : String) : MessageContent(alt, IMAGE)
 /**
  * This class represents a message in a room.
  */
-class Message(
-		room : Room,
-		sender : MatrixId,
-		val age : LocalDateTime,
-		content : MessageContent
-) : MatrixRoomEvent<MessageContent>(room, sender, ROOM_MESSAGE, content)
+class Message
+@Throws(IllegalJsonException::class)
+constructor(room : Room, json : JsonObject)
+	: MatrixRoomEvent<MessageContent>(room, json,
+		MessageContent.fromJson(json.obj("content") ?: missing("content")))
 {
-	constructor(room : Room, sender : MatrixId, age : LocalDateTime, body : String, msgtype : String)
-		: this(room, sender, age, MessageContent(body, msgtype))
-	
-	companion object
-	{
-		/**
-		 * Constructs a message by parsing the supplied json. For a documentation of the json see the matrix
-		 * specifications.
-		 *
-		 * @throws MatrixAnswerException If one of the required json parameters were null (or not present).
-		 */
-		@Throws(MatrixAnswerException::class)
-		@JvmStatic
-		fun fromJson(room : Room, json : JsonObject) : Message
-				= Message(room, MatrixId.fromString(json.string("sender") ?: throw IllegalJsonException("Missing: 'sender'")),
-					LocalDateTime.now().minus(json.long("age") ?: json.obj("unsigned")?.long("age") ?: throw IllegalJsonException("Missing: 'age'"), MILLIS),
-					MessageContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
-	}
-	
 	val body get() = content.body
 	val msgtype get() = content.msgtype
-	
-	override val json : JsonObject get()
-	{
-		val json = abstractJson
-		json["room_id"] = room.id.toString()
-		return json
-	}
 }
 
 class Messages(

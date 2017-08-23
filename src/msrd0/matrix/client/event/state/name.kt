@@ -49,25 +49,8 @@ class RoomNameEventContent(val name : String) : MatrixEventContent()
 /**
  * A room name event.
  */
-class RoomNameEvent(
-		room : Room,
-		sender : MatrixId,
-		content : RoomNameEventContent
-) : MatrixRoomEvent<RoomNameEventContent>(room, sender, ROOM_NAME, content)
-{
-	companion object
-	{
-		/**
-		 * Constructs a room name event py parsing the supplied json.
-		 *
-		 * @throws IllegalJsonException On errors in the json.
-		 */
-		@JvmStatic
-		@Throws(IllegalJsonException::class)
-		fun fromJson(room : Room, json : JsonObject) : RoomNameEvent
-				= RoomNameEvent(room, MatrixId.fromString(json.string("sender") ?: throw IllegalJsonException("Missing: 'sender'")),
-					RoomNameEventContent.fromJson(json.obj("content") ?: throw IllegalJsonException("Missing: 'content'")))
-	}
-	
-	override val json : JsonObject get() = abstractJson
-}
+class RoomNameEvent
+@Throws(IllegalJsonException::class)
+constructor(room : Room, json : JsonObject)
+	: MatrixRoomEvent<RoomNameEventContent>(room, json,
+		RoomNameEventContent.fromJson(json.obj("content") ?: missing("content")))

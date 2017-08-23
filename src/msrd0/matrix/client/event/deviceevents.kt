@@ -37,6 +37,7 @@ class NewDeviceEventContent(
 	}
 }
 
+/*
 class NewDeviceEvent(
 		sender : MatrixId,
 		content : NewDeviceEventContent
@@ -46,3 +47,4 @@ class NewDeviceEvent(
 		get() = TODO("not implemented")
 	
 }
+*/

@@ -270,7 +270,7 @@ public class Main
 				body = "(broken image) " + body;
 			}
 		}
-		System.out.println("  -> " + msg.getAge().format(DateTimeFormatter.ofPattern("dd MMM uuuu HH:mm:ss")) +
+		System.out.println("  -> " + msg.getTimestamp().format(DateTimeFormatter.ofPattern("dd MMM uuuu HH:mm:ss")) +
 				" [" + msg.getSender() + "] " + body);
 	}
 	

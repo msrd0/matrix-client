@@ -19,37 +19,75 @@
 
 package msrd0.matrix.client.event
 
-import com.beust.klaxon.JsonObject
+import com.beust.klaxon.*
 import msrd0.matrix.client.*
 import msrd0.matrix.client.util.JsonSerializable
+import java.time.*
+import java.time.temporal.ChronoUnit.*
 
+/**
+ * The superclass of every event content.
+ */
 abstract class MatrixEventContent : JsonSerializable
 
-abstract class MatrixEvent<out C : MatrixEventContent>
-@JvmOverloads
-constructor(
+data class MatrixEventData(
+		val eventId : String,
 		val sender : MatrixId,
 		val type : String,
-		val content : C,
-		val timestamp : Long? = null,
-		val eventId : String? = null
+		val timestamp : LocalDateTime
+)
+{
+	constructor(json : JsonObject) : this(
+			json.string("event_id") ?: missing("event_id"),
+			MatrixId.fromString(json.string("sender") ?: missing("sender")),
+			json.string("type") ?: missing("type"),
+			LocalDateTime.now().minus(json.long("age") ?: json.obj("unsigned")?.long("age") ?: missing("age"), MILLIS)
+	)
+}
+
+/**
+ * The superclass of all matrix events. For room events, use [MatrixRoomEvent].
+ */
+abstract class MatrixEvent<out C : MatrixEventContent>
+constructor(
+		val data : MatrixEventData,
+		val content : C
 ) : JsonSerializable
 {
-	val abstractJson : JsonObject get()
+	constructor(json : JsonObject, content : C)
+			: this(MatrixEventData(json), content)
+	
+	val eventId get() = data.eventId
+	val sender get() = data.sender
+	val type get() = data.type
+	val timestamp get() = data.timestamp
+	
+	override val json : JsonObject get()
 	{
 		val json = JsonObject()
+		json["event_id"] = eventId
 		json["sender"] = sender.toString()
 		json["type"] = type
 		json["content"] = content.json
-		if (eventId != null)
-			json["event_id"] = eventId
 		return json
 	}
 }
 
 abstract class MatrixRoomEvent<out C : MatrixEventContent>(
 		val room : Room,
-		sender : MatrixId,
-		type : String,
+		data : MatrixEventData,
 		content : C
-) : MatrixEvent<C>(sender, type, content)
+) : MatrixEvent<C>(data, content)
+{
+	constructor(room : Room, json : JsonObject, content : C)
+			: this(room, MatrixEventData(json), content)
+	
+	val roomId get() = room.id
+	
+	override val json : JsonObject get()
+	{
+		val json = super.json
+		json["room_id"] = "$roomId"
+		return json
+	}
+}
