@@ -108,6 +108,14 @@ public class MatrixEventTypes
 	public static final String ROOM_REDACTION = "m.room.redaction";
 	
 	
+	// ### receipt events ##############################################################################################
+	
+	/**
+	 * A receipt.
+	 */
+	public static final String RECEIPT = "m.receipt";
+	
+	
 	// ### other events ################################################################################################
 	
 	public static final String DEVICE_NEW = "m.new_device";
