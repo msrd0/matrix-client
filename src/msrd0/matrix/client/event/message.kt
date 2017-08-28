@@ -52,15 +52,15 @@ open class MessageContent(
 		@Throws(MatrixAnswerException::class)
 		fun fromJson(json : JsonObject) : MessageContent
 		{
-			val type = json.string("msgtype") ?: throw IllegalJsonException("Missing: 'msgtype'")
-			val body = json.string("body") ?: throw IllegalJsonException("Missing: 'body'")
+			val type = json.string("msgtype") ?: missing("msgtype")
+			val body = json.string("body") ?: missing("body")
 			
 			if (type == TEXT)
 			{
 				if (json.containsKey("format"))
 					return FormattedTextMessageContent(body,
-							json.string("format") ?: throw IllegalJsonException("Missing: 'format'"),
-							json.string("formatted_body") ?: throw IllegalJsonException("Missing: 'formatted_body'"))
+							json.string("format") ?: missing("format"),
+							json.string("formatted_body") ?: missing("formatted_body"))
 				return TextMessageContent(body)
 			}
 			
@@ -68,8 +68,8 @@ open class MessageContent(
 			{
 				val content = ImageMessageContent(body)
 				content.loadFromJson(
-						json.obj("info") ?: throw IllegalJsonException("Missing: 'info'"),
-						json.string("url") ?: throw IllegalJsonException("Missing: 'url'")
+						json.obj("info") ?: missing("info"),
+						json.string("url") ?: missing("url")
 				)
 				return content
 			}
@@ -140,10 +140,10 @@ open class ImageMessageContent(alt : String) : MessageContent(alt, IMAGE)
 	open fun loadFromJson(info : JsonObject, url : String)
 	{
 		this.url = url
-		this.mimetype = info.string("mimetype") ?: throw IllegalJsonException("Missing: 'mimetype'")
-		this.width = info.int("w") ?: throw IllegalJsonException("Missing: 'w'")
-		this.height = info.int("h") ?: throw IllegalJsonException("Missing: 'h'")
-		this.size = info.int("size") ?: throw IllegalJsonException("Missing: 'size'")
+		this.mimetype = info.string("mimetype") ?: missing("mimetype")
+		this.width = info.int("w") ?: missing("w")
+		this.height = info.int("h") ?: missing("h")
+		this.size = info.int("size") ?: missing("size")
 	}
 	
 	/**

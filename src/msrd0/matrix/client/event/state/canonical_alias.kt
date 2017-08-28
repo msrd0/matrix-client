@@ -40,7 +40,7 @@ class RoomCanonicalAliasEventContent(val alias : RoomAlias) : MatrixEventContent
 		@Throws(IllegalJsonException::class)
 		fun fromJson(json : JsonObject) : RoomCanonicalAliasEventContent
 				= RoomCanonicalAliasEventContent(RoomAlias.fromString(
-					json.string("alias") ?: throw IllegalJsonException("Missing: 'alias'")))
+					json.string("alias") ?: missing("alias")))
 	}
 	
 	override val json : JsonObject get()

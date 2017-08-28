@@ -39,10 +39,10 @@ data class AvatarInfo(
 		@Throws(IllegalJsonException::class)
 		fun fromJson(json : JsonObject) : AvatarInfo
 				= AvatarInfo(
-					json.int("w") ?: throw IllegalJsonException("Missing: 'w'"),
-					json.int("h") ?: throw IllegalJsonException("Missing: 'h'"),
-					json.long("size") ?: throw IllegalJsonException("Missing: 'size'"),
-					json.string("mimetype") ?: throw IllegalJsonException("Missing: 'mimetype'")
+					json.int("w") ?: missing("w"),
+					json.int("h") ?: missing("h"),
+					json.long("size") ?: missing("size"),
+					json.string("mimetype") ?: missing("mimetype")
 				)
 	}
 	
@@ -68,7 +68,7 @@ class Avatar @JvmOverloads constructor(
 		@Throws(IllegalJsonException::class)
 		fun fromJson(json : JsonObject) : Avatar
 		{
-			val url = json.string("url") ?: throw IllegalJsonException("Missing: 'url'")
+			val url = json.string("url") ?: missing("url")
 			var info : AvatarInfo? = null
 			if (json.containsKey("obj"))
 				info = AvatarInfo.fromJson(json.obj("info")!!)

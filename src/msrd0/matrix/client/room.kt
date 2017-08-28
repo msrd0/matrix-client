@@ -142,10 +142,10 @@ open class Room(
 		
 		members.clear()
 		
-		val chunk = res.json.array<JsonObject>("chunk") ?: throw IllegalJsonException("Missing: 'chunk'")
+		val chunk = res.json.array<JsonObject>("chunk") ?: missing("chunk")
 		for (member in chunk)
 		{
-			val content = member.obj("content") ?: throw IllegalJsonException("Missing: 'chunk.[].content'")
+			val content = member.obj("content") ?: missing("chunk.[].content")
 			val membership = content.string("membership") ?: throw IllegalJsonException("Missing: 'chunk.[].content.membership")
 			if (membership != "join")
 				continue

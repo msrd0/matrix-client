@@ -40,7 +40,7 @@ class RoomAliasesEventContent(val aliases : List<RoomAlias>) : MatrixEventConten
 		@Throws(IllegalJsonException::class)
 		fun fromJson(json : JsonObject) : RoomAliasesEventContent
 				= RoomAliasesEventContent(json.array<String>("aliases")?.map { RoomAlias.fromString(it) }
-					?: throw IllegalJsonException("Missing: 'aliases'"))
+					?: missing("aliases"))
 	}
 	
 	override val json : JsonObject get()

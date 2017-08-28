@@ -39,7 +39,7 @@ class RoomTopicEventContent(val topic : String) : MatrixEventContent()
 		@JvmStatic
 		@Throws(IllegalJsonException::class)
 		fun fromJson(json : JsonObject) : RoomTopicEventContent
-				= RoomTopicEventContent(json.string("topic") ?: throw IllegalJsonException("Missing: 'topic'"))
+				= RoomTopicEventContent(json.string("topic") ?: missing("topic"))
 	}
 	
 	override val json : JsonObject get()

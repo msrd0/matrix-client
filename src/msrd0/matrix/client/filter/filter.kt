@@ -67,7 +67,7 @@ class Filter : JsonSerializable
 		val res = client.target.post("_matrix/client/r0/user/${client.id}/filter",
 				client.token ?: throw NoTokenException(), client.id, json)
 		checkForError(res)
-		return res.json.string("filter_id") ?: throw IllegalJsonException("Missing: 'filter_id'")
+		return res.json.string("filter_id") ?: missing("filter_id")
 	}
 }
 

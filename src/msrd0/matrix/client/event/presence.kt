@@ -55,7 +55,7 @@ data class Presence(
 		fun fromJson(user : MatrixId, json : JsonObject) : Presence
 		{
 			val presence = Presence(user,
-					PresenceState.valueOf(json.string("presence")?.toUpperCase() ?: throw IllegalJsonException("Missing: 'presence'")))
+					PresenceState.valueOf(json.string("presence")?.toUpperCase() ?: missing("presence")))
 			presence.lastActiveAgo = json.long("last_active_ago")
 			presence.status = json.string("status_msg")
 			presence.currentlyActive = json.boolean("currently_active") ?: false

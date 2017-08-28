@@ -58,7 +58,7 @@ open class IllegalJsonException : MatrixAnswerException
  */
 @Throws(IllegalJsonException::class)
 fun missing(key : String) : Nothing
-		= throw IllegalJsonException("Missing: '$key'")
+		= missing("$key")
 
 
 /**

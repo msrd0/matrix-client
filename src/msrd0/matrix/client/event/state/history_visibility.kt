@@ -39,7 +39,7 @@ class RoomHistoryVisibilityEventContent(val historyVisibility : String) : Matrix
 		@JvmStatic
 		@Throws(IllegalJsonException::class)
 		fun fromJson(json : JsonObject) : RoomHistoryVisibilityEventContent
-				= RoomHistoryVisibilityEventContent(json.string("history_visibility") ?: throw IllegalJsonException("Missing: 'history_visibility'"))
+				= RoomHistoryVisibilityEventContent(json.string("history_visibility") ?: missing("history_visibility"))
 	}
 	
 	override val json : JsonObject get()
