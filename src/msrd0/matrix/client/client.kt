@@ -651,7 +651,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 		val res = target.get("_matrix/client/unstable/devices", token ?: throw NoTokenException(), id)
 		checkForError(res)
 		return res.json.array<JsonObject>("devices")
-				?.map { Device.fromJson(it) }
+				?.map { Device(it) }
 				?: missing("devices")
 	}
 	
@@ -667,7 +667,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 		if (res.status.status == 404)
 			return null
 		checkForError(res)
-		return Device.fromJson(res.json)
+		return Device(res.json)
 	}
 	
 	/**
