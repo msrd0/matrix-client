@@ -26,7 +26,7 @@ import java.util.regex.Pattern
 /**
  * This class represents a matrix content url of format `mxc://example.tld/FHyPlCeYUSFFxlgbQYZmoEoe`.
  */
-class MatrixContentUrl(
+data class MatrixContentUrl(
 		val domain : String,
 		val mediaId : String
 )

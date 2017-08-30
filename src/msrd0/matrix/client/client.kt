@@ -585,7 +585,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	fun updateAvatar(avatar : Avatar)
 	{
 		val res = target.put("_matrix/client/unstable/profile/$id/avatar_url", token ?: throw NoTokenException(), id,
-				JsonObject(mapOf("avatar_url" to avatar.url)))
+				JsonObject(mapOf("avatar_url" to "${avatar.url}")))
 		checkForError(res)
 	}
 	
@@ -737,6 +737,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 open class Client(hs : HomeServer, id : MatrixId) : MatrixClient(hs, id)
 {
 	@JvmOverloads
+	@Suppress("DEPRECATION")
 	constructor(domain : String, localpart : String, hsDomain : String = domain, hsBaseUri : URI = URI("https://$hsDomain/"))
 			: this(HomeServer(hsDomain, hsBaseUri), MatrixId(localpart, domain))
 }

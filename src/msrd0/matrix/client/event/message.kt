@@ -180,7 +180,7 @@ open class ImageMessageContent(alt : String) : MessageContent(alt, IMAGE)
 	override val json : JsonObject get()
 	{
 		val json = super.json
-		json["url"] = url ?: throw IllegalStateException("You need to call ImageMessageContent::uploadImage first")
+		json["url"] = url?.toString() ?: throw IllegalStateException("You need to call ImageMessageContent::uploadImage first")
 		json["info"] = mapOf(
 				"mimetype" to mimetype,
 				"h" to height,

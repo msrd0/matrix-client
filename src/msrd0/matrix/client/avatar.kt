@@ -118,7 +118,7 @@ class Avatar @JvmOverloads constructor(
 	override val json : JsonObject get()
 	{
 		val json = JsonObject()
-		json["url"] = url
+		json["url"] = "$url"
 		if (info != null)
 			json["info"] = info!!.json
 		return json
