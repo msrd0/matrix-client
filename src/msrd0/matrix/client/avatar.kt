@@ -58,10 +58,14 @@ data class AvatarInfo(
 }	
 
 class Avatar @JvmOverloads constructor(
-		val url : String,
+		val url : MatrixContentUrl,
 		var info : AvatarInfo? = null
 ) : MatrixEventContent()
 {
+	@JvmOverloads
+	constructor(url : String, info : AvatarInfo? = null)
+			: this(MatrixContentUrl.fromString(url), info)
+	
 	companion object
 	{
 		@JvmStatic

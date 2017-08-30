@@ -115,12 +115,7 @@ open class FormattedTextMessageContent(
  */
 open class ImageMessageContent(alt : String) : MessageContent(alt, IMAGE)
 {
-	companion object
-	{
-		private var urlPattern = Pattern.compile("mxc://(?<domain>[^/]+)/(?<mediaId>[^/]+)")
-	}
-	
-	var url : String? = null
+	var url : MatrixContentUrl? = null
 			protected set
 	var mimetype : String = "image/png"
 			protected set
@@ -137,7 +132,7 @@ open class ImageMessageContent(alt : String) : MessageContent(alt, IMAGE)
 	 * @throws IllegalJsonException On errors in the json.
 	 */
 	@Throws(IllegalJsonException::class)
-	open fun loadFromJson(info : JsonObject, url : String)
+	open fun loadFromJson(info : JsonObject, url : MatrixContentUrl)
 	{
 		this.url = url
 		this.mimetype = info.string("mimetype") ?: missing("mimetype")
@@ -145,6 +140,9 @@ open class ImageMessageContent(alt : String) : MessageContent(alt, IMAGE)
 		this.height = info.int("h") ?: missing("h")
 		this.size = info.int("size") ?: missing("size")
 	}
+	@Throws(IllegalJsonException::class)
+	fun loadFromJson(info : JsonObject, url : String)
+			= loadFromJson(info, MatrixContentUrl.fromString(url))
 	
 	/**
 	 * Uploads the image to the matrix server. This method needs to be called before sending this message.
@@ -175,7 +173,7 @@ open class ImageMessageContent(alt : String) : MessageContent(alt, IMAGE)
 	@Throws(MatrixAnswerException::class, IOException::class)
 	open fun downloadImage(client : MatrixClient) : RenderedImage
 	{
-		val res = client.download(MatrixContentUrl.fromString(url ?: throw IllegalStateException("url is null")))
+		val res = client.download(url ?: throw IllegalStateException("url is null"))
 		return ImageIO.read(ByteArrayInputStream(res.first))
 	}
 	

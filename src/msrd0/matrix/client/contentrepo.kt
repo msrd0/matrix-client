@@ -63,12 +63,12 @@ object ContentRepo
 	 */
 	@JvmStatic
 	@Throws(MatrixAnswerException::class)
-	fun upload(bytes : ByteArray, mimetype : String, client : MatrixClient) : String
+	fun upload(bytes : ByteArray, mimetype : String, client : MatrixClient) : MatrixContentUrl
 	{
 		val res = client.target.post("_matrix/media/r0/upload", client.token ?: throw NoTokenException(), client.id,
 				bytes, mimetype)
 		checkForError(res)
-		return res.json.string("content_uri") ?: missing("content_uri")
+		return MatrixContentUrl.fromString(res.json.string("content_uri") ?: missing("content_uri"))
 	}
 	
 	/**
