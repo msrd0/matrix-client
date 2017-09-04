@@ -43,6 +43,10 @@ allprojects {
 		jcenter()
 		maven { url "https://msrd0.duckdns.org/artifactory/gradle" }
 	}
+	
+	task sourceJar(type : Jar) {
+		from sourceSets.main.allSource
+	}
 }
 
 dependencies {
@@ -126,6 +130,11 @@ publishing {
 	publications {
 		mavenKotlin(MavenPublication) {
 			from components.java
+			
+			artifact sourceJar {
+				classifier "sources"
+			}
+			
 			pom.withXml {
 				asNode()
 					.appendNode('licenses')
