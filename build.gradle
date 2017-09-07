@@ -44,7 +44,7 @@ allprojects {
 		maven { url "https://msrd0.duckdns.org/artifactory/gradle" }
 	}
 	
-	task sourceJar(type : Jar) {
+	jar {
 		from sourceSets.main.allSource
 	}
 }
@@ -131,9 +131,7 @@ publishing {
 		mavenKotlin(MavenPublication) {
 			from components.java
 			
-			artifact sourceJar {
-				classifier "sources"
-			}
+			artifact jar
 			
 			pom.withXml {
 				asNode()
@@ -169,8 +167,4 @@ artifactory {
 			publications('mavenKotlin')
 		}
 	}
-}
-
-artifactoryPublish {
-	dependsOn jar
 }
