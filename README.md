@@ -8,7 +8,7 @@ There is also a cli interface written in Java in the cli folder.
 
 ```gradle
 repositories {
-	maven { url "https://msrd0.duckdns.org/artifactory/gradle" }
+	maven { url "https://maven.devpi.de/repository/default/" }
 }
 
 dependencies {

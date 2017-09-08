@@ -25,6 +25,6 @@ test:
 deploy:
   stage: deploy
   script:
-    - GRADLE_USER_HOME=.gradle gradle artifactoryPublish
+    - GRADLE_USER_HOME=.gradle gradle publish
   only:
     - master

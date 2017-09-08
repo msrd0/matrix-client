@@ -20,9 +20,6 @@ buildscript {
 		// code coverage
 		classpath "com.palantir:jacoco-coverage:0.4.+"
 		classpath "com.github.ksoichiro:gradle-console-reporter:0.5.+"
-		
-		// jfrog artifactory
-		classpath "org.jfrog.buildinfo:build-info-extractor-gradle:+"
 	}
 }
 
@@ -41,10 +38,11 @@ allprojects {
 	repositories {
 		mavenLocal()
 		jcenter()
-		maven { url "https://msrd0.duckdns.org/artifactory/gradle" }
+		maven { url "https://maven.devpi.de/repository/default/" }
+		maven { url "https://msrd0.duckdns.org/artifactory/gradle/" }
 	}
 	
-	jar {
+	task sourcesJar(type : Jar) {
 		from sourceSets.main.allSource
 	}
 }
@@ -123,7 +121,6 @@ build {
 }
 
 
-apply plugin: 'com.jfrog.artifactory'
 apply plugin: 'maven-publish'
 
 publishing {
@@ -131,7 +128,9 @@ publishing {
 		mavenKotlin(MavenPublication) {
 			from components.java
 			
-			artifact jar
+			artifact sourcesJar {
+				classifier "sources"
+			}
 			
 			pom.withXml {
 				asNode()
@@ -147,24 +146,14 @@ publishing {
 			}
 		}
 	}
-}
-
-artifactory {
-	contextUrl = 'https://msrd0.duckdns.org/artifactory'
-	resolve {
-		repository {
-			repoKey = 'gradle'
-		}
-	}
-	publish {
-		repository {
-			repoKey = 'local'
-			username = 'gitlab-ci'
-			password = System.getenv("ARTIFACTORY_PASSWORD")
-			maven = true
-		}
-		defaults {
-			publications('mavenKotlin')
+	
+	repositories {
+		maven {
+			url "https://maven.devpi.de/repository/default/"
+			credentials(PasswordCredentials) {
+				username "gitlab-ci"
+				password System.getenv("ARTIFACTORY_PASSWORD")
+			}
 		}
 	}
 }
