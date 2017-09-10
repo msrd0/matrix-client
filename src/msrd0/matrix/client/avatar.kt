@@ -79,15 +79,35 @@ class Avatar @JvmOverloads constructor(
 			return Avatar(url, info)
 		}
 		
+		/**
+		 * Creates an avatar from the given image. The client is used to upload the image to the matrix homeserver.
+		 *
+		 * @param image The image of this avatar.
+		 * @param client The client used to upload the image.
+		 * @param imageType The image type used for writing the image. One of: BMP, GIF, JPG/JPEG, PNG, WBMP. Please
+		 * 	make sure the java installation also provides support for it, e.g. by calling `ImageIO.getWriterFormatNames()`.
+		 * 	Default: JPG
+		 *
+		 * @throws MatrixAnswerException On errors while uploading the image.
+		 */
+		@JvmOverloads
 		@JvmStatic
 		@Throws(MatrixAnswerException::class)
-		fun fromImage(image : RenderedImage, client : MatrixClient) : Avatar
+		fun fromImage(image : RenderedImage, client : MatrixClient, imageType : String = "JPG") : Avatar
 		{
+			val mimetype = when (imageType.toUpperCase()) {
+				"BMP" -> "image/x-windows-bmp"
+				"GIF" -> "image/gif"
+				"JPG", "JPEG" -> "image/jpeg"
+				"PNG" -> "image/png"
+				"WBMP" -> "image/vnd.wap.wbmp"
+				else  -> throw IllegalArgumentException("Unsupported image type: $imageType")
+			}
 			val baos = ByteArrayOutputStream()
-			ImageIO.write(image, "PNG", baos)
+			ImageIO.write(image, imageType, baos)
 			val bytes = baos.toByteArray()
-			val url = client.upload(bytes, "image/png")
-			val info = AvatarInfo(image.width, image.height, bytes.size.toLong(), "image/png")
+			val url = client.upload(bytes, mimetype)
+			val info = AvatarInfo(image.width, image.height, bytes.size.toLong(), mimetype)
 			return Avatar(url, info)
 		}
 	}
