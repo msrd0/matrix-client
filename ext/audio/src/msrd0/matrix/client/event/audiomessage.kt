@@ -19,4 +19,27 @@
 
 package msrd0.matrix.client.event
 
+import com.beust.klaxon.JsonObject
+import msrd0.matrix.client.event.MessageTypes.*
 
+/**
+ * The content of an audio message. Please make sure to call [uploadAudio] before trying to send events of this type.
+ */
+open class AudioMessageContent(alt : String) : UrlMessageContent(alt, AUDIO, "audio/aac")
+{
+	/** The duration of the audio track in milliseconds. */
+	var duration : Long? = null
+			protected set
+	
+	override fun loadFromJson(json : JsonObject)
+	{
+		TODO("not implemented")
+	}
+	
+	override val infoJson : JsonObject get()
+	{
+		val json = super.infoJson
+		json["duration"] = duration
+		return json
+	}
+}

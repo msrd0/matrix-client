@@ -31,4 +31,7 @@ public class MessageTypes
 	public static final String IMAGE = "m.image";
 	
 	public static final String FILE = "m.file";
+	
+	/** The `matrix-client-audio` library is required for this type!!! */
+	public static final String AUDIO = "m.audio";
 }

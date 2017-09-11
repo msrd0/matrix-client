@@ -43,6 +43,8 @@ abstract class MessageContent(
 {
 	companion object
 	{
+		private val logger : Logger = LoggerFactory.getLogger(MessageContent::class.java)
+		
 		/**
 		 * Constructs a message content by parsing the supplied json. For a documentation of the json see the matrix
 		 * specifications.
@@ -68,10 +70,7 @@ abstract class MessageContent(
 			if (type == IMAGE)
 			{
 				val content = ImageMessageContent(body)
-				content.loadFromJson(
-						json.obj("info") ?: missing("info"),
-						json.string("url") ?: missing("url")
-				)
+				content.loadFromJson(json)
 				return content
 			}
 			
@@ -80,6 +79,22 @@ abstract class MessageContent(
 				val content = FileMessageContent(body, body)
 				content.loadFromJson(json)
 				return content
+			}
+			
+			if (type == AUDIO)
+			{
+				try
+				{
+					val clazz = Class.forName("${MessageContent::class.java.`package`.name}.AudioMessageContent")
+					val ctor = clazz.getDeclaredConstructor(String::class.java)
+					val content = ctor.newInstance(body) as UrlMessageContent
+					content.loadFromJson(json)
+					return content
+				}
+				catch (ex : ReflectiveOperationException)
+				{
+					logger.warn("Received audio message but cannot create audio message content, is the library loaded?", ex)
+				}
 			}
 			
 			throw MatrixAnswerException("Unknown message type $type")
@@ -143,6 +158,9 @@ abstract class UrlMessageContent
 		this.size = bytes.size
 	}
 	
+	@Throws(IllegalJsonException::class)
+	abstract fun loadFromJson(json : JsonObject)
+	
 	open val infoJson : JsonObject get()
 	{
 		val json = JsonObject()
@@ -188,6 +206,10 @@ open class ImageMessageContent(alt : String) : UrlMessageContent(alt, IMAGE, "im
 	@Throws(IllegalJsonException::class)
 	fun loadFromJson(info : JsonObject, url : String)
 			= loadFromJson(info, MatrixContentUrl.fromString(url))
+	
+	@Throws(IllegalJsonException::class)
+	override fun loadFromJson(json : JsonObject)
+			= loadFromJson(json.obj("info") ?: missing("info"), json.string("url") ?: missing("url"))
 	
 	/**
 	 * Uploads the image to the matrix server. This method needs to be called before sending this message.
@@ -255,7 +277,7 @@ open class FileMessageContent
 	 * @throws IllegalJsonException On errors in the json.
 	 */
 	@Throws(IllegalJsonException::class)
-	open fun loadFromJson(json : JsonObject)
+	override fun loadFromJson(json : JsonObject)
 	{
 		filename = json.string("filename") ?: missing("filename")
 		url = MatrixContentUrl.fromString(json.string("url") ?: missing("url"))
