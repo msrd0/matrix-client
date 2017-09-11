@@ -1,13 +1,6 @@
-group 'msrd0.matrix'
-version "$matrix_client_version"
-
-apply plugin: 'java'
-
 apply plugin: 'application'
 mainClassName = "msrd0.matrix.client.cli.Main"
 run.standardInput = System.in
-
-sourceCompatibility = 1.8
 
 dependencies {
 	compile rootProject

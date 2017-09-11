@@ -1,6 +1,3 @@
-group 'msrd0.matrix'
-version "$matrix_client_version"
-
 buildscript {
 	ext.kotlin_version = '1.1.+'
 	
@@ -23,11 +20,12 @@ buildscript {
 	}
 }
 
-apply plugin: 'kotlin'
-apply plugin: "com.palantir.jacoco-full-report"
-apply plugin: "com.github.ksoichiro.console.reporter"
-
 allprojects {
+	group 'msrd0.matrix'
+	version "$matrix_client_version"
+	
+	apply plugin: 'java'
+	
 	apply plugin: 'net.minecrell.licenser'
 	license {
 		header = project.file('HEADER.txt')
@@ -42,18 +40,122 @@ allprojects {
 		maven { url "https://msrd0.duckdns.org/artifactory/gradle/" }
 	}
 	
+	dependencies {
+		// java lombok annotations
+		compileOnly "org.projectlombok:lombok:1.16.+"
+		
+		// logging
+		compile "org.slf4j:slf4j-api:1.7.+"
+		
+		// test stuff
+		testCompile "org.testng:testng:6.+"
+		testCompile "org.hamcrest:hamcrest-integration:1.+"
+		testCompile "ch.qos.logback:logback-classic:1.+"
+	}
+	
+	sourceCompatibility = "1.8"
+	
+	test {
+		useTestNG()
+		testLogging.showStandardStreams = true
+	}
+	
 	task sourcesJar(type : Jar) {
 		from sourceSets.main.allSource
 	}
 }
 
-dependencies {
-	// stdlib
-	compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
-	compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
+configure(allprojects - project('matrix-client-cli')) {
 	
-	// java lombok annotations
-	compileOnly "org.projectlombok:lombok:1.16.+"
+	apply plugin: 'kotlin'
+	apply plugin: "com.palantir.jacoco-full-report"
+	apply plugin: "com.github.ksoichiro.console.reporter"
+	
+	dependencies {
+		// stdlib
+		compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+		compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
+	}
+	
+	sourceSets {
+		main {
+			kotlin.srcDirs = ['src/']
+			java.srcDirs = ['src/']
+			resources.srcDirs = ['res/']
+		}
+		test {
+			kotlin.srcDirs = ['test/src/']
+			java.srcDirs = []
+			resources.srcDirs = ['test/res/']
+		}
+	}
+	
+	compileKotlin {
+		kotlinOptions.jvmTarget = "1.8"
+	}
+	compileTestKotlin {
+		kotlinOptions.jvmTarget = "1.8"
+	}
+	
+	apply plugin: "org.jetbrains.dokka"
+	
+	dokka {
+		outputFormat = "javadoc"
+		outputDirectory = "$buildDir/javadoc"
+		
+		jdkVersion = 8
+		impliedPlatforms = ["JVM"]
+		
+		linkMapping {
+			dir = "src/"
+			url = "https://gitlab.com/mextrix/matrix-client/tree/master/src"
+			suffix = "#L"
+		}
+	}
+	build {
+		dependsOn "dokka"
+	}
+	
+	apply plugin: 'maven-publish'
+	
+	publishing {
+		publications {
+			mavenKotlin(MavenPublication) {
+				from components.java
+				
+				artifact sourcesJar {
+					classifier "sources"
+				}
+				
+				pom.withXml {
+					asNode()
+						.appendNode('licenses')
+							.appendNode('license')
+								.appendNode('name', "GNU General Public License, Version 3")
+									.parent()
+								.appendNode('url', "http://gnu.org/licenses/gpl-3.0")
+									.parent()
+								.appendNode('distribution', "repo")
+									.parent()
+								.appendNode('comments', "A copyleft license for free open source software")
+				}
+			}
+		}
+		
+		repositories {
+			maven {
+				url "https://maven.devpi.de/repository/default/"
+				credentials(PasswordCredentials) {
+					username "gitlab-ci"
+					password System.getenv("ARTIFACTORY_PASSWORD")
+				}
+			}
+		}
+	}
+	
+}
+
+dependencies {
 	
 	// apache commons
 	compile 'commons-io:commons-io:2.5'
@@ -66,94 +168,4 @@ dependencies {
 	
 	// olm java
 	compile "msrd0.matrix:matrix-olm-java:2.+"
-	
-	// logging
-	compile "org.slf4j:slf4j-api:1.7.+"
-	
-	// test stuff
-	testCompile "org.testng:testng:6.+"
-	testCompile "org.hamcrest:hamcrest-integration:1.+"
-	testCompile "ch.qos.logback:logback-classic:1.+"
-}
-
-sourceSets {
-	main {
-		kotlin.srcDirs = ['src/']
-		java.srcDirs = ['src/']
-		resources.srcDirs = ['res/']
-	}
-	test {
-		kotlin.srcDirs = ['test/src/']
-		java.srcDirs = []
-		resources.srcDirs = ['test/res/']
-	}
-}
-
-compileKotlin {
-	kotlinOptions.jvmTarget = "1.8"
-}
-compileTestKotlin {
-	kotlinOptions.jvmTarget = "1.8"
-}
-
-test {
-	useTestNG()
-	testLogging.showStandardStreams = true
-}
-
-apply plugin: "org.jetbrains.dokka"
-
-dokka {
-	outputFormat = "javadoc"
-	outputDirectory = "$buildDir/javadoc"
-	
-	jdkVersion = 8
-	impliedPlatforms = ["JVM"]
-	
-	linkMapping {
-		dir = "src/"
-		url = "https://gitlab.com/mextrix/matrix-client/tree/master/src"
-		suffix = "#L"
-	}
-}
-build {
-	dependsOn "dokka"
-}
-
-
-apply plugin: 'maven-publish'
-
-publishing {
-	publications {
-		mavenKotlin(MavenPublication) {
-			from components.java
-			
-			artifact sourcesJar {
-				classifier "sources"
-			}
-			
-			pom.withXml {
-				asNode()
-					.appendNode('licenses')
-						.appendNode('license')
-							.appendNode('name', "GNU General Public License, Version 3")
-								.parent()
-							.appendNode('url', "http://gnu.org/licenses/gpl-3.0")
-								.parent()
-							.appendNode('distribution', "repo")
-								.parent()
-							.appendNode('comments', "A copyleft license for free open source software")
-			}
-		}
-	}
-	
-	repositories {
-		maven {
-			url "https://maven.devpi.de/repository/default/"
-			credentials(PasswordCredentials) {
-				username "gitlab-ci"
-				password System.getenv("ARTIFACTORY_PASSWORD")
-			}
-		}
-	}
 }
