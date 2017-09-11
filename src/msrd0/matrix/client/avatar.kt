@@ -21,7 +21,7 @@ package msrd0.matrix.client
 
 import com.beust.klaxon.*
 import msrd0.matrix.client.event.MatrixEventContent
-import msrd0.matrix.client.util.JsonSerializable
+import msrd0.matrix.client.util.*
 import java.awt.Image
 import java.awt.image.*
 import java.io.*
@@ -107,11 +107,11 @@ class Avatar @JvmOverloads constructor(
 			}
 			val baos = ByteArrayOutputStream()
 			// bug in OpenJDK - cannot write jpeg images with alpha channel
-			if (mimetype == "image/jpeg" && image.colorModel.hasAlpha() && image is Image)
+			if (mimetype == "image/jpeg" && image.colorModel.hasAlpha())
 			{
 				val bi = BufferedImage(image.width, image.height, BufferedImage.TYPE_INT_RGB)
 				val g = bi.createGraphics()
-				g.drawImage(image, 0, 0, bi.width, bi.height, null)
+				g.drawImage(image.toImage(), 0, 0, bi.width, bi.height, null)
 				g.dispose()
 				image = bi
 			}
