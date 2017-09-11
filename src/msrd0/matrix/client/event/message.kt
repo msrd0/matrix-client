@@ -36,7 +36,7 @@ import javax.imageio.ImageIO
  * The content of a message. Every message has a body and a message type. While you can use this class directly, the
  * use of one of the subclasses is recommended.
  */
-open class MessageContent(
+abstract class MessageContent(
 		val body : String,
 		val msgtype : String
 ) : MatrixEventContent()
@@ -119,19 +119,56 @@ open class FormattedTextMessageContent(
 }
 
 /**
+ * An abstract message content that adds a url and some info about it to the default message content.
+ */
+abstract class UrlMessageContent
+@JvmOverloads constructor(
+		body : String,
+		msgtype : String,
+		mimetype : String = "application/octet-stream"
+) : MessageContent(body, msgtype)
+{
+	open var url : MatrixContentUrl? = null
+			protected set
+	open var mimetype : String = mimetype
+			protected set
+	open var size : Int? = null
+			protected set
+	
+	@Throws(MatrixAnswerException::class)
+	protected fun upload(bytes : ByteArray, mimetype : String, client : MatrixClient)
+	{
+		this.url = client.upload(bytes, mimetype)
+		this.mimetype = mimetype
+		this.size = bytes.size
+	}
+	
+	open val infoJson : JsonObject get()
+	{
+		val json = JsonObject()
+		json["mimetype"] = mimetype
+		if (size != null)
+			json["size"] = size
+		return json
+	}
+	
+	override val json : JsonObject get()
+	{
+		val json = super.json
+		json["url"] = url?.toString() ?: throw IllegalStateException("url is null")
+		json["info"] = infoJson
+		return json
+	}
+}
+
+/**
  * The content of an image message. Please make sure to call `uploadImage` before trying to send events of this type.
  */
-open class ImageMessageContent(alt : String) : MessageContent(alt, IMAGE)
+open class ImageMessageContent(alt : String) : UrlMessageContent(alt, IMAGE, "image/png")
 {
-	var url : MatrixContentUrl? = null
-			protected set
-	var mimetype : String = "image/png"
-			protected set
 	var width : Int? = null
 			protected set
 	var height : Int? = null
-			protected set
-	var size : Int? = null
 			protected set
 	
 	/**
@@ -189,16 +226,11 @@ open class ImageMessageContent(alt : String) : MessageContent(alt, IMAGE)
 		return ImageIO.read(ByteArrayInputStream(res.first))
 	}
 	
-	override val json : JsonObject get()
+	override val infoJson : JsonObject get()
 	{
-		val json = super.json
-		json["url"] = url?.toString() ?: throw IllegalStateException("You need to call ImageMessageContent::uploadImage first")
-		json["info"] = mapOf(
-				"mimetype" to mimetype,
-				"h" to height,
-				"w" to width,
-				"size" to size
-		)
+		val json = super.infoJson
+		json["w"] = width
+		json["h"] = height
 		return json
 	}
 }
@@ -210,19 +242,12 @@ open class FileMessageContent
 @JvmOverloads constructor(
 		var filename : String,
 		body : String = filename
-) : MessageContent(body, FILE)
+) : UrlMessageContent(body, FILE)
 {
 	companion object
 	{
 		private val logger : Logger = LoggerFactory.getLogger(FileMessageContent::class.java)
 	}
-	
-	var url : MatrixContentUrl? = null
-			protected set
-	var mimetype : String = "application/octet-stream"
-			protected set
-	var size : Int? = null
-			protected set
 	
 	/**
 	 * Loads the file from the json of a received message event.
@@ -249,11 +274,7 @@ open class FileMessageContent
 	 */
 	@Throws(MatrixAnswerException::class)
 	open fun uploadFile(bytes : ByteArray, mimetype : String, client : MatrixClient)
-	{
-		url = client.upload(bytes, mimetype)
-		this.mimetype = mimetype
-		this.size = bytes.size
-	}
+			= super.upload(bytes, mimetype, client)
 	
 	/**
 	 * Download the file from the matrix server. Please make sure that either [uploadFile] or [loadFromJson] was called
@@ -274,11 +295,6 @@ open class FileMessageContent
 	{
 		val json = super.json
 		json["filename"] = filename
-		json["url"] = url?.toString() ?: throw IllegalStateException("You need to call FileMessageContent::uploadFile first")
-		json["info"] = mapOf(
-				"mimetype" to mimetype,
-				"size" to size
-		)
 		return json
 	}
 }
