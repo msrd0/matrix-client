@@ -30,10 +30,12 @@ import javax.imageio.ImageIO
 data class AvatarInfo(
 		val width : Int,
 		val height : Int,
-		val size : Long,
+		val size : Int,
 		val mimetype : String
 ) : JsonSerializable
 {
+	constructor(info : ImageInfo) : this(info.width, info.height, info.size, info.mimetype)
+	
 	companion object
 	{
 		@JvmStatic
@@ -42,7 +44,7 @@ data class AvatarInfo(
 				= AvatarInfo(
 					json.int("w") ?: missing("w"),
 					json.int("h") ?: missing("h"),
-					json.long("size") ?: missing("size"),
+					json.int("size") ?: missing("size"),
 					json.string("mimetype") ?: missing("mimetype")
 				)
 	}
@@ -96,30 +98,8 @@ class Avatar @JvmOverloads constructor(
 		@Throws(MatrixAnswerException::class)
 		fun fromImage(image : RenderedImage, client : MatrixClient, imageType : String = "JPG") : Avatar
 		{
-			@Suppress("NAME_SHADOWING") var image = image
-			val mimetype = when (imageType.toUpperCase()) {
-				"BMP" -> "image/x-windows-bmp"
-				"GIF" -> "image/gif"
-				"JPG", "JPEG" -> "image/jpeg"
-				"PNG" -> "image/png"
-				"WBMP" -> "image/vnd.wap.wbmp"
-				else  -> throw IllegalArgumentException("Unsupported image type: $imageType")
-			}
-			val baos = ByteArrayOutputStream()
-			// bug in OpenJDK - cannot write jpeg images with alpha channel
-			if (mimetype == "image/jpeg" && image.colorModel.hasAlpha())
-			{
-				val bi = BufferedImage(image.width, image.height, BufferedImage.TYPE_INT_RGB)
-				val g = bi.createGraphics()
-				g.drawImage(image.toImage(), 0, 0, bi.width, bi.height, null)
-				g.dispose()
-				image = bi
-			}
-			ImageIO.write(image, imageType, baos)
-			val bytes = baos.toByteArray()
-			val url = client.upload(bytes, mimetype)
-			val info = AvatarInfo(image.width, image.height, bytes.size.toLong(), mimetype)
-			return Avatar(url, info)
+			val (url, info) = client.uploadImage(image, imageType)
+			return Avatar(url, AvatarInfo(info))
 		}
 	}
 	
@@ -129,7 +109,7 @@ class Avatar @JvmOverloads constructor(
 		val res = client.download(url)
 		if (info != null)
 		{
-			if (res.first.size.toLong() != info!!.size)
+			if (res.first.size != info!!.size)
 				throw MatrixInfoMismatchException("size", info!!.size, res.first.size)
 			if (res.second != info!!.mimetype)
 				throw MatrixInfoMismatchException("mimetype", info!!.mimetype, res.second)

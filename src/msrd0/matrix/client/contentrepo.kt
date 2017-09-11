@@ -21,7 +21,11 @@ package msrd0.matrix.client
 
 import com.beust.klaxon.string
 import msrd0.matrix.client.MatrixClient.Companion.checkForError
+import msrd0.matrix.client.util.toImage
+import java.awt.image.*
+import java.io.*
 import java.util.regex.Pattern
+import javax.imageio.ImageIO
 
 /**
  * This class represents a matrix content url of format `mxc://example.tld/FHyPlCeYUSFFxlgbQYZmoEoe`.
@@ -51,6 +55,17 @@ data class MatrixContentUrl(
 	override fun toString() = "mxc://$domain/$mediaId"
 }
 
+data class ImageInfo(
+		val width : Int,
+		val height : Int,
+		val mimetype : String,
+		val size : Int
+)
+{
+	constructor(image : RenderedImage, mimetype : String, size : Int)
+			: this(image.width, image.height, mimetype, size)
+}
+
 /**
  * This object helps accessing the matrix content repository.
  */
@@ -69,6 +84,47 @@ object ContentRepo
 				bytes, mimetype)
 		checkForError(res)
 		return MatrixContentUrl.fromString(res.json.string("content_uri") ?: missing("content_uri"))
+	}
+	
+	/**
+	 * Upload the image with the specified image type to the server.
+	 *
+	 * @param image The image to upload.
+	 * @param client The client used to upload the image.
+	 * @param imageType The image type used for writing the image. One of: BMP, GIF, JPG/JPEG, PNG, WBMP. Please
+	 * 	make sure the java installation also provides support for it, e.g. by calling `ImageIO.getWriterFormatNames()`.
+	 * 	Default: PNG
+	 *
+	 * @return The content url plus information about the uploaded image.
+	 */
+	@JvmOverloads
+	@JvmStatic
+	@Throws(MatrixAnswerException::class, IOException::class)
+	fun uploadImage(image : RenderedImage, client : MatrixClient, imageType : String = "PNG") : Pair<MatrixContentUrl, ImageInfo>
+	{
+		@Suppress("NAME_SHADOWING") var image = image
+		val mimetype = when (imageType.toUpperCase()) {
+			"BMP" -> "image/x-windows-bmp"
+			"GIF" -> "image/gif"
+			"JPG", "JPEG" -> "image/jpeg"
+			"PNG" -> "image/png"
+			"WBMP" -> "image/vnd.wap.wbmp"
+			else  -> throw IllegalArgumentException("Unsupported image type: $imageType")
+		}
+		// bug in OpenJDK - cannot write jpeg images with alpha channel
+		if (mimetype == "image/jpeg" && image.colorModel.hasAlpha())
+		{
+			val bi = BufferedImage(image.width, image.height, BufferedImage.TYPE_INT_RGB)
+			val g = bi.createGraphics()
+			g.drawImage(image.toImage(), 0, 0, bi.width, bi.height, null)
+			g.dispose()
+			image = bi
+		}
+		val baos = ByteArrayOutputStream()
+		ImageIO.write(image, imageType, baos)
+		val bytes = baos.toByteArray()
+		val url = client.upload(bytes, mimetype)
+		return url to ImageInfo(image, mimetype, bytes.size)
 	}
 	
 	/**
@@ -102,3 +158,7 @@ object ContentRepo
 @Throws(MatrixAnswerException::class) fun MatrixClient.upload(bytes : ByteArray, mimetype : String) = ContentRepo.upload(bytes, mimetype, this)
 @Throws(MatrixAnswerException::class) fun MatrixClient.download(url : MatrixContentUrl) = ContentRepo.download(url, this)
 @Throws(MatrixAnswerException::class) fun MatrixClient.download(url : String) = ContentRepo.download(url, this)
+
+@Throws(MatrixAnswerException::class, IOException::class)
+fun MatrixClient.uploadImage(image : RenderedImage, imageType : String = "PNG")
+		= ContentRepo.uploadImage(image, this, imageType)

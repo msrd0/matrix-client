@@ -147,20 +147,24 @@ open class ImageMessageContent(alt : String) : MessageContent(alt, IMAGE)
 	/**
 	 * Uploads the image to the matrix server. This method needs to be called before sending this message.
 	 *
+	 * @param image The image of this avatar.
+	 * @param client The client used to upload the image.
+	 * @param imageType The image type used for writing the image. One of: BMP, GIF, JPG/JPEG, PNG, WBMP. Please
+	 * 	make sure the java installation also provides support for it, e.g. by calling `ImageIO.getWriterFormatNames()`.
+	 * 	Default: PNG
+	 *
 	 * @throws MatrixAnswerException On errors in the answer.
 	 */
+	@JvmOverloads
 	@Throws(MatrixAnswerException::class)
-	open fun uploadImage(img : RenderedImage, client : MatrixClient)
+	open fun uploadImage(image : RenderedImage, client : MatrixClient, imageType : String = "PNG")
 	{
-		width = img.width
-		height = img.height
-		
-		val baos = ByteArrayOutputStream()
-		ImageIO.write(img, "PNG", baos)
-		val bytes = baos.toByteArray()
-		size = bytes.size
-		
-		url = client.upload(bytes, mimetype)
+		val (url, info) = client.uploadImage(image, imageType)
+		this.url = url
+		this.width = info.width
+		this.height = info.height
+		this.mimetype = info.mimetype
+		this.size = info.size
 	}
 	
 	/**
