@@ -22,6 +22,7 @@ package msrd0.matrix.client
 import com.beust.klaxon.*
 import msrd0.matrix.client.event.MatrixEventContent
 import msrd0.matrix.client.util.JsonSerializable
+import java.awt.Image
 import java.awt.image.*
 import java.io.*
 import javax.imageio.ImageIO
@@ -95,6 +96,7 @@ class Avatar @JvmOverloads constructor(
 		@Throws(MatrixAnswerException::class)
 		fun fromImage(image : RenderedImage, client : MatrixClient, imageType : String = "JPG") : Avatar
 		{
+			@Suppress("NAME_SHADOWING") var image = image
 			val mimetype = when (imageType.toUpperCase()) {
 				"BMP" -> "image/x-windows-bmp"
 				"GIF" -> "image/gif"
@@ -104,6 +106,15 @@ class Avatar @JvmOverloads constructor(
 				else  -> throw IllegalArgumentException("Unsupported image type: $imageType")
 			}
 			val baos = ByteArrayOutputStream()
+			// bug in OpenJDK - cannot write jpeg images with alpha channel
+			if (mimetype == "image/jpeg" && image.colorModel.hasAlpha() && image is Image)
+			{
+				val bi = BufferedImage(image.width, image.height, BufferedImage.TYPE_INT_RGB)
+				val g = bi.createGraphics()
+				g.drawImage(image, 0, 0, bi.width, bi.height, null)
+				g.dispose()
+				image = bi
+			}
 			ImageIO.write(image, imageType, baos)
 			val bytes = baos.toByteArray()
 			val url = client.upload(bytes, mimetype)
