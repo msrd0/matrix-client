@@ -23,6 +23,7 @@ import com.beust.klaxon.*
 import msrd0.matrix.client.*
 import msrd0.matrix.client.event.MatrixEventTypes.*
 import msrd0.matrix.client.event.MessageTypes.*
+import org.slf4j.*
 import java.awt.image.RenderedImage
 import java.io.*
 import java.time.LocalDateTime
@@ -71,6 +72,13 @@ open class MessageContent(
 						json.obj("info") ?: missing("info"),
 						json.string("url") ?: missing("url")
 				)
+				return content
+			}
+			
+			if (type == FILE)
+			{
+				val content = FileMessageContent(body, body)
+				content.loadFromJson(json)
 				return content
 			}
 			
@@ -168,7 +176,7 @@ open class ImageMessageContent(alt : String) : MessageContent(alt, IMAGE)
 	}
 	
 	/**
-	 * Downloads the image from the matrix server. Please make sure that either `uploadImage` or `loadFromJson` was
+	 * Downloads the image from the matrix server. Please make sure that either [uploadImage] or [loadFromJson] was
 	 * called before to populate the url of this image message.
 	 *
 	 * @throws MatrixAnswerException On errors in the answer.
@@ -196,6 +204,86 @@ open class ImageMessageContent(alt : String) : MessageContent(alt, IMAGE)
 }
 
 /**
+ * The content of a file message. Please make sure to call [uploadFile] before trying to send events of this type.
+ */
+open class FileMessageContent
+@JvmOverloads constructor(
+		var filename : String,
+		body : String = filename
+) : MessageContent(body, FILE)
+{
+	companion object
+	{
+		private val logger : Logger = LoggerFactory.getLogger(FileMessageContent::class.java)
+	}
+	
+	var url : MatrixContentUrl? = null
+			protected set
+	var mimetype : String = "application/octet-stream"
+			protected set
+	var size : Int? = null
+			protected set
+	
+	/**
+	 * Loads the file from the json of a received message event.
+	 *
+	 * @throws IllegalJsonException On errors in the json.
+	 */
+	@Throws(IllegalJsonException::class)
+	open fun loadFromJson(json : JsonObject)
+	{
+		filename = json.string("filename") ?: missing("filename")
+		url = MatrixContentUrl.fromString(json.string("url") ?: missing("url"))
+		val info = json.obj("info")
+		if (info != null)
+		{
+			mimetype = info.string("mimetype") ?: "application/octet-stream"
+			size = info.int("size")
+		}
+	}
+	
+	/**
+	 * Upload the file to the matrix server. This method needs to be called before sending this message.
+	 *
+	 * @throws MatrixAnswerException On errors while uploading.
+	 */
+	@Throws(MatrixAnswerException::class)
+	open fun uploadFile(bytes : ByteArray, mimetype : String, client : MatrixClient)
+	{
+		url = client.upload(bytes, mimetype)
+		this.mimetype = mimetype
+		this.size = bytes.size
+	}
+	
+	/**
+	 * Download the file from the matrix server. Please make sure that either [uploadFile] or [loadFromJson] was called
+	 * before to populate the url of this file message.
+	 *
+	 * @throws MatrixAnswerException On errors while downloading.
+	 */
+	@Throws(MatrixAnswerException::class)
+	open fun downloadFile(client : MatrixClient) : ByteArray
+	{
+		val res = client.download(url ?: throw IllegalStateException("url is null"))
+		if (res.second != mimetype)
+			logger.warn("Downloaded mimetype ${res.second} doesn't match $mimetype")
+		return res.first
+	}
+	
+	override val json : JsonObject get()
+	{
+		val json = super.json
+		json["filename"] = filename
+		json["url"] = url?.toString() ?: throw IllegalStateException("You need to call FileMessageContent::uploadFile first")
+		json["info"] = mapOf(
+				"mimetype" to mimetype,
+				"size" to size
+		)
+		return json
+	}
+}
+
+/**
  * This class represents a message in a room.
  */
 class Message
@@ -206,6 +294,8 @@ constructor(room : Room, json : JsonObject)
 {
 	val body get() = content.body
 	val msgtype get() = content.msgtype
+	
+	override fun toString() = "Message(from $sender in $roomId: $content)"
 }
 
 class Messages(

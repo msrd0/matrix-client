@@ -29,4 +29,6 @@ public class MessageTypes
 	public static final String TEXT = "m.text";
 	
 	public static final String IMAGE = "m.image";
+	
+	public static final String FILE = "m.file";
 }
