@@ -19,7 +19,8 @@
 
 package msrd0.matrix.client.event
 
-import com.beust.klaxon.JsonObject
+import com.beust.klaxon.*
+import msrd0.matrix.client.*
 import msrd0.matrix.client.event.MessageTypes.*
 
 /**
@@ -31,10 +32,21 @@ open class AudioMessageContent(alt : String) : UrlMessageContent(alt, AUDIO, "au
 	var duration : Long? = null
 			protected set
 	
-	override fun loadFromJson(json : JsonObject)
+	@Throws(IllegalJsonException::class)
+	open fun loadFromJson(info : JsonObject, url : MatrixContentUrl)
 	{
-		TODO("not implemented")
+		this.url = url
+		this.mimetype = info.string("mimetype") ?: missing("mimetype")
+		this.size = info.int("size") ?: missing("size")
+		this.duration = info.long("duration") ?: missing("duration")
 	}
+	@Throws(IllegalJsonException::class)
+	fun loadFromJson(info : JsonObject, url : String)
+			= loadFromJson(info, MatrixContentUrl.fromString(url))
+	
+	@Throws(IllegalJsonException::class)
+	override fun loadFromJson(json : JsonObject)
+			= loadFromJson(json.obj("info") ?: missing("info"), json.string("url") ?: missing("url"))
 	
 	override val infoJson : JsonObject get()
 	{
