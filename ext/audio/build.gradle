@@ -1,4 +1,6 @@
 
 dependencies {
 	compile rootProject
+	
+	compile "net.sourceforge.jaadec:jaad:0.8.+"
 }
