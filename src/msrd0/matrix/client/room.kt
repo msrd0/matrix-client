@@ -265,4 +265,101 @@ open class Room(
 		promotions.forEach { user, level -> pl.users[user] = level }
 		powerLevels = pl
 	}
+	
+	/**
+	 * Kick a user from this room.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@JvmOverloads
+	@Throws(MatrixAnswerException::class)
+	fun kick(user : MatrixId, reason : String = "")
+	{
+		val res = client.target.post("_matrix/client/r0/rooms/$id/kick", client.token ?: throw NoTokenException(),
+				client.id, JsonObject(mapOf(
+					"user_id" to "$user",
+					"reason" to reason
+				)))
+	}
+	/**
+	 * Kick a list of users from this room.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@JvmOverloads
+	@Throws(MatrixAnswerException::class)
+	fun kick(users : Iterable<MatrixId>, reason : String = "")
+			= users.forEach { kick(it, reason) }
+	/**
+	 * Kick a list of users from this room.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@JvmOverloads
+	@Throws(MatrixAnswerException::class)
+	fun kick(vararg users : MatrixId, reason : String = "")
+			= users.forEach { kick(it, reason) }
+	
+	/**
+	 * Ban a user from this room.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@JvmOverloads
+	@Throws(MatrixAnswerException::class)
+	fun ban(user : MatrixId, reason : String = "")
+	{
+		val res = client.target.post("_matrix/client/r0/rooms/$id/ban", client.token ?: throw NoTokenException(),
+				client.id, JsonObject(mapOf(
+					"user_id" to "$user",
+					"reason" to reason
+				)))
+	}
+	/**
+	 * Ban a list of users from this room.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun ban(users : Iterable<MatrixId>, reason : String = "")
+			= users.forEach { ban(it, reason) }
+	/**
+	 * Ban a list of users from this room.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@JvmOverloads
+	@Throws(MatrixAnswerException::class)
+	fun ban(vararg users : MatrixId, reason : String = "")
+			= users.forEach { ban(it, reason) }
+	
+	/**
+	 * Unban a user from this room.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun unban(user : MatrixId)
+	{
+		val res = client.target.post("_matrix/client/r0/rooms/$id/unban", client.token ?: throw NoTokenException(),
+				client.id, JsonObject(mapOf(
+					"user_id" to "$user"
+				)))
+	}
+	/**
+	 * Unban a list of users from this room.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun unban(users : Iterable<MatrixId>)
+			= users.forEach { unban(it) }
+	/**
+	 * Unban a list of users from this room.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun unban(vararg users : MatrixId)
+			= users.forEach { unban(it) }
 }
