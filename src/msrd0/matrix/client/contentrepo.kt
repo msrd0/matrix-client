@@ -134,13 +134,13 @@ object ContentRepo
 	 */
 	@JvmStatic
 	@Throws(MatrixAnswerException::class)
-	fun download(url : MatrixContentUrl, client : MatrixClient) : Pair<ByteArray, String>
+	fun downloadBytes(url : MatrixContentUrl, client : MatrixClient) : Pair<ByteArray, String>
 	{
 		val res = client.target.get("_matrix/media/r0/download/${url.domain}/${url.mediaId}", client.token ?: throw NoTokenException(), client.id)
 		val status = res.status
 		if (status.family != 2)
 			throw MatrixErrorResponseException("${status.status}", status.phrase)
-		return Pair<ByteArray, String>(res.bytes, res.header("Content-Type") ?: throw MatrixAnswerException("Missing Content-Type header"))
+		return Pair(res.bytes, res.header("Content-Type") ?: throw MatrixAnswerException("Missing Content-Type header"))
 	}
 	
 	/**
@@ -150,15 +150,80 @@ object ContentRepo
 	 */
 	@JvmStatic
 	@Throws(MatrixAnswerException::class)
-	fun download(url : String, client : MatrixClient)
-			= download(MatrixContentUrl.fromString(url), client)
+	fun downloadBytes(url : String, client : MatrixClient)
+			= downloadBytes(MatrixContentUrl.fromString(url), client)
+	
+	
+	/**
+	 * Download the content with the specified url.
+	 *
+	 * @return A pair of the bytes and the mimetype.
+	 */
+	@JvmStatic
+	@Throws(MatrixAnswerException::class)
+	fun downloadStream(url : MatrixContentUrl, client : MatrixClient) : Pair<InputStream, String>
+	{
+		val res = client.target.get("_matrix/media/r0/download/${url.domain}/${url.mediaId}", client.token ?: throw NoTokenException(), client.id)
+		val status = res.status
+		if (status.family != 2)
+			throw MatrixErrorResponseException("${status.status}", status.phrase)
+		return Pair(res.stream, res.header("Content-Type") ?: throw MatrixAnswerException("Missing Content-Type header"))
+	}
+	
+	/**
+	 * Download the content with the specified url.
+	 *
+	 * @return A pair of the bytes and the mimetype.
+	 */
+	@JvmStatic
+	@Throws(MatrixAnswerException::class)
+	fun downloadStream(url : String, client : MatrixClient)
+			= downloadStream(MatrixContentUrl.fromString(url), client)
+	
+	
+	@JvmStatic
+	@Throws(MatrixAnswerException::class)
+	@Deprecated("Deprecated API call", replaceWith = ReplaceWith("downloadBytes(url, client)"))
+	fun download(url : MatrixContentUrl, client : MatrixClient) = downloadBytes(url, client)
+	
+	@JvmStatic
+	@Throws(MatrixAnswerException::class)
+	@Deprecated("Deprecated API call", replaceWith = ReplaceWith("downloadBytes(url, client)"))
+	fun download(url : String, client : MatrixClient) = downloadBytes(url, client)
 }
 
 // extend the client with the content repo functions
-@Throws(MatrixAnswerException::class) fun MatrixClient.upload(bytes : ByteArray, mimetype : String) = ContentRepo.upload(bytes, mimetype, this)
-@Throws(MatrixAnswerException::class) fun MatrixClient.download(url : MatrixContentUrl) = ContentRepo.download(url, this)
-@Throws(MatrixAnswerException::class) fun MatrixClient.download(url : String) = ContentRepo.download(url, this)
+
+@Throws(MatrixAnswerException::class)
+fun MatrixClient.upload(bytes : ByteArray, mimetype : String)
+		= ContentRepo.upload(bytes, mimetype, this)
 
 @Throws(MatrixAnswerException::class, IOException::class)
 fun MatrixClient.uploadImage(image : RenderedImage, imageType : String = "PNG")
 		= ContentRepo.uploadImage(image, this, imageType)
+
+@Throws(MatrixAnswerException::class)
+@Deprecated("Deprecated API call", replaceWith = ReplaceWith("downloadBytes(url)"))
+fun MatrixClient.download(url : MatrixContentUrl)
+		= @Suppress("DEPRECATION") ContentRepo.download(url, this)
+
+@Throws(MatrixAnswerException::class)
+@Deprecated("Deprecated API call", replaceWith = ReplaceWith("downloadBytes(url)"))
+fun MatrixClient.download(url : String)
+		= @Suppress("DEPRECATION") ContentRepo.download(url, this)
+
+@Throws(MatrixAnswerException::class)
+fun MatrixClient.downloadBytes(url : MatrixContentUrl)
+		= ContentRepo.downloadBytes(url, this)
+
+@Throws(MatrixAnswerException::class)
+fun MatrixClient.downloadBytes(url : String)
+		= ContentRepo.downloadBytes(url, this)
+
+@Throws(MatrixAnswerException::class)
+fun MatrixClient.downloadStream(url : MatrixContentUrl)
+		= ContentRepo.downloadStream(url, this)
+
+@Throws(MatrixAnswerException::class)
+fun MatrixClient.downloadStream(url : String)
+		= ContentRepo.downloadStream(url, this)
