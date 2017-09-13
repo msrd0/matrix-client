@@ -19,9 +19,28 @@
 
 package msrd0.matrix.client.event.call
 
-import com.beust.klaxon.JsonObject
-import msrd0.matrix.client.Room
+import com.beust.klaxon.*
+import msrd0.matrix.client.*
 import msrd0.matrix.client.event.*
+import msrd0.matrix.client.util.JsonSerializable
+
+data class CallEventDescriptor(
+		val type : String,
+		val sdp : String
+) : JsonSerializable
+{
+	@Throws(IllegalJsonException::class)
+	constructor(json : JsonObject)
+			: this(json.string("type") ?: missing("type"), json.string("sdp") ?: missing("sdp"))
+	
+	override val json : JsonObject get()
+	{
+		val json = JsonObject()
+		json["type"] = type
+		json["sdp"] = sdp
+		return json
+	}
+}
 
 /**
  * The content of a call event. Every call event has a call id.

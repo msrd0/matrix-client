@@ -23,30 +23,12 @@ import com.beust.klaxon.*
 import msrd0.matrix.client.*
 import msrd0.matrix.client.util.JsonSerializable
 
-data class CallInviteOffer(
-		val type : String,
-		val sdp : String
-) : JsonSerializable
-{
-	@Throws(IllegalJsonException::class)
-	constructor(json : JsonObject)
-			: this(json.string("type") ?: missing("type"), json.string("sdp") ?: missing("sdp"))
-	
-	override val json : JsonObject get()
-	{
-		val json = JsonObject()
-		json["type"] = type
-		json["sdp"] = sdp
-		return json
-	}
-}
-
 /**
  * The content of a call invite event.
  */
 class CallInviteEventContent(
 		callId : String,
-		val offer : CallInviteOffer,
+		val offer : CallEventDescriptor,
 		val lifetime : Long,
 		val version : Int
 ) : CallEventContent(callId)
@@ -58,7 +40,7 @@ class CallInviteEventContent(
 		fun fromJson(json : JsonObject)
 				= CallInviteEventContent(
 					json.string("call_id") ?: missing("call_id"),
-					CallInviteOffer(json.obj("offer") ?: missing("offer")),
+					CallEventDescriptor(json.obj("offer") ?: missing("offer")),
 					json.long("lifetime") ?: missing("lifetime"),
 					json.int("version") ?: missing("version")
 				)
