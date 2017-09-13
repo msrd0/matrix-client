@@ -22,7 +22,7 @@ package msrd0.matrix.client.util
 import com.beust.klaxon.*
 import msrd0.matrix.client.MatrixId
 import okhttp3.*
-import java.io.ByteArrayInputStream
+import java.io.*
 import java.net.*
 import java.util.concurrent.TimeUnit.*
 
@@ -135,14 +135,17 @@ class OkHttpTarget(uri : URI, userAgent : String) : HttpTarget(uri, userAgent)
 class OkHttpResponse(val res : Response) : HttpResponse()
 {
 	override val status : HttpStatusInfo
-		get() = HttpStatusInfo(res.code(), res.message())
+			by lazy { HttpStatusInfo(res.code(), res.message()) }
 	
 	override fun header(name : String) : String?
 			= res.header(name)
 	
-	override val bytes : ByteArray = res.body()!!.bytes()
+	override val stream : InputStream
+		get() = res.body()!!.byteStream()
+	override val bytes : ByteArray
+			by lazy { res.body()!!.bytes() }
 	override val str : String
-		get() = String(bytes)
+			by lazy { String(bytes) }
 	override val json : JsonObject
-		get() = Parser().parse(ByteArrayInputStream(bytes)) as JsonObject
+			by lazy { Parser().parse(stream) as JsonObject }
 }
