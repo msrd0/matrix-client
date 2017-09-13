@@ -222,7 +222,7 @@ open class ImageMessageContent(alt : String) : UrlMessageContent(alt, IMAGE, "im
 	@Throws(MatrixAnswerException::class, IOException::class)
 	open fun downloadImage(client : MatrixClient) : RenderedImage
 	{
-		val res = client.download(url ?: throw IllegalStateException("url is null"))
+		val res = client.downloadBytes(url ?: throw IllegalStateException("url is null"))
 		return ImageIO.read(ByteArrayInputStream(res.first))
 	}
 	
@@ -285,7 +285,7 @@ open class FileMessageContent
 	@Throws(MatrixAnswerException::class)
 	open fun downloadFile(client : MatrixClient) : ByteArray
 	{
-		val res = client.download(url ?: throw IllegalStateException("url is null"))
+		val res = client.downloadBytes(url ?: throw IllegalStateException("url is null"))
 		if (res.second != mimetype)
 			logger.warn("Downloaded mimetype ${res.second} doesn't match $mimetype")
 		return res.first

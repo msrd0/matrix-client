@@ -113,7 +113,7 @@ class MatrixClientTest
 		assertNotNull(avatar)
 		avatar as Avatar // asserted not null
 		assertThat(avatar.url, equalTo(testAvatar!!.url))
-		assertThat(ContentRepo.download(avatar.url, client).first.size, equalTo(testAvatar!!.info!!.size))
+		assertThat(client.downloadBytes(avatar.url).first.size, equalTo(testAvatar!!.info!!.size))
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
@@ -208,7 +208,7 @@ class MatrixClientTest
 		assertNotNull(avatar)
 		avatar as Avatar // asserted not null
 		assertThat(avatar.url, equalTo(testAvatar!!.url))
-		assertThat(ContentRepo.download(avatar.url, client).first.size, equalTo(testAvatar!!.info!!.size))
+		assertThat(client.downloadBytes(avatar.url).first.size, equalTo(testAvatar!!.info!!.size))
 		
 	}
 	
