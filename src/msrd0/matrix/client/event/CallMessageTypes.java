@@ -17,15 +17,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
  */
 
-package msrd0.matrix.client.event
+package msrd0.matrix.client.event;
 
-enum class CallMessageType(val type : String)
+import static lombok.AccessLevel.*;
+
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor(access = PRIVATE)
+public class CallMessageTypes
 {
-	INVITE("m.call.invite"),
+	public static final String INVITE = "m.call.invite";
 	
-	CANDIDATES("m.call.candidates"),
+	public static final String CANDIDATES = "m.call.candidates";
 	
-	ANSWER("m.call.answer"),
+	public static final String ANSWER = "m.call.answer";
 	
-	HANGUP("m.call.hangup")
+	public static final String HANGUP = "m.call.hangup";
 }
