@@ -106,7 +106,7 @@ class Avatar @JvmOverloads constructor(
 	@Throws(MatrixAnswerException::class)
 	fun downloadImage(client : MatrixClient) : BufferedImage
 	{
-		val res = client.download(url)
+		val res = client.downloadBytes(url)
 		if (info != null)
 		{
 			if (res.first.size != info!!.size)
