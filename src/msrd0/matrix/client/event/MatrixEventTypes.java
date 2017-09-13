@@ -107,6 +107,15 @@ public class MatrixEventTypes
 	 */
 	public static final String ROOM_REDACTION = "m.room.redaction";
 	
+	// ### call message events #########################################################################################
+	
+	public static final String CALL_INVITE = "m.call.invite";
+	
+	public static final String CALL_CANDIDATES = "m.call.candidates";
+	
+	public static final String CALL_ANSWER = "m.call.answer";
+	
+	public static final String CALL_HANGUP = "m.call.hangup";
 	
 	// ### receipt events ##############################################################################################
 	
