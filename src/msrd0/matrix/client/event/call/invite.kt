@@ -28,10 +28,10 @@ import msrd0.matrix.client.util.JsonSerializable
  */
 class CallInviteEventContent(
 		callId : String,
+		version : Int,
 		val offer : CallEventDescriptor,
-		val lifetime : Long,
-		val version : Int
-) : CallEventContent(callId)
+		val lifetime : Long
+) : CallEventContent(callId, version)
 {
 	companion object
 	{
@@ -40,9 +40,9 @@ class CallInviteEventContent(
 		fun fromJson(json : JsonObject)
 				= CallInviteEventContent(
 					json.string("call_id") ?: missing("call_id"),
+					json.int("version") ?: missing("version"),
 					CallEventDescriptor(json.obj("offer") ?: missing("offer")),
-					json.long("lifetime") ?: missing("lifetime"),
-					json.int("version") ?: missing("version")
+					json.long("lifetime") ?: missing("lifetime")
 				)
 	}
 	
@@ -51,7 +51,6 @@ class CallInviteEventContent(
 		val json = super.json
 		json["offer"] = offer.json
 		json["lifetime"] = lifetime
-		json["version"] = version
 		return json
 	}
 }

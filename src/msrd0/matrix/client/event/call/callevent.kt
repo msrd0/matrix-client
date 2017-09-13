@@ -43,16 +43,18 @@ data class CallEventDescriptor(
 }
 
 /**
- * The content of a call event. Every call event has a call id.
+ * The content of a call event. Every call event has a call id and a version.
  */
 abstract class CallEventContent(
-		val callId : String
+		val callId : String,
+		val version : Int
 ) : MatrixEventContent()
 {
 	override val json : JsonObject get()
 	{
 		val json = JsonObject()
 		json["call_id"] = callId
+		json["version"] = version
 		return json
 	}
 }
@@ -70,4 +72,5 @@ abstract class CallEvent<out C : CallEventContent>(
 			: this(room, MatrixEventData(json), content)
 	
 	val callId get() = content.callId
+	val version get() = content.version
 }
