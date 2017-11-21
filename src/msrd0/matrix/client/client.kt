@@ -584,7 +584,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	@Throws(MatrixAnswerException::class)
 	fun updateAvatar(avatar : Avatar)
 	{
-		val res = target.put("_matrix/client/unstable/profile/$id/avatar_url", token ?: throw NoTokenException(), id,
+		val res = target.put("_matrix/client/r0/profile/$id/avatar_url", token ?: throw NoTokenException(), id,
 				JsonObject(mapOf("avatar_url" to "${avatar.url}")))
 		checkForError(res)
 	}
@@ -614,7 +614,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 		}
 		val json = JsonObject(mapOf("messages" to messages))
 		
-		val res = target.put("_matrix/client/unstable/sendToDevice/$evType/$nextTxnId", json)
+		val res = target.put("_matrix/client/r0/sendToDevice/$evType/$nextTxnId", json)
 		checkForError(res)
 	}
 	
@@ -648,7 +648,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	@Throws(MatrixAnswerException::class)
 	fun devices() : List<Device>
 	{
-		val res = target.get("_matrix/client/unstable/devices", token ?: throw NoTokenException(), id)
+		val res = target.get("_matrix/client/r0/devices", token ?: throw NoTokenException(), id)
 		checkForError(res)
 		return res.json.array<JsonObject>("devices")
 				?.map { Device(it) }
@@ -663,7 +663,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	@Throws(MatrixAnswerException::class)
 	fun device(deviceId : String) : Device?
 	{
-		val res = target.get("_matrix/client/unstable/devices/$deviceId", token ?: throw NoTokenException(), id)
+		val res = target.get("_matrix/client/r0/devices/$deviceId", token ?: throw NoTokenException(), id)
 		if (res.status.status == 404)
 			return null
 		checkForError(res)
@@ -678,7 +678,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	@Throws(MatrixAnswerException::class)
 	fun updateDeviceDisplayName(deviceId : String, displayName : String)
 	{
-		val res = target.put("_matrix/client/unstable/devices/$deviceId", token ?: throw NoTokenException(), id,
+		val res = target.put("_matrix/client/r0/devices/$deviceId", token ?: throw NoTokenException(), id,
 				JsonObject(mapOf("display_name" to displayName)))
 		checkForError(res)
 	}
@@ -695,13 +695,13 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	fun deleteDevice(deviceId : String, helper : FlowHelper = DefaultFlowHelper())
 	{
 		val json = JsonObject()
-		var res = target.delete("_matrix/client/unstable/devices/$deviceId", json)
+		var res = target.delete("_matrix/client/r0/devices/$deviceId", json)
 		
 		while (res.status.status == 401 && res.json.containsKey("flows"))
 		{
 			val flowResponse = helper.answer(FlowRequest.fromJson(res.json))
 			json["auth"] = flowResponse.json
-			res = target.delete("_matrix/client/unstable/devices/$deviceId", json)
+			res = target.delete("_matrix/client/r0/devices/$deviceId", json)
 		}
 		
 		checkForError(res)
