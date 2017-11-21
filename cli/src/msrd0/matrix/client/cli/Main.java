@@ -242,6 +242,9 @@ public class Main
 		
 		// stop the client's event queue
 		MatrixClient.stopEventQueue();
+		
+		// exit the system
+		System.exit(0);
 	}
 	
 	private static void sync() throws MatrixAnswerException
