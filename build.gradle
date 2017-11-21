@@ -1,5 +1,13 @@
 buildscript {
-	ext.kotlin_version = '1.1.+'
+	ext.commonsIoVersion = '2.6'
+	ext.guavaVersion = '23.4-jre'
+	ext.hamcrestVersion = '1.3'
+	ext.kotlinVersion = '1.1.60'
+	ext.logbackVersion = '1.2.3'
+	ext.lombokVersion = '1.16.18'
+	ext.okhttpVersion = '3.9.1'
+	ext.slf4jVersion = '1.7.25'
+	ext.testngVersion = '6.12'
 	
 	repositories {
 		mavenLocal()
@@ -8,15 +16,18 @@ buildscript {
 	}
 	dependencies {
 		// kotlin
-		classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-		classpath "org.jetbrains.dokka:dokka-gradle-plugin:+"
+		classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
+		classpath "org.jetbrains.dokka:dokka-gradle-plugin:0.9.15"
 		
 		// licenser
 		classpath "gradle.plugin.net.minecrell:licenser:0.3"
 		
 		// code coverage
-		classpath "com.palantir:jacoco-coverage:0.4.+"
-		classpath "com.github.ksoichiro:gradle-console-reporter:0.5.+"
+		classpath "com.palantir:jacoco-coverage:0.4.0"
+		classpath "com.github.ksoichiro:gradle-console-reporter:0.5.0"
+		
+		// version check
+		classpath "com.github.ben-manes:gradle-versions-plugin:0.17.0"
 	}
 }
 
@@ -25,6 +36,7 @@ allprojects {
 	version "$matrix_client_version"
 	
 	apply plugin: 'java'
+	apply plugin: 'com.github.ben-manes.versions'
 	
 	apply plugin: 'net.minecrell.licenser'
 	license {
@@ -37,20 +49,19 @@ allprojects {
 		mavenLocal()
 		jcenter()
 		maven { url "https://maven.devpi.de/repository/default/" }
-		maven { url "https://msrd0.duckdns.org/artifactory/gradle/" }
 	}
 	
 	dependencies {
 		// java lombok annotations
-		compileOnly "org.projectlombok:lombok:1.16.+"
+		compileOnly "org.projectlombok:lombok:$lombokVersion"
 		
 		// logging
-		compile "org.slf4j:slf4j-api:1.7.+"
+		compile "org.slf4j:slf4j-api:$slf4jVersion"
 		
 		// test stuff
-		testCompile "org.testng:testng:6.+"
-		testCompile "org.hamcrest:hamcrest-integration:1.+"
-		testCompile "ch.qos.logback:logback-classic:1.+"
+		testCompile "org.testng:testng:$testngVersion"
+		testCompile "org.hamcrest:hamcrest-integration:$hamcrestVersion"
+		testCompile "ch.qos.logback:logback-classic:$logbackVersion"
 	}
 	
 	sourceCompatibility = "1.8"
@@ -73,8 +84,8 @@ configure(allprojects - project('matrix-client-cli')) {
 	
 	dependencies {
 		// stdlib
-		compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
-		compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
+		compile "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
+		compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlinVersion"
 	}
 	
 	sourceSets {
@@ -158,10 +169,10 @@ configure(allprojects - project('matrix-client-cli')) {
 dependencies {
 	
 	// apache commons
-	compile 'commons-io:commons-io:2.5'
+	compile "commons-io:commons-io:$commonsIoVersion"
 	
 	// http lib
-	compile "com.squareup.okhttp3:okhttp:3.8.+"
+	compile "com.squareup.okhttp3:okhttp:$okhttpVersion"
 	
 	// json lib
 	compile "com.beust:klaxon:0.32-SNAPSHOT"
