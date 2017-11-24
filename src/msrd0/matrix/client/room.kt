@@ -26,6 +26,7 @@ import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.MatrixEventTypes.*
 import msrd0.matrix.client.event.encryption.*
 import msrd0.matrix.client.event.state.*
+import org.matrix.olm.OlmManager
 import org.slf4j.*
 
 /**
@@ -41,7 +42,9 @@ open class Room(
 	
 	companion object
 	{
-		val logger : Logger = LoggerFactory.getLogger(Room::class.java)
+		private val logger : Logger = LoggerFactory.getLogger(Room::class.java)
+		
+		private val olmManager = OlmManager()
 		
 		fun newRoomEncryptor(client : MatrixClient, id : RoomId) : RoomEncryptor
 		{
