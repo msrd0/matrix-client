@@ -17,32 +17,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
  */
 
-package msrd0.matrix.client.event
+package msrd0.matrix.client.event;
 
-import com.beust.klaxon.*
-import msrd0.matrix.client.*
-import msrd0.matrix.client.event.MatrixEventTypes.DEVICE_NEW
+import static lombok.AccessLevel.*;
 
-class NewDeviceEventContent(
-		val device_id : String,
-		val rooms : Collection<RoomId>
-) : MatrixEventContent()
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor(access = PRIVATE)
+public class TextMessageFormats
 {
-	override val json : JsonObject get()
-	{
-		val json = JsonObject()
-		json["device_id"] = device_id
-		json["rooms"] = JsonArray(rooms.map { it.toString() })
-		return json
-	}
+	/** HTML message format. This is not part of the specification, but used by Riot. */
+	public static String HTML = "org.matrix.custom.html";
 }
-
-/*
-class NewDeviceEvent(
-		sender : MatrixId,
-		content : NewDeviceEventContent
-) : MatrixToDeviceEvent<NewDeviceEventContent>(sender, DEVICE_NEW, content)
-{
-	override val json : JsonObject get() = abstractJson
-}
-*/

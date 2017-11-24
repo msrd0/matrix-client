@@ -51,23 +51,10 @@ class RoomEncryptionEventContent(val algorithm : String) : MatrixEventContent()
  */
 class RoomEncryptionEvent(
 		room : Room,
-		sender : MatrixId,
+		data : MatrixEventData,
 		content : RoomEncryptionEventContent
-) : MatrixRoomEvent<RoomEncryptionEventContent>(room, sender, ROOM_ENCRYPTION, content)
+) : MatrixRoomEvent<RoomEncryptionEventContent>(room, data, content)
 {
-	companion object
-	{
-		/**
-		 * Constructs a room encryption event py parsing the supplied json.
-		 *
-		 * @throws IllegalJsonException On errors in the json.
-		 */
-		@JvmStatic
-		@Throws(IllegalJsonException::class)
-		fun fromJson(room : Room, json : JsonObject) : RoomEncryptionEvent
-				= RoomEncryptionEvent(room, MatrixId.fromString(json.string("sender") ?: missing("sender")),
-					RoomEncryptionEventContent.fromJson(json.obj("content") ?: missing("content")))
-	}
-	
-	override val json : JsonObject get() = abstractJson
+	constructor(room : Room, json : JsonObject, content : RoomEncryptionEventContent)
+			: this(room, MatrixEventData(json), content)
 }

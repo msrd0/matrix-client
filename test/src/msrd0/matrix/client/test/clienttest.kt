@@ -20,18 +20,21 @@
 package msrd0.matrix.client.test
 
 import msrd0.matrix.client.*
-import msrd0.matrix.client.event.ImageMessageContent
+import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.encryption.RoomEncryptionAlgorithms
 import msrd0.matrix.client.event.state.*
+import org.apache.commons.io.IOUtils
 import org.hamcrest.MatcherAssert.*
 import org.hamcrest.Matchers.*
 import org.testng.Assert.*
 import org.testng.annotations.Test
 import java.awt.image.RenderedImage
+import java.lang.ClassLoader.*
 import java.net.URI
+import java.nio.charset.StandardCharsets.*
 import javax.imageio.ImageIO
 
-class ClientTest
+class MatrixClientTest
 {
 	companion object
 	{
@@ -42,13 +45,19 @@ class ClientTest
 		var userData : MatrixUserData? = null
 		var roomId : RoomId? = null
 		
-		val testImage : RenderedImage = ImageIO.read(ClassLoader.getSystemResourceAsStream("matrix-logo.png"))
+		val testImage : RenderedImage = ImageIO.read(getSystemResourceAsStream("matrix-logo.png"))
 		var testAvatar : Avatar? = null
+		var testFile : String = IOUtils.toString(getSystemResource("blindtext.txt"), UTF_8)
 		
-		fun newClient() : Client
+		var numClient : Long = 0
+		fun newClient() : MatrixClient
 		{
-			val c = Client(hs, id)
+			val c = MatrixClient(hs, id)
 			c.userData = userData
+			synchronized(numClient) {
+				c.lastTxnId = numClient
+				numClient += 100
+			}
 			return c
 		}
 	}
@@ -63,7 +72,7 @@ class ClientTest
 	@Test(groups = arrayOf("api"))
 	fun client_register()
 	{
-		val client = Client.register(id.localpart, hs, password)
+		val client = MatrixClient.register(id.localpart, hs, password)
 		assertThat(client.hs, equalTo(hs))
 		assertThat(client.id.localpart, equalTo(id.localpart))
 		assertNotNull(client.userData)
@@ -105,7 +114,7 @@ class ClientTest
 		assertNotNull(avatar)
 		avatar as Avatar // asserted not null
 		assertThat(avatar.url, equalTo(testAvatar!!.url))
-		assertThat(ContentRepo.download(avatar.url, client).first.size.toLong(), equalTo(testAvatar!!.info!!.size))
+		assertThat(client.downloadBytes(avatar.url).first.size, equalTo(testAvatar!!.info!!.size))
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
@@ -203,8 +212,31 @@ class ClientTest
 		assertNotNull(avatar)
 		avatar as Avatar // asserted not null
 		assertThat(avatar.url, equalTo(testAvatar!!.url))
-		assertThat(ContentRepo.download(avatar.url, client).first.size.toLong(), equalTo(testAvatar!!.info!!.size))
+		assertThat(client.downloadBytes(avatar.url).first.size, equalTo(testAvatar!!.info!!.size))
 		
+	}
+	
+	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create"))
+	fun room_send_message()
+	{
+		val client = newClient()
+		val room = Room(client, roomId!!)
+		
+		val msg = FormattedTextMessageContent(
+				"This is a test message",
+				TextMessageFormats.HTML,
+				"<p><i>This</i> is a <b>test</b> message</p>"
+		)
+		room.sendMessage(msg)
+		
+		val messages = room.retrieveMessages()
+		val filtered = messages.filter { it.body == msg.body }
+		assertThat(filtered.size, greaterThan(0))
+		val content = filtered.first().content
+		assertThat(content, instanceOf(FormattedTextMessageContent::class.java))
+		content as FormattedTextMessageContent
+		assertThat(content.format, equalTo(msg.format))
+		assertThat(content.formattedBody, equalTo(msg.formattedBody))
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create"))
@@ -219,7 +251,7 @@ class ClientTest
 		room.sendMessage(msg)
 		
 		val messages = room.retrieveMessages()
-		val filtered = messages.filter { it.body == "matrix-logo.png" }
+		val filtered = messages.filter { it.body == msg.body }
 		assertThat(filtered.size, greaterThan(0))
 		val content = filtered.first().content
 		assertThat(content, instanceOf(ImageMessageContent::class.java))
@@ -229,6 +261,30 @@ class ClientTest
 		val downloaded = content.downloadImage(client)
 		assertThat(downloaded.width, equalTo(img.width))
 		assertThat(downloaded.height, equalTo(img.height))
+	}	
+	
+	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create"))
+	fun room_send_file()
+	{
+		val client = newClient()
+		val room = Room(client, roomId!!)
+		
+		val msg = FileMessageContent("blindtext.txt")
+		val bytes = testFile.toByteArray(UTF_8)
+		msg.uploadFile(bytes, "text/plain;charset=utf-8", client)
+		room.sendMessage(msg)
+		
+		val messages = room.retrieveMessages()
+		val filtered = messages.filter { it.body == msg.body }
+		assertThat(filtered.size, greaterThan(0))
+		val content = filtered.first().content
+		assertThat(content, instanceOf(FileMessageContent::class.java))
+		content as FileMessageContent
+		assertThat(content.filename, equalTo(msg.filename))
+		assertThat(content.mimetype, equalTo(msg.mimetype))
+		assertThat(content.size, equalTo(bytes.size))
+		val downloaded = content.downloadFile(client)
+		assertThat(String(downloaded, UTF_8), equalTo(testFile))
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_send_image", "room_update"))

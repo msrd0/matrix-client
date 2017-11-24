@@ -21,7 +21,7 @@ package msrd0.matrix.client.filter
 
 import com.beust.klaxon.*
 import msrd0.matrix.client.*
-import msrd0.matrix.client.Client.Companion.checkForError
+import msrd0.matrix.client.MatrixClient.Companion.checkForError
 import msrd0.matrix.client.util.JsonSerializable
 
 enum class EventFormat
@@ -62,7 +62,7 @@ class Filter : JsonSerializable
 	 * @throws MatrixAnswerException On errors in the answer from the server.
 	 */
 	@Throws(MatrixAnswerException::class)
-	fun upload(client : Client) : String
+	fun upload(client : MatrixClient) : String
 	{
 		val res = client.target.post("_matrix/client/r0/user/${client.id}/filter",
 				client.token ?: throw NoTokenException(), client.id, json)
@@ -72,5 +72,5 @@ class Filter : JsonSerializable
 }
 
 @Throws(MatrixAnswerException::class)
-fun Client.uploadFilter(filter : Filter) : String
+fun MatrixClient.uploadFilter(filter : Filter) : String
 		 = filter.upload(this)

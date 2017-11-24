@@ -21,7 +21,8 @@ package msrd0.matrix.client
 
 import com.beust.klaxon.*
 import msrd0.matrix.client.event.MatrixEventContent
-import msrd0.matrix.client.util.JsonSerializable
+import msrd0.matrix.client.util.*
+import java.awt.Image
 import java.awt.image.*
 import java.io.*
 import javax.imageio.ImageIO
@@ -29,10 +30,12 @@ import javax.imageio.ImageIO
 data class AvatarInfo(
 		val width : Int,
 		val height : Int,
-		val size : Long,
+		val size : Int,
 		val mimetype : String
 ) : JsonSerializable
 {
+	constructor(info : ImageInfo) : this(info.width, info.height, info.size, info.mimetype)
+	
 	companion object
 	{
 		@JvmStatic
@@ -41,7 +44,7 @@ data class AvatarInfo(
 				= AvatarInfo(
 					json.int("w") ?: missing("w"),
 					json.int("h") ?: missing("h"),
-					json.long("size") ?: missing("size"),
+					json.int("size") ?: missing("size"),
 					json.string("mimetype") ?: missing("mimetype")
 				)
 	}
@@ -58,10 +61,14 @@ data class AvatarInfo(
 }	
 
 class Avatar @JvmOverloads constructor(
-		val url : String,
+		val url : MatrixContentUrl,
 		var info : AvatarInfo? = null
 ) : MatrixEventContent()
 {
+	@JvmOverloads
+	constructor(url : String, info : AvatarInfo? = null)
+			: this(MatrixContentUrl.fromString(url), info)
+	
 	companion object
 	{
 		@JvmStatic
@@ -75,26 +82,34 @@ class Avatar @JvmOverloads constructor(
 			return Avatar(url, info)
 		}
 		
+		/**
+		 * Creates an avatar from the given image. The client is used to upload the image to the matrix homeserver.
+		 *
+		 * @param image The image of this avatar.
+		 * @param client The client used to upload the image.
+		 * @param imageType The image type used for writing the image. One of: BMP, GIF, JPG/JPEG, PNG, WBMP. Please
+		 * 	make sure the java installation also provides support for it, e.g. by calling `ImageIO.getWriterFormatNames()`.
+		 * 	Default: JPG
+		 *
+		 * @throws MatrixAnswerException On errors while uploading the image.
+		 */
+		@JvmOverloads
 		@JvmStatic
 		@Throws(MatrixAnswerException::class)
-		fun fromImage(image : RenderedImage, client : Client) : Avatar
+		fun fromImage(image : RenderedImage, client : MatrixClient, imageType : String = "JPG") : Avatar
 		{
-			val baos = ByteArrayOutputStream()
-			ImageIO.write(image, "PNG", baos)
-			val bytes = baos.toByteArray()
-			val url = client.upload(bytes, "image/png")
-			val info = AvatarInfo(image.width, image.height, bytes.size.toLong(), "image/png")
-			return Avatar(url, info)
+			val (url, info) = client.uploadImage(image, imageType)
+			return Avatar(url, AvatarInfo(info))
 		}
 	}
 	
 	@Throws(MatrixAnswerException::class)
-	fun downloadImage(client : Client) : BufferedImage
+	fun downloadImage(client : MatrixClient) : BufferedImage
 	{
-		val res = client.download(url)
+		val res = client.downloadBytes(url)
 		if (info != null)
 		{
-			if (res.first.size.toLong() != info!!.size)
+			if (res.first.size != info!!.size)
 				throw MatrixInfoMismatchException("size", info!!.size, res.first.size)
 			if (res.second != info!!.mimetype)
 				throw MatrixInfoMismatchException("mimetype", info!!.mimetype, res.second)
@@ -114,7 +129,7 @@ class Avatar @JvmOverloads constructor(
 	override val json : JsonObject get()
 	{
 		val json = JsonObject()
-		json["url"] = url
+		json["url"] = "$url"
 		if (info != null)
 			json["info"] = info!!.json
 		return json

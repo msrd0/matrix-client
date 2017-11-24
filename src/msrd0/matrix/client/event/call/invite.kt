@@ -17,40 +17,49 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
  */
 
-package msrd0.matrix.client.event.state
+package msrd0.matrix.client.event.call
 
 import com.beust.klaxon.*
 import msrd0.matrix.client.*
-import msrd0.matrix.client.event.*
-import msrd0.matrix.client.event.MatrixEventTypes.*
+import msrd0.matrix.client.util.JsonSerializable
 
 /**
- * The content of a room name event.
+ * The content of a call invite event.
  */
-class RoomNameEventContent(val name : String) : MatrixEventContent()
+class CallInviteEventContent(
+		callId : String,
+		version : Int,
+		val offer : CallEventDescriptor,
+		val lifetime : Long
+) : CallEventContent(callId, version)
 {
 	companion object
 	{
-		/**
-		 * Constructs a room name event content by parsing the supplied json.
-		 *
-		 * @throws IllegalJsonException On errors in the json.
-		 */
 		@JvmStatic
 		@Throws(IllegalJsonException::class)
-		fun fromJson(json : JsonObject) : RoomNameEventContent
-				= RoomNameEventContent(json.string("name") ?: missing("name"))
+		fun fromJson(json : JsonObject)
+				= CallInviteEventContent(
+					json.string("call_id") ?: missing("call_id"),
+					json.int("version") ?: missing("version"),
+					CallEventDescriptor(json.obj("offer") ?: missing("offer")),
+					json.long("lifetime") ?: missing("lifetime")
+				)
 	}
 	
 	override val json : JsonObject get()
-			= JsonObject(mapOf("name" to name))
+	{
+		val json = super.json
+		json["offer"] = offer.json
+		json["lifetime"] = lifetime
+		return json
+	}
 }
 
 /**
- * A room name event.
+ * A call invite event.
  */
-class RoomNameEvent
+class CallInviteEvent
 @Throws(IllegalJsonException::class)
 constructor(room : Room, json : JsonObject)
-	: MatrixRoomEvent<RoomNameEventContent>(room, json,
-		RoomNameEventContent.fromJson(json.obj("content") ?: missing("content")))
+	: CallEvent<CallInviteEventContent>(room, json,
+		CallInviteEventContent.fromJson(json.obj("content") ?: missing("content")))

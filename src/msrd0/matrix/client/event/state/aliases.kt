@@ -50,25 +50,8 @@ class RoomAliasesEventContent(val aliases : List<RoomAlias>) : MatrixEventConten
 /**
  * A room aliases event.
  */
-class RoomAliasesEvent(
-		room : Room,
-		sender : MatrixId,
-		content : RoomAliasesEventContent
-) : MatrixRoomEvent<RoomAliasesEventContent>(room, sender, ROOM_ALIASES, content)
-{
-	companion object
-	{
-		/**
-		 * Constructs a room aliases event by parsing the supplied json.
-		 *
-		 * @throws IllegalJsonException On errors in the json.
-		 */
-		@JvmStatic
-		@Throws(IllegalJsonException::class)
-		fun fromJson(room : Room, json : JsonObject) : RoomAliasesEvent
-				= RoomAliasesEvent(room, MatrixId.fromString(json.string("sender") ?: missing("sender")),
-					RoomAliasesEventContent.fromJson(json.obj("content") ?: missing("content")))
-	}
-	
-	override val json : JsonObject get() = abstractJson
-}
+class RoomAliasesEvent
+@Throws(IllegalJsonException::class)
+constructor(room : Room, json : JsonObject)
+	: MatrixRoomEvent<RoomAliasesEventContent>(room, json,
+		RoomAliasesEventContent.fromJson(json.obj("content") ?: missing("content")))

@@ -124,25 +124,8 @@ data class RoomPowerLevels(
 /**
  * A room power levels event.
  */
-class RoomPowerLevelsEvent(
-		room : Room,
-		sender : MatrixId,
-		content : RoomPowerLevels
-) : MatrixRoomEvent<RoomPowerLevels>(room, sender, ROOM_POWER_LEVELS, content)
-{
-	companion object
-	{
-		/**
-		 * Constructs a room power levels event by parsing the supplied json.
-		 *
-		 * @throws IllegalJsonException On errors in the json.
-		 */
-		@JvmStatic
-		@Throws(IllegalJsonException::class)
-		fun fromJson(room : Room, json : JsonObject) : RoomPowerLevelsEvent
-				= RoomPowerLevelsEvent(room, MatrixId.fromString(json.string("sender") ?: missing("sender")),
-					RoomPowerLevels.fromJson(json.obj("content") ?: missing("content")))
-	}
-	
-	override val json : JsonObject get() = abstractJson
-}
+class RoomPowerLevelsEvent
+@Throws(IllegalJsonException::class)
+constructor(room : Room, json : JsonObject)
+	: MatrixRoomEvent<RoomPowerLevels>(room, json,
+		RoomPowerLevels.fromJson(json.obj("content") ?: missing("content")))

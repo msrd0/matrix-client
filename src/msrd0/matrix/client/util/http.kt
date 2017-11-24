@@ -22,6 +22,7 @@ package msrd0.matrix.client.util
 import com.beust.klaxon.*
 import msrd0.matrix.client.MatrixId
 import org.slf4j.*
+import java.io.InputStream
 import java.lang.Math.*
 import java.net.URI
 import java.nio.charset.StandardCharsets.*
@@ -153,6 +154,7 @@ abstract class HttpResponse
 	abstract val status : HttpStatusInfo
 	abstract fun header(name : String) : String?
 	
+	abstract val stream : InputStream
 	abstract val bytes : ByteArray
 	abstract val str : String
 	abstract val json : JsonObject

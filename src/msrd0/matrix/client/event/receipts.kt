@@ -17,40 +17,37 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
  */
 
-package msrd0.matrix.client.event.state
+package msrd0.matrix.client.event
 
-import com.beust.klaxon.*
+import com.beust.klaxon.JsonObject
 import msrd0.matrix.client.*
-import msrd0.matrix.client.event.*
-import msrd0.matrix.client.event.MatrixEventTypes.*
 
 /**
- * The content of a room name event.
+ * The content of a receipt event. It is a dictionary of eventId to receiptType to userId to timestamp.
  */
-class RoomNameEventContent(val name : String) : MatrixEventContent()
+class ReceiptContent(val content : Map<String, Map<String, Map<MatrixId, Long>>>)
 {
 	companion object
 	{
-		/**
-		 * Constructs a room name event content by parsing the supplied json.
-		 *
-		 * @throws IllegalJsonException On errors in the json.
-		 */
 		@JvmStatic
 		@Throws(IllegalJsonException::class)
-		fun fromJson(json : JsonObject) : RoomNameEventContent
-				= RoomNameEventContent(json.string("name") ?: missing("name"))
+		fun fromJson(json : JsonObject)
+				= ReceiptContent(json
+						.mapKeys { it.key as String }
+						.mapValues { (it.value as JsonObject)
+								.mapKeys { it.key as String }
+								.mapValues { (it.value as JsonObject)
+										.mapKeys { MatrixId.fromString(it.key as String) }
+										.mapValues {
+											val value = it.value;
+											when (value) {
+												is Int -> value.toLong()
+												is Long -> value
+												else -> throw IllegalArgumentException("")
+											}
+										}
+								}
+						}
+				)
 	}
-	
-	override val json : JsonObject get()
-			= JsonObject(mapOf("name" to name))
 }
-
-/**
- * A room name event.
- */
-class RoomNameEvent
-@Throws(IllegalJsonException::class)
-constructor(room : Room, json : JsonObject)
-	: MatrixRoomEvent<RoomNameEventContent>(room, json,
-		RoomNameEventContent.fromJson(json.obj("content") ?: missing("content")))

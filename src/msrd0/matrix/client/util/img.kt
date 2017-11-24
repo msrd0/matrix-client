@@ -17,32 +17,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
  */
 
-package msrd0.matrix.client.event
+package msrd0.matrix.client.util
 
-import com.beust.klaxon.*
-import msrd0.matrix.client.*
-import msrd0.matrix.client.event.MatrixEventTypes.DEVICE_NEW
+import java.awt.Image
+import java.awt.image.*
+import java.util.*
 
-class NewDeviceEventContent(
-		val device_id : String,
-		val rooms : Collection<RoomId>
-) : MatrixEventContent()
+fun RenderedImage.toBufferedImage() : BufferedImage
 {
-	override val json : JsonObject get()
-	{
-		val json = JsonObject()
-		json["device_id"] = device_id
-		json["rooms"] = JsonArray(rooms.map { it.toString() })
-		return json
-	}
+	if (this is BufferedImage)
+		return this
+	
+	val raster = colorModel.createCompatibleWritableRaster(width, height)
+	val props = Hashtable<String, Any>()
+	for (key in (propertyNames ?: emptyArray()))
+		props[key] = getProperty(key)
+	
+	val img = BufferedImage(colorModel, raster, colorModel.isAlphaPremultiplied, props)
+	img.copyData(raster)
+	return img
 }
 
-/*
-class NewDeviceEvent(
-		sender : MatrixId,
-		content : NewDeviceEventContent
-) : MatrixToDeviceEvent<NewDeviceEventContent>(sender, DEVICE_NEW, content)
+fun RenderedImage.toImage() : Image
 {
-	override val json : JsonObject get() = abstractJson
+	if (this is Image)
+		return this
+	return toBufferedImage()
 }
-*/

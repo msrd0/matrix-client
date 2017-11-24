@@ -43,7 +43,7 @@ enum class LoginType(val type : String)
 	}
 }
 
-class Auth(val client : Client, val loginType : LoginType)
+class Auth(val client : MatrixClient, val loginType : LoginType)
 {
 	val isSuccess : Boolean
 		get() = loginType == LoginType.SUCCESS

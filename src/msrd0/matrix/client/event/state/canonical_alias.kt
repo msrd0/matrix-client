@@ -50,25 +50,8 @@ class RoomCanonicalAliasEventContent(val alias : RoomAlias) : MatrixEventContent
 /**
  * A room canonical alias event.
  */
-class RoomCanonicalAliasEvent(
-		room : Room,
-		sender : MatrixId,
-		content : RoomCanonicalAliasEventContent
-) : MatrixRoomEvent<RoomCanonicalAliasEventContent>(room, sender, ROOM_CANONICAL_ALIAS, content)
-{
-	companion object
-	{
-		/**
-		 * Constructs a room canonical alias event py parsing the supplied json.
-		 *
-		 * @throws IllegalJsonException On errors in the json.
-		 */
-		@JvmStatic
-		@Throws(IllegalJsonException::class)
-		fun fromJson(room : Room, json : JsonObject) : RoomCanonicalAliasEvent
-				= RoomCanonicalAliasEvent(room, MatrixId.fromString(json.string("sender") ?: missing("sender")),
-					RoomCanonicalAliasEventContent.fromJson(json.obj("content") ?: missing("content")))
-	}
-	
-	override val json : JsonObject get() = abstractJson
-}
+class RoomCanonicalAliasEvent
+@Throws(IllegalJsonException::class)
+constructor(room : Room, json : JsonObject)
+	: MatrixRoomEvent<RoomCanonicalAliasEventContent>(room, json,
+		RoomCanonicalAliasEventContent.fromJson(json.obj("content") ?: missing("content")))

@@ -15,7 +15,7 @@ build:
 test:
   stage: test
   services:
-    - name: msrd0/synapse
+    - name: registry.gitlab.com/msrd0/docker-synapse
       alias: synapse
   script:
     - GRADLE_USER_HOME=.gradle gradle test
@@ -25,6 +25,6 @@ test:
 deploy:
   stage: deploy
   script:
-    - GRADLE_USER_HOME=.gradle gradle artifactoryPublish
+    - GRADLE_USER_HOME=.gradle gradle publish
   only:
     - master

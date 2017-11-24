@@ -40,15 +40,16 @@ data class Device(
 		 * @throws IllegalJsonException On errors in the supplied json.
 		 */
 		@JvmStatic
+		@Deprecated(message = "Use constructor instead", replaceWith = ReplaceWith("Device(json)"))
 		@Throws(IllegalJsonException::class)
-		fun fromJson(json : JsonObject) : Device
-		{
-			val deviceId = json.string("device_id") ?: missing("device_id")
-			val displayName = json.string("display_name") ?: missing("display_name")
-			val lastSeenIp = json.string("last_seen_ip") ?: missing("last_seen_ip")
-			val lastSeenTs = json.long("last_seen_ts") ?: missing("last_seen_ts")
-			return Device(deviceId, displayName, lastSeenIp,
-					Instant.ofEpochMilli(lastSeenTs).atZone(ZoneId.systemDefault()))
-		}
+		fun fromJson(json : JsonObject) = Device(json)
 	}
+	
+	@Throws(IllegalJsonException::class)
+	constructor(json : JsonObject) : this(
+			json.string("device_id") ?: missing("device_id"),
+			json.string("display_name") ?: missing("display_name"),
+			json.string("last_seen_ip") ?: missing("last_seen_ip"),
+			Instant.ofEpochMilli(json.long("last_seen_ts") ?: missing("last_seen_ts")).atZone(ZoneId.systemDefault())
+	)
 }

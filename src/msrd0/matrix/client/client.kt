@@ -31,11 +31,11 @@ import kotlin.concurrent.thread
 /**
  * This class is the http client for the matrix server.
  */
-open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
+open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 {
 	companion object
 	{
-		private val logger : Logger = LoggerFactory.getLogger(Client::class.java)
+		private val logger : Logger = LoggerFactory.getLogger(MatrixClient::class.java)
 		
 		
 		
@@ -60,7 +60,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 		@JvmStatic
 		@JvmOverloads
 		@Throws(MatrixAnswerException::class, UnsupportedFlowsException::class)
-		fun register(localpart : String, hs : HomeServer, password : String, helper : FlowHelper = DefaultFlowHelper(password)) : Client
+		fun register(localpart : String, hs : HomeServer, password : String, helper : FlowHelper = DefaultFlowHelper(password)) : MatrixClient
 		{
 			var json = JsonObject()
 			json["username"] = localpart
@@ -81,7 +81,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 			
 			json = res.json
 			
-			val client = Client(hs, MatrixId.fromString(json.string("user_id") ?: missing("user_id")))
+			val client = MatrixClient(hs, MatrixId.fromString(json.string("user_id") ?: missing("user_id")))
 			client.userData = MatrixUserData(
 					json.string("access_token") ?: missing("access_token"),
 					json.string("device_id") ?: missing("device_id")
@@ -98,7 +98,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 		 */
 		@JvmStatic
 		@Throws(MatrixAnswerException::class)
-		fun registerFromAs(localpart : String, hs : HomeServer, token : String) : Client
+		fun registerFromAs(localpart : String, hs : HomeServer, token : String) : MatrixClient
 		{
 			var json = JsonObject()
 			json["username"] = localpart
@@ -110,7 +110,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 			
 			json = res.json
 			
-			val client = Client(hs, MatrixId.fromString(json.string("user_id") ?: missing("user_id")))
+			val client = MatrixClient(hs, MatrixId.fromString(json.string("user_id") ?: missing("user_id")))
 			client.userData = MatrixUserData(
 					json.string("access_token") ?: missing("access_token"),
 					json.string("device_id") ?: missing("device_id")
@@ -192,11 +192,11 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 	internal fun fire(ev : Event)
 			= queue.enqueue(ev)
 	
-	/** The last transaction id used by this client. */
-	private var lastTxnId : Long = -1
+	/** The last transaction id used by this client. Use `nextTxnId` if you need a new one. */
+	var lastTxnId : Long = -1
 	
 	/** The next transaction id to use by this client. */
-	val nextTxnId : Long
+	open val nextTxnId : Long
 		get() = ++lastTxnId
 	
 	/**
@@ -206,7 +206,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 	constructor(domain : String, localpart : String, hsDomain : String = domain, hsBaseUri : URI = URI("https://$hsDomain/"))
 			: this(HomeServer(hsDomain, hsBaseUri), MatrixId(localpart, domain))
 	
-	/** HTTP Client */
+	/** HTTP MatrixClient */
 	internal val target : HttpTarget = DefaultHttpTarget(hs.base, publicTarget.userAgent)
 	
 	
@@ -498,7 +498,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 					val timeline = join.obj("$roomId")?.obj("timeline") ?: missing("timeline")
 					val events = timeline.array<JsonObject>("events") ?: missing("timeline.events")
 					for (event in events)
-						fire(RoomMessageEvent(room, Message.fromJson(room, event)))
+						fire(RoomMessageEvent(room, Message(room, event)))
 				}
 				val invite = rooms.obj("invite") ?: missing("rooms.invite")
 				for (roomId in invite.keys.map { RoomId.fromString(it) })
@@ -584,8 +584,8 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 	@Throws(MatrixAnswerException::class)
 	fun updateAvatar(avatar : Avatar)
 	{
-		val res = target.put("_matrix/client/unstable/profile/$id/avatar_url", token ?: throw NoTokenException(), id,
-				JsonObject(mapOf("avatar_url" to avatar.url)))
+		val res = target.put("_matrix/client/r0/profile/$id/avatar_url", token ?: throw NoTokenException(), id,
+				JsonObject(mapOf("avatar_url" to "${avatar.url}")))
 		checkForError(res)
 	}
 	
@@ -614,7 +614,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 		}
 		val json = JsonObject(mapOf("messages" to messages))
 		
-		val res = target.put("_matrix/client/unstable/sendToDevice/$evType/$nextTxnId", json)
+		val res = target.put("_matrix/client/r0/sendToDevice/$evType/$nextTxnId", json)
 		checkForError(res)
 	}
 	
@@ -648,10 +648,10 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 	@Throws(MatrixAnswerException::class)
 	fun devices() : List<Device>
 	{
-		val res = target.get("_matrix/client/unstable/devices", token ?: throw NoTokenException(), id)
+		val res = target.get("_matrix/client/r0/devices", token ?: throw NoTokenException(), id)
 		checkForError(res)
 		return res.json.array<JsonObject>("devices")
-				?.map { Device.fromJson(it) }
+				?.map { Device(it) }
 				?: missing("devices")
 	}
 	
@@ -663,11 +663,11 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 	@Throws(MatrixAnswerException::class)
 	fun device(deviceId : String) : Device?
 	{
-		val res = target.get("_matrix/client/unstable/devices/$deviceId", token ?: throw NoTokenException(), id)
+		val res = target.get("_matrix/client/r0/devices/$deviceId", token ?: throw NoTokenException(), id)
 		if (res.status.status == 404)
 			return null
 		checkForError(res)
-		return Device.fromJson(res.json)
+		return Device(res.json)
 	}
 	
 	/**
@@ -678,7 +678,7 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 	@Throws(MatrixAnswerException::class)
 	fun updateDeviceDisplayName(deviceId : String, displayName : String)
 	{
-		val res = target.put("_matrix/client/unstable/devices/$deviceId", token ?: throw NoTokenException(), id,
+		val res = target.put("_matrix/client/r0/devices/$deviceId", token ?: throw NoTokenException(), id,
 				JsonObject(mapOf("display_name" to displayName)))
 		checkForError(res)
 	}
@@ -695,13 +695,13 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 	fun deleteDevice(deviceId : String, helper : FlowHelper = DefaultFlowHelper())
 	{
 		val json = JsonObject()
-		var res = target.delete("_matrix/client/unstable/devices/$deviceId", json)
+		var res = target.delete("_matrix/client/r0/devices/$deviceId", json)
 		
 		while (res.status.status == 401 && res.json.containsKey("flows"))
 		{
 			val flowResponse = helper.answer(FlowRequest.fromJson(res.json))
 			json["auth"] = flowResponse.json
-			res = target.delete("_matrix/client/unstable/devices/$deviceId", json)
+			res = target.delete("_matrix/client/r0/devices/$deviceId", json)
 		}
 		
 		checkForError(res)
@@ -731,4 +731,13 @@ open class Client(val hs : HomeServer, val id : MatrixId) : ListenerRegistration
 		checkForError(res)
 		return Room(this, RoomId.fromString(res.json.string("room_id") ?: missing("room_id")))
 	}
+}
+
+@Deprecated("Use MatrixClient instead")
+open class Client(hs : HomeServer, id : MatrixId) : MatrixClient(hs, id)
+{
+	@JvmOverloads
+	@Suppress("DEPRECATION")
+	constructor(domain : String, localpart : String, hsDomain : String = domain, hsBaseUri : URI = URI("https://$hsDomain/"))
+			: this(HomeServer(hsDomain, hsBaseUri), MatrixId(localpart, domain))
 }

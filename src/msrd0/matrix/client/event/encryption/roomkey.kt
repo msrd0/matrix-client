@@ -66,23 +66,10 @@ class RoomKeyEventContent(
  * event.
  */
 class RoomKeyEvent(
-		sender : MatrixId,
+		data : MatrixEventData,
 		content : RoomKeyEventContent
-) : MatrixToDeviceEvent<RoomKeyEventContent>(sender, ROOM_KEY, content)
+) : MatrixToDeviceEvent<RoomKeyEventContent>(data, content)
 {
-	companion object
-	{
-		/**
-		 * Construct a room key event by parsing the supplied json.
-		 *
-		 * @throws IllegalJsonException On errors in the json.
-		 */
-		@JvmStatic
-		@Throws(IllegalJsonException::class)
-		fun fromJson(json : JsonObject) : RoomKeyEvent
-				= RoomKeyEvent(MatrixId.fromString(json.string("sender") ?: missing("sender")),
-					RoomKeyEventContent.fromJson(json.obj("content") ?: missing("content")))
-	}
-	
-	override val json : JsonObject get() = abstractJson
+	constructor(json : JsonObject, content : RoomKeyEventContent)
+			: this(MatrixEventData(json), content)
 }

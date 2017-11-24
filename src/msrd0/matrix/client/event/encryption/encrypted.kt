@@ -73,25 +73,12 @@ class EncryptedEventContent(
  * A to-device encrypted event.
  */
 class EncryptedEvent(
-		sender : MatrixId,
+		data : MatrixEventData,
 		content : EncryptedEventContent
-) : MatrixToDeviceEvent<EncryptedEventContent>(sender, ROOM_ENCRYPTED, content)
+) : MatrixToDeviceEvent<EncryptedEventContent>(data, content)
 {
-	companion object
-	{
-		/**
-		 * Constructs a new encrypted event by parsing the supplied json.
-		 *
-		 * @throws IllegalJsonException On errors in the json.
-		 */
-		@JvmStatic
-		@Throws(IllegalJsonException::class)
-		fun fromJson(json : JsonObject) : EncryptedEvent
-				= EncryptedEvent(MatrixId.fromString(json.string("sender") ?: missing("sender")),
-					EncryptedEventContent.fromJson(json.obj("content") ?: missing("content")))
-	}
-	
-	override val json : JsonObject get() = abstractJson
+	constructor(json : JsonObject, content : EncryptedEventContent)
+			: this(MatrixEventData(json), content)
 }
 
 /**
@@ -99,23 +86,10 @@ class EncryptedEvent(
  */
 class EncryptedRoomEvent(
 		room : Room,
-		sender : MatrixId,
+		data : MatrixEventData,
 		content : EncryptedEventContent
-) : MatrixRoomEvent<EncryptedEventContent>(room, sender, ROOM_ENCRYPTED, content)
+) : MatrixRoomEvent<EncryptedEventContent>(room, data, content)
 {
-	companion object
-	{
-		/**
-		 * Constructs a new encrypted event by parsing the supplied json.
-		 *
-		 * @throws IllegalJsonException On errors in the json.
-		 */
-		@JvmStatic
-		@Throws(IllegalJsonException::class)
-		fun fromJson(room : Room, json : JsonObject) : EncryptedRoomEvent
-				= EncryptedRoomEvent(room, MatrixId.fromString(json.string("sender") ?: missing("sender")),
-					EncryptedEventContent.fromJson(json.obj("content") ?: missing("content")))
-	}
-	
-	override val json : JsonObject get() = abstractJson
+	constructor(room : Room, json : JsonObject, content : EncryptedEventContent)
+			: this(room, MatrixEventData(json), content)
 }

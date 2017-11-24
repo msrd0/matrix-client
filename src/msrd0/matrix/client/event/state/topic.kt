@@ -49,25 +49,8 @@ class RoomTopicEventContent(val topic : String) : MatrixEventContent()
 /**
  * A room topic event.
  */
-class RoomTopicEvent(
-		room : Room,
-		sender : MatrixId,
-		content : RoomTopicEventContent
-) : MatrixRoomEvent<RoomTopicEventContent>(room, sender, ROOM_TOPIC, content)
-{
-	companion object
-	{
-		/**
-		 * Constructs a room topic event py parsing the supplied json.
-		 *
-		 * @throws IllegalJsonException On errors in the json.
-		 */
-		@JvmStatic
-		@Throws(IllegalJsonException::class)
-		fun fromJson(room : Room, json : JsonObject) : RoomTopicEvent
-				= RoomTopicEvent(room, MatrixId.fromString(json.string("sender") ?: missing("sender")),
-					RoomTopicEventContent.fromJson(json.obj("content") ?: missing("content")))
-	}
-	
-	override val json : JsonObject get() = abstractJson
-}
+class RoomTopicEvent
+@Throws(IllegalJsonException::class)
+constructor(room : Room, json : JsonObject)
+	: MatrixRoomEvent<RoomTopicEventContent>(room, json,
+		RoomTopicEventContent.fromJson(json.obj("content") ?: missing("content")))

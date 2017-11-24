@@ -20,8 +20,8 @@
 package msrd0.matrix.client
 
 import com.beust.klaxon.string
-import msrd0.matrix.client.Client.Companion.checkForError
-import msrd0.matrix.client.Client.Companion.publicTarget
+import msrd0.matrix.client.MatrixClient.Companion.checkForError
+import msrd0.matrix.client.MatrixClient.Companion.publicTarget
 import java.net.URI
 
 /**
