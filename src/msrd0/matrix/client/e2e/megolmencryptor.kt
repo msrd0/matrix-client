@@ -17,12 +17,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
  */
 
-package msrd0.matrix.client.encryption
+package msrd0.matrix.client.e2e
 
 import msrd0.matrix.client.event.encryption.RoomEncryptionAlgorithms.*
 import com.beust.klaxon.*
 import msrd0.matrix.client.RoomId
-import msrd0.matrix.client.event.MatrixEventTypes.*
 import msrd0.matrix.client.event.encryption.*
 import org.matrix.olm.*
 import java.time.LocalDateTime

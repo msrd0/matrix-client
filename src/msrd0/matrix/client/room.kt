@@ -21,7 +21,7 @@ package msrd0.matrix.client
 
 import com.beust.klaxon.*
 import msrd0.matrix.client.MatrixClient.Companion.checkForError
-import msrd0.matrix.client.encryption.*
+import msrd0.matrix.client.e2e.*
 import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.MatrixEventTypes.*
 import msrd0.matrix.client.event.encryption.*

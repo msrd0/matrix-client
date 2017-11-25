@@ -17,14 +17,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
  */
 
-package msrd0.matrix.client.encryption
+package msrd0.matrix.client.e2e.test
 
-import com.beust.klaxon.string
-import org.matrix.olm.OlmAccount
+import msrd0.matrix.client.e2e.olm
+import org.hamcrest.Matchers.*
+import org.hamcrest.MatcherAssert.*
+import org.testng.annotations.Test
 
-open class OlmEncryption(val deviceId : String)
+class OlmTest
 {
-	val account : OlmAccount = OlmAccount()
-	val identityKey : String = account.identityKeys()?.string("curve25519") ?: ""
-	val signingKey : String = account.identityKeys()?.string("ed25519") ?: ""
+	@Test(groups = arrayOf("base"))
+	fun version()
+	{
+		assertThat(olm.olmLibVersion, notNullValue())
+	}
 }

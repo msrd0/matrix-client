@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
  */
 
-package msrd0.matrix.client.encryption
+package msrd0.matrix.client.e2e
 
 import com.beust.klaxon.JsonObject
 import msrd0.matrix.client.event.encryption.*
