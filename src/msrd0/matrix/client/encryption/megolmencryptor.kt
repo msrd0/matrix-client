@@ -45,7 +45,7 @@ class MegolmEncryptor(
 	{
 		val formattedJson = event.toJsonString(false, true)
 		val nextMessageIndex = outSession.messageIndex()
-		val encryptedJson = outSession.encryptMessage(formattedJson)
+		val encryptedJson = outSession.encryptMessage(formattedJson)!! // TODO properly handle non-null values
 		
 		if (maxMessages != 0)
 		{
