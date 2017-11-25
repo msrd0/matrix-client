@@ -24,17 +24,16 @@ import msrd0.matrix.client.util.JsonSerializable
 
 class DeviceKeySignatures() : HashMap<MatrixId, Map<String, String>>(), JsonSerializable
 {
-	companion object
+	constructor(json : JsonObject) : this()
 	{
-		@JvmStatic
-		@Throws(IllegalJsonException::class)
-		fun fromJson(json : JsonObject) : DeviceKeySignatures
-		{
-			val signatures = DeviceKeySignatures()
-			for ((id, obj) in json.mapKeys { MatrixId.fromString(it.key) }.mapValues { it.value as JsonObject })
-				signatures[id] = obj.mapValues { it.value as String }
-			return signatures
-		}
+		loadSignaturesFromJson(json)
+	}
+	
+	fun loadSignaturesFromJson(json : JsonObject) : DeviceKeySignatures
+	{
+		for ((id, obj) in json.map { (id, obj) -> MatrixId.fromString(id) to (obj as JsonObject) })
+			this[id] = obj.mapValues { it.value as String }
+		return this
 	}
 	
 	override val json : JsonObject get() = JsonObject(mapKeys { "${it.key}" })
@@ -58,7 +57,7 @@ class DeviceKeys(
 					deviceId = json.string("device_id") ?: missing("device_id"),
 					algorithms = json.array("algorithms") ?: missing("algorithms"),
 					keys = json.obj("keys")?.mapValues { it.value as String } ?: missing("keys"),
-					signatures = DeviceKeySignatures.fromJson(json.obj("signatures") ?: missing("signatures"))
+					signatures = DeviceKeySignatures(json.obj("signatures") ?: missing("signatures"))
 				)
 	}
 	

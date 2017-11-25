@@ -25,6 +25,11 @@ package msrd0.matrix.client
 open class NoTokenException() : IllegalStateException()
 
 /**
+ * This exception indicates that the client doesn't know its own device id.
+ */
+open class NoDeviceIdException() : IllegalStateException()
+
+/**
  * This exception indicates that none of the available flows are known or applicable.
  */
 open class UnsupportedFlowsException : Exception

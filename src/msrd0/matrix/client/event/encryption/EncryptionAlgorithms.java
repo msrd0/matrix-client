@@ -19,12 +19,15 @@
 
 package msrd0.matrix.client.event.encryption;
 
+import static kotlin.collections.CollectionsKt.*;
 import static lombok.AccessLevel.*;
+
+import java.util.*;
 
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = PRIVATE)
-public class RoomEncryptionAlgorithms
+public class EncryptionAlgorithms
 {
 	/**
 	 * Version 1 of the OLM ratchet. This uses:
@@ -46,4 +49,9 @@ public class RoomEncryptionAlgorithms
 	 *  - Ed25519 for message authenticity.
 	 */
 	public static final String MEGOLM_V1_RATCHET = "m.megolm.v1.aes-sha2", MEGOLM_AES_SHA2 = MEGOLM_V1_RATCHET;
+	
+	/**
+	 * A list of all supported algorithms.
+	 */
+	public static final List<String> ALGORITHMS = listOf(OLM_V1_RATCHET, MEGOLM_V1_RATCHET);
 }

@@ -20,8 +20,10 @@
 package msrd0.matrix.client.test
 
 import msrd0.matrix.client.*
+import msrd0.matrix.client.e2e.InMemoryKeyStore
+import msrd0.matrix.client.e2e.KeyStore
 import msrd0.matrix.client.event.*
-import msrd0.matrix.client.event.encryption.RoomEncryptionAlgorithms
+import msrd0.matrix.client.event.encryption.EncryptionAlgorithms
 import msrd0.matrix.client.event.state.*
 import org.apache.commons.io.IOUtils
 import org.hamcrest.MatcherAssert.*
@@ -43,6 +45,7 @@ class MatrixClientTest
 		var id = MatrixId("test${System.currentTimeMillis()}", "synapse")
 		val password = "Eish2nies9peifaez7uX"
 		var userData : MatrixUserData? = null
+		var keyStore : KeyStore = InMemoryKeyStore()
 		var roomId : RoomId? = null
 		
 		val testImage : RenderedImage = ImageIO.read(getSystemResourceAsStream("matrix-logo.png"))
@@ -81,6 +84,10 @@ class MatrixClientTest
 		client.sync()
 		userData = client.userData
 		id = client.id // to make sure the domain is what synapse think it would be
+		
+		// enable e2e to populate our keys
+		client.enableE2E(keyStore)
+		assert(keyStore.hasIdentityKeyPair)
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
@@ -293,9 +300,9 @@ class MatrixClientTest
 		val client = newClient()
 		val room = Room(client, roomId!!)
 		
-		room.encryptionAlgorithm = RoomEncryptionAlgorithms.MEGOLM_AES_SHA2
+		room.encryptionAlgorithm = EncryptionAlgorithms.MEGOLM_AES_SHA2
 		room.clearCache()
 		assertNotNull(room.encryptionAlgorithm)
-		assertThat(room.encryptionAlgorithm, equalTo(RoomEncryptionAlgorithms.MEGOLM_AES_SHA2))
+		assertThat(room.encryptionAlgorithm, equalTo(EncryptionAlgorithms.MEGOLM_AES_SHA2))
 	}
 }

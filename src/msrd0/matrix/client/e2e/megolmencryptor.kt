@@ -19,7 +19,7 @@
 
 package msrd0.matrix.client.e2e
 
-import msrd0.matrix.client.event.encryption.RoomEncryptionAlgorithms.*
+import msrd0.matrix.client.event.encryption.EncryptionAlgorithms.*
 import com.beust.klaxon.*
 import msrd0.matrix.client.RoomId
 import msrd0.matrix.client.event.encryption.*

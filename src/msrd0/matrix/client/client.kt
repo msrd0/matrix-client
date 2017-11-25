@@ -20,7 +20,9 @@
 package msrd0.matrix.client
 
 import com.beust.klaxon.*
+import msrd0.matrix.client.e2e.*
 import msrd0.matrix.client.event.*
+import msrd0.matrix.client.event.encryption.EncryptionAlgorithms
 import msrd0.matrix.client.filter.*
 import msrd0.matrix.client.listener.*
 import msrd0.matrix.client.util.*
@@ -730,6 +732,46 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 		val res = target.post("_matrix/client/r0/createRoom", token ?: throw NoTokenException(), id, json)
 		checkForError(res)
 		return Room(this, RoomId.fromString(res.json.string("room_id") ?: missing("room_id")))
+	}
+	
+	
+	/** The identity key pair for e2e. */
+	protected var identityKeyPair : IdentityKeyPair? = null
+	
+	/**
+	 * Enable E2E encryption for this client. This involves retrieving/updating keys in the [keyStore] and
+	 * uploading the to the homeserver.
+	 */
+	fun enableE2E(keyStore : KeyStore)
+	{
+		if (keyStore.hasIdentityKeyPair)
+			identityKeyPair = keyStore.retrieveIdentityKeyPair()
+		else
+		{
+			// TODO create identity key and store it
+			identityKeyPair = IdentityKeyPair(ByteArray(0), ByteArray(0), ByteArray(0), ByteArray(0))
+			keyStore.storeIdentityKeyPair(identityKeyPair!!)
+		}
+		
+		uploadIdentityKeys(identityKeyPair!!.toIdentityKey())
+	}
+	
+	/**
+	 * Upload the identity keys to the homeserver.
+	 *
+	 * @param idKey The identity keys to upload.
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class, NoDeviceIdException::class)
+	fun uploadIdentityKeys(idKey : IdentityKey)
+	{
+		val json = JsonObject()
+		val deviceKeys = DeviceKeys(id, deviceId ?: throw NoDeviceIdException(), EncryptionAlgorithms.ALGORITHMS,
+				mapOf("ed25519" to idKey.ed25519.toBase64(), "curve25519" to idKey.curve25519.toBase64()),
+				DeviceKeySignatures(/* TODO populate the signatures */))
+		json["device_keys"] = deviceKeys.json
+		val res = target.post("_matrix/client/r0/keys/upload", token ?: throw NoTokenException(), id, json)
+		checkForError(res)
 	}
 }
 

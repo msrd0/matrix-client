@@ -46,9 +46,10 @@ open class Room(
 		
 		private val olmManager = OlmManager()
 		
+		@Throws(NoDeviceIdException::class)
 		fun newRoomEncryptor(client : MatrixClient, id : RoomId) : RoomEncryptor
 		{
-			val olm = OlmEncryption(client.deviceId ?: throw IllegalStateException("Client has no device id"))
+			val olm = OlmEncryption(client.deviceId ?: throw NoDeviceIdException())
 			val megolm = MegolmEncryptor(olm, id)
 			return megolm
 		}
