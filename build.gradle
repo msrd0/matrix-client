@@ -2,6 +2,7 @@ buildscript {
 	ext.commonsIoVersion = '2.6'
 	ext.guavaVersion = '23.4-jre'
 	ext.hamcrestVersion = '1.3'
+	ext.klaxonVersion = '0.32'
 	ext.kotlinVersion = '1.1.60'
 	ext.logbackVersion = '1.2.3'
 	ext.lombokVersion = '1.16.18'
@@ -175,7 +176,7 @@ dependencies {
 	compile "com.squareup.okhttp3:okhttp:$okhttpVersion"
 	
 	// json lib
-	compile "com.beust:klaxon:0.32-SNAPSHOT"
+	compile "com.beust:klaxon:$klaxonVersion"
 	
 	// olm java
 	compile "msrd0.matrix:matrix-olm-java:2.+"
