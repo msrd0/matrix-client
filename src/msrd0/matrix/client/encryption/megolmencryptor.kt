@@ -36,28 +36,24 @@ class MegolmEncryptor(
 ) : RoomEncryptor
 {
 	private var outSession : OlmOutboundGroupSession = OlmOutboundGroupSession()
-	private var inSessions : MutableMap<String, OlmInboundGroupSession> = mutableMapOf(outSession.sessionIdentifier() to OlmInboundGroupSession(outSession.sessionKey()))
-	private var senderSessions : MutableMap<String, String> = mutableMapOf(olm.identityKey to outSession.sessionIdentifier())
+	private var inSessions : MutableMap<String, OlmInboundGroupSession> = mutableMapOf(
+			outSession.sessionIdentifier() to OlmInboundGroupSession(outSession.sessionKey())
+	)
+	private var senderSessions : MutableMap<String, String> = mutableMapOf(
+			olm.identityKey to outSession.sessionIdentifier()
+	)
 	private var pendingSecrets = true
 	private val startTime : LocalDateTime = LocalDateTime.now()
 	
 	override fun getEncryptedJson(event : JsonObject) : EncryptedEventContent
 	{
-		val formattedJson = event.toJsonString(false, true)
+		val formattedJson = event.toJsonString(canonical = true)
 		val nextMessageIndex = outSession.messageIndex()
 		val encryptedJson = outSession.encryptMessage(formattedJson)!! // TODO properly handle non-null values
 		
-		if (maxMessages != 0)
-		{
-			if (nextMessageIndex >= maxMessages)
-				renew()
-			
-		}
-		if (maxTime != 0L)
-		{
-			if (LocalDateTime.now().minusSeconds(maxTime) <= startTime)
-				renew()
-		}
+		if ((maxMessages != 0 && nextMessageIndex >= maxMessages)
+				|| (maxTime != 0L && LocalDateTime.now().minusSeconds(maxTime) <= startTime))
+			renew()
 		
 		return EncryptedEventContent(
 				algorithm = MEGOLM_AES_SHA2,
