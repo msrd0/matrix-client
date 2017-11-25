@@ -27,3 +27,4 @@ fun ByteArray.fromUtf8() : String = String(this, UTF_8)
 private val base64 by lazy { Base64(0, ByteArray(0), false) }
 fun ByteArray.toBase64() : String = base64.encodeToString(this)
 fun ByteArray.toUnpaddedBase64() : String = toBase64().trimEnd('=')
+fun String.fromBase64() : ByteArray = base64.decode(this)

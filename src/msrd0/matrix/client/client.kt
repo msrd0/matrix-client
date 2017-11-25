@@ -26,6 +26,8 @@ import msrd0.matrix.client.event.encryption.EncryptionAlgorithms
 import msrd0.matrix.client.filter.*
 import msrd0.matrix.client.listener.*
 import msrd0.matrix.client.util.*
+import org.matrix.olm.OlmAccount
+import org.matrix.olm.OlmManager
 import org.slf4j.*
 import java.net.URI
 import kotlin.concurrent.thread
@@ -39,6 +41,8 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	{
 		private val logger : Logger = LoggerFactory.getLogger(MatrixClient::class.java)
 		
+		// make sure we load the olm library just in case somebody want's to use it
+		init { OlmManager() }
 		
 		
 		/**
@@ -748,8 +752,12 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 			identityKeyPair = keyStore.retrieveIdentityKeyPair()
 		else
 		{
-			// TODO create identity key and store it
-			identityKeyPair = IdentityKeyPair(ByteArray(0), ByteArray(0), ByteArray(0), ByteArray(0))
+			val account = OlmAccount()
+			val idKeys = account.identityKeys()!! // TODO proper handling of null values
+			identityKeyPair = IdentityKeyPair(
+					idKeys.string("ed25519")?.fromBase64() ?: missing("ed25519"), ByteArray(0),
+					idKeys.string("curve25519")?.fromBase64() ?: missing("curve25519"), ByteArray(0)
+			)
 			keyStore.storeIdentityKeyPair(identityKeyPair!!)
 		}
 		
