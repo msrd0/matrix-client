@@ -773,6 +773,28 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 		val res = target.post("_matrix/client/r0/keys/upload", token ?: throw NoTokenException(), id, json)
 		checkForError(res)
 	}
+	
+	/**
+	 * Query the identity keys for the given list of user ids from the homeserver.
+	 *
+	 * @param users The user ids to query.
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun queryIdentityKeys(users : Iterable<MatrixId>) : List<DeviceKeys>
+	{
+		val json = JsonObject()
+		val keys = JsonObject()
+		for (user in users)
+			keys["$user"] = JsonArray<Nothing>()
+		json["device_keys"] = keys
+		val res = target.post("_matrix/client/r0/keys/query", token ?: throw NoTokenException(), id, json)
+		checkForError(res)
+		return (res.json.obj("device_keys") ?: missing("device_keys"))
+				.map { (_, obj) -> obj as JsonObject } // returns a list of all user objects
+				.flatMap { it.map { (_, obj) -> obj as JsonObject } } // returns a list of all device objects
+				.map { deviceJson -> DeviceKeys(deviceJson) } // maps the device objects to a DeviceKey
+	}
 }
 
 @Deprecated("Use MatrixClient instead")

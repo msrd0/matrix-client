@@ -88,6 +88,10 @@ class MatrixClientTest
 		// enable e2e to populate our keys
 		client.enableE2E(keyStore)
 		assert(keyStore.hasIdentityKeyPair)
+		
+		// retrieve our own keys
+		val keys = client.queryIdentityKeys(listOf(id))
+		println("KEYS: " + keys.joinToString { "${it.userId}:${it.deviceId}=${it.keys}" })
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))

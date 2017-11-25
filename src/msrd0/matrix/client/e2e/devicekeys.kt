@@ -47,19 +47,14 @@ class DeviceKeys(
 		val signatures : DeviceKeySignatures
 ) : JsonSerializable
 {
-	companion object
-	{
-		@JvmStatic
-		@Throws(IllegalJsonException::class)
-		fun fromJson(json : JsonObject) : DeviceKeys
-				= DeviceKeys(
-					userId = MatrixId.fromString(json.string("user_id") ?: missing("user_id")),
-					deviceId = json.string("device_id") ?: missing("device_id"),
-					algorithms = json.array("algorithms") ?: missing("algorithms"),
-					keys = json.obj("keys")?.mapValues { it.value as String } ?: missing("keys"),
-					signatures = DeviceKeySignatures(json.obj("signatures") ?: missing("signatures"))
-				)
-	}
+	@Throws(IllegalJsonException::class)
+	constructor(json : JsonObject) : this(
+			userId = MatrixId.fromString(json.string("user_id") ?: missing("user_id")),
+			deviceId = json.string("device_id") ?: missing("device_id"),
+			algorithms = json.array("algorithms") ?: missing("algorithms"),
+			keys = json.obj("keys")?.mapValues { it.value as String } ?: missing("keys"),
+			signatures = DeviceKeySignatures(json.obj("signatures") ?: missing("signatures"))
+	)
 	
 	override val json : JsonObject get()
 			= JsonObject(mapOf(
