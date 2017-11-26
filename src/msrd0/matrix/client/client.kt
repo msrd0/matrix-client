@@ -896,6 +896,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 					oneTimeKeysJson["signed_$algo:$name"] = json
 				}
 			}
+			uploadOneTimeKeys(oneTimeKeysJson)
 		}
 	}
 	
