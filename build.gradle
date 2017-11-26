@@ -3,6 +3,7 @@ buildscript {
 	ext.guavaVersion = '23.4-jre'
 	ext.hamcrestVersion = '1.3'
 	ext.klaxonVersion = '0.32'
+	ext.kotlinCoroutinesVersion = '0.19.3'
 	ext.kotlinVersion = '1.1.60'
 	ext.logbackVersion = '1.2.3'
 	ext.lombokVersion = '1.16.18'
@@ -87,6 +88,7 @@ configure(allprojects - project('matrix-client-cli')) {
 		// stdlib
 		compile "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
 		compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlinVersion"
+		compile "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion"
 	}
 	
 	sourceSets {
@@ -107,6 +109,11 @@ configure(allprojects - project('matrix-client-cli')) {
 	}
 	compileTestKotlin {
 		kotlinOptions.jvmTarget = "1.8"
+	}
+	kotlin {
+		experimental {
+			coroutines 'enable'
+		}
 	}
 	
 	apply plugin: "org.jetbrains.dokka"

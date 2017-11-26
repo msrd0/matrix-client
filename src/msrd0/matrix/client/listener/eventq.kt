@@ -19,16 +19,22 @@
 
 package msrd0.matrix.client.listener
 
-import org.slf4j.*
-import java.util.*
-import kotlin.collections.HashMap
-import kotlin.concurrent.thread
+import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.experimental.sync.Mutex
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import java.util.LinkedList
+import java.util.concurrent.BlockingDeque
+import java.util.concurrent.LinkedBlockingDeque
+import java.util.concurrent.TimeUnit.*
 
 class EventQueue
 {
 	companion object
 	{
-		val logger : Logger = LoggerFactory.getLogger(EventQueue::class.java)
+		private val logger : Logger = LoggerFactory.getLogger(EventQueue::class.java)
+		
+		private val timeout : Long = 200 /* ms */
 	}
 	
 	/** Whether the EventQueue is running. */
@@ -48,9 +54,9 @@ class EventQueue
 	
 	
 	/** The lock that is used to notify the queue of new events. */
-	private val lock = Object()
+	private val lock = Mutex()
 	/** The queue that is used to store events. */
-	private val q : Deque<Event> = LinkedList()
+	private val q : BlockingDeque<Event> = LinkedBlockingDeque()
 	/** Tells the queue whether it should be stopped. */
 	private var shouldStop = false
 	
@@ -79,24 +85,20 @@ class EventQueue
 	}
 	
 	/**
-	 * Start the EventQueue in a new thread.
+	 * Start the EventQueue in a coroutine.
 	 */
 	fun start()
 	{
 		if (isRunning)
 			throw IllegalStateException("The queue is already running")
 		
-		thread(name = EventQueue::class.qualifiedName) {
+		launch {
 			isRunning = true
 			logger.debug("EventQueue started on Thread ${Thread.currentThread()}")
 			
 			while (!shouldStop)
 			{
-				if (q.isEmpty())
-					synchronized(lock) {
-						lock.wait()
-					}
-				val ev = q.pollFirst() ?: continue
+				val ev = q.pollFirst(timeout, MILLISECONDS) ?: continue
 				val l = listeners.get(ev.type) ?: continue
 				for (listener : Listener<*> in l)
 				{
@@ -119,10 +121,7 @@ class EventQueue
 	 */
 	fun enqueue(ev : Event)
 	{
-		q.addLast(ev)
-		synchronized(lock) {
-			lock.notifyAll()
-		}
+		q.putFirst(ev)
 	}
 	
 	/**
@@ -131,8 +130,5 @@ class EventQueue
 	fun stop()
 	{
 		shouldStop = true
-		synchronized(lock) {
-			lock.notifyAll()
-		}
 	}
 }

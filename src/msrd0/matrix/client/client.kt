@@ -20,13 +20,17 @@
 package msrd0.matrix.client
 
 import com.beust.klaxon.*
+import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.experimental.sync.Mutex
+import kotlinx.coroutines.experimental.sync.withLock
 import msrd0.matrix.client.event.*
-import msrd0.matrix.client.filter.*
+import msrd0.matrix.client.filter.Filter
+import msrd0.matrix.client.filter.uploadFilter
 import msrd0.matrix.client.listener.*
 import msrd0.matrix.client.util.*
-import org.slf4j.*
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.net.URI
-import kotlin.concurrent.thread
 
 /**
  * This class is the http client for the matrix server.
@@ -411,57 +415,50 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 		syncBlockingFilter = uploadFilter(f)
 	}
 	
-	/** Set to true if there is no `syncBlocking` call at the moment or if it should stop. */
+	/** Set to true if there is no [syncBlocking] call at the moment or if it should stop. */
 	private var syncBlockingStopped : Boolean = true
+	/** Mutex for [syncBlocking]. */
+	private var syncBlockingMutex = Mutex()
 	
-	/** Returns true if the method `retrieveMessagesBlocking` is active. */
+	/** Returns true if the method [syncBlocking] is active. */
 	val isSyncBlockingRunning : Boolean get() = !syncBlockingStopped
 	
 	/**
-	 * Stop the `syncBlocking` method. Please note that it might take a while until it will finish; this
+	 * Stop the [syncBlocking] method. Please note that it might take a while until it will finish; this
 	 * depends on the timeout of that function.
 	 *
-	 * @throws IllegalStateException If no `syncBlocking` call is active.
+	 * @throws IllegalStateException If no [syncBlocking] call is active.
 	 */
 	@Throws(IllegalStateException::class)
 	fun stopSyncBlocking()
 	{
 		synchronized(syncBlockingStopped) {
 			if (syncBlockingStopped)
-				throw IllegalStateException("No active retrieveMessagesBlocking call found")
+				throw IllegalStateException("No active syncBlocking call found")
 			syncBlockingStopped = true
 		}
 	}
 	
 	/**
 	 * Starts a sync request for this client that blocks until an event is available. As soon as an event was received,
-	 * a corresponding event will be fired and a new request will be made. If `threaded` is false, this method will
-	 * never return. Otherwise it will run in a new thread.
+	 * a corresponding event will be fired and a new request will be made.
 	 *
 	 * Please note that at the moment this will only receive room joins, invites and message events. To receive
-	 * everything else please call the `sync` method. **This behaviour might change in the future without prior notice!!**
+	 * everything else please call the [sync] method. **This behaviour might change in the future without prior notice!!**
 	 *
 	 * @param timeout The timeout in milliseconds.
-	 * @param threaded Controls whether this method will run in a new thread or in the current thread.
 	 *
 	 * @throws MatrixAnswerException On errors that happened before the blocking call started. If an error occurred
 	 * 		afterwards, it will be logged and a new request will be made.
+	 * @throws IllegalStateException When another call to [syncBlocking] is active.
 	 */
-	@Throws(MatrixAnswerException::class)
+	@Throws(MatrixAnswerException::class, IllegalStateException::class)
 	@JvmOverloads
-	fun syncBlocking(timeout : Int = 30000, threaded : Boolean = true)
+	suspend fun syncBlocking(timeout : Int = 30000)
 	{
-		if (threaded)
-		{
-			thread(start = true) {
-				syncBlocking(timeout, false)
-			}
-			return
-		}
-		
-		synchronized(syncBlockingStopped) {
+		syncBlockingMutex.withLock {
 			if (!syncBlockingStopped)
-				throw IllegalStateException("Another thread is already waiting for events")
+				throw IllegalStateException("Another syncBlocking method is already waiting for events")
 			syncBlockingStopped = false
 		}
 		
@@ -512,6 +509,17 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 			{
 				logger.warn("syncBlocking received exception", ex)
 			}
+		}
+	}
+	
+	/**
+	 * Start the [syncBlocking] method in a new coroutine.
+	 */
+	@JvmOverloads
+	fun startSyncBlocking(timeout : Int = 30000)
+	{
+		launch {
+			syncBlocking(timeout)
 		}
 	}
 	

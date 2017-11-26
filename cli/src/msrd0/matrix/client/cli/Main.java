@@ -155,8 +155,8 @@ public class Main
 		
 		// synchronize the client
 		sync();
-		// run blocking synchronization in a new thread
-		client.syncBlocking();
+		// run blocking synchronization in a coroutine
+		client.startSyncBlocking();
 		
 		Room curr = null;
 		while (true)
