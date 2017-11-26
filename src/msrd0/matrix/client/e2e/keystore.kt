@@ -18,12 +18,14 @@
 package msrd0.matrix.client.e2e
 
 import org.matrix.olm.OlmAccount
+import org.matrix.olm.OlmException
 
 interface KeyStore
 {
 	/** Store/Retrieve the [OlmAccount] stored in this key store. */
-	@get:Throws(IllegalStateException::class)
 	var account : OlmAccount
+		@Throws(OlmException::class) get
+		@Throws(OlmException::class) set
 	
 	/** Return true if this key store stores an [OlmAccount]. */
 	val hasAccount : Boolean

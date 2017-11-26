@@ -158,6 +158,11 @@ public class Main
 		// run blocking synchronization in a coroutine
 		client.startSyncBlocking();
 		
+		// initialize e2e
+		client.enableE2E(new PropertiesKeyStore(conf));
+		client.uploadIdentityKeys();
+		client.startUpdateOneTimeKeysBlocking();
+		
 		Room curr = null;
 		while (true)
 		{
