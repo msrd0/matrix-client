@@ -20,6 +20,7 @@
 package msrd0.matrix.client
 
 import com.beust.klaxon.*
+import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
 import kotlinx.coroutines.experimental.sync.Mutex
 import kotlinx.coroutines.experimental.sync.withLock
@@ -33,6 +34,7 @@ import org.matrix.olm.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.URI
+import java.util.concurrent.TimeUnit.MILLISECONDS
 
 /**
  * This class is the http client for the matrix server.
@@ -779,7 +781,6 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 		)
 		deviceKeys.sign(keyStore?.account ?: throw IllegalStateException(), id, deviceId ?: throw NoDeviceIdException())
 		json["device_keys"] = deviceKeys.json
-		logger.debug(json.toJsonString(prettyPrint = true))
 		val res = target.post("_matrix/client/r0/keys/upload", token ?: throw NoTokenException(), id, json)
 		checkForError(res)
 	}
@@ -804,6 +805,114 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 				.map { (_, obj) -> obj as JsonObject } // returns a list of all user objects
 				.flatMap { it.map { (_, obj) -> obj as JsonObject } } // returns a list of all device objects
 				.map { deviceJson -> DeviceKeys(deviceJson) } // maps the device objects to a DeviceKey
+	}
+	
+	/**
+	 * Query the amount of currently stored one-time keys.
+	 *
+	 * @return A map of key algorithm to amount of one-time keys.
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun oneTimeKeyCounts() : Map<String, Int>
+	{
+		val res = target.post("_matrix/client/r0/keys/upload", token ?: throw NoTokenException(), id)
+		checkForError(res)
+		return (res.json.obj("one_time_key_counts") ?: missing("one_time_key_counts"))
+				.mapValues { (_, it) -> it as? Int ?: (it as Number).toInt() }
+	}
+	
+	
+	/** Set to true if there is no [updateOneTimeKeysBlocking] call at the moment or if it should stop. */
+	private var updateOneTimeKeysBlockingStopped : Boolean = true
+	/** Mutex for [updateOneTimeKeysBlocking]. */
+	private var updateOneTimeKeysBlockingMutex = Mutex()
+	
+	/** Returns true if the method [updateOneTimeKeysBlocking] is active. */
+	val isUpdateOneTimeKeysBlockingRunning : Boolean get() = !updateOneTimeKeysBlockingStopped
+	
+	/**
+	 * Start the [updateOneTimeKeysBlocking] method in a coroutine.
+	 *
+	 * @throws IllegalStateException If the [updateOneTimeKeysBlocking] method is already running.
+	 */
+	@JvmOverloads
+	@Throws(IllegalStateException::class)
+	fun startUpdateOneTimeKeysBlocking(interval : Long = 600000)
+	{
+		if (isUpdateOneTimeKeysBlockingRunning)
+			throw IllegalStateException("updateOneTimeKeysBlocking() is already running")
+		launch {
+			updateOneTimeKeysBlocking(interval)
+		}
+	}
+	
+	/**
+	 * Update the one time keys in the given [interval].
+	 *
+	 * @param interval The interval to wait between updates to the one time keys.
+	 */
+	@JvmOverloads
+	suspend fun updateOneTimeKeysBlocking(interval : Long = 600000)
+	{
+		updateOneTimeKeysBlockingMutex.withLock {
+			updateOneTimeKeysBlockingStopped = false
+		}
+		
+		while (isUpdateOneTimeKeysBlockingRunning)
+		{
+			updateOneTimeKeys()
+			delay(interval, MILLISECONDS)
+		}
+	}
+	
+	/**
+	 * Update the one time keys. The client will try to manage half the maximum amount of supported one-time
+	 * keys by olm.
+	 */
+	fun updateOneTimeKeys()
+	{
+		val counts = oneTimeKeyCounts()
+		val signedCurve25519 = counts["signed_curve25519"] ?: 0
+		val account = keyStore?.account ?: throw IllegalStateException()
+		val intendedKeys = (account.maxOneTimeKeys() / 2).toInt()
+		
+		if (signedCurve25519 < intendedKeys)
+		{
+			account.generateOneTimeKeys(intendedKeys - signedCurve25519)
+			val keys = account.oneTimeKeys()
+			
+			val oneTimeKeysJson = JsonObject()
+			for ((algo, obj) in keys.mapValues { (_, it) -> it as JsonObject })
+			{
+				for ((name, key) in obj.mapValues { (_, it) -> it as String })
+				{
+					val json = JsonObject()
+					json["key"] = key
+					val signature = account.signMessage(json.toJsonString(canonical = true))
+					val signatures = JsonObject()
+					signatures["$id"] = mapOf("ed25519:$deviceId" to signature)
+					json["signatures"] = signatures
+					oneTimeKeysJson["signed_$algo:$name"] = json
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Upload the one-time keys json object to the homeserver.
+	 *
+	 * See also [updateOneTimeKeys] and [updateOneTimeKeysBlocking].
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun uploadOneTimeKeys(oneTimeKeysJson : JsonObject)
+	{
+		val json = JsonObject()
+		json["one_time_keys"] = oneTimeKeysJson
+		val res = target.post("_matrix/client/r0/keys/upload", token ?: throw NoTokenException(), id, json)
+		checkForError(res)
 	}
 }
 
