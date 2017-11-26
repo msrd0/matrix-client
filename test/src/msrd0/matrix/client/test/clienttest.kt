@@ -19,6 +19,7 @@
 
 package msrd0.matrix.client.test
 
+import com.beust.klaxon.string
 import msrd0.matrix.client.*
 import msrd0.matrix.client.e2e.InMemoryKeyStore
 import msrd0.matrix.client.e2e.KeyStore
@@ -29,6 +30,8 @@ import msrd0.matrix.client.util.fromBase64
 import org.apache.commons.io.IOUtils
 import org.hamcrest.MatcherAssert.*
 import org.hamcrest.Matchers.*
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.testng.Assert.*
 import org.testng.annotations.Test
 import java.awt.image.RenderedImage
@@ -41,6 +44,8 @@ class MatrixClientTest
 {
 	companion object
 	{
+		private val logger : Logger = LoggerFactory.getLogger(MatrixClientTest::class.java)
+		
 		val domain = if (System.getenv().containsKey("CI")) "synapse:8008" else "localhost:8008"
 		val hs = HomeServer(domain, URI("http://$domain"))
 		var id = MatrixId("test${System.currentTimeMillis()}", "synapse")
@@ -84,20 +89,24 @@ class MatrixClientTest
 		// sync to make sure our token is working
 		client.sync()
 		userData = client.userData
+		assertNotNull(userData)
 		id = client.id // to make sure the domain is what synapse think it would be
+		logger.info("Registered $id, deviceId=${userData!!.deviceId}, token=${userData!!.token}")
 		
 		// enable e2e to populate our keys
 		client.enableE2E(keyStore)
-		assert(keyStore.hasIdentityKeyPair)
-		val keyPair = keyStore.retrieveIdentityKeyPair()
+		assert(keyStore.hasAccount)
+		client.uploadIdentityKeys()
+		val account = keyStore.account
+		val idKeys = account.identityKeys()
 		
 		// retrieve our own keys
 		val keys = client.queryIdentityKeys(listOf(id))
 		val key = keys.find { it.userId == client.id && it.deviceId == client.deviceId }
 		assertNotNull(key)
 		key!!
-		assertThat(key.keys["ed25519"]?.fromBase64(), equalTo(keyPair.pubEd25519))
-		assertThat(key.keys["curve25519"]?.fromBase64(), equalTo(keyPair.pubCurve25519))
+		assertThat(key.keys["ed25519"]?.fromBase64(), equalTo(idKeys.string("ed25519")?.fromBase64()))
+		assertThat(key.keys["curve25519"]?.fromBase64(), equalTo(idKeys.string("curve25519")?.fromBase64()))
 		key.keys.values.forEach {
 			assertThat(it, not(endsWith("=")))
 		}

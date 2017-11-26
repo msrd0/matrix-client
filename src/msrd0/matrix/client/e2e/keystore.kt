@@ -17,38 +17,27 @@
  */
 package msrd0.matrix.client.e2e
 
+import org.matrix.olm.OlmAccount
+
 interface KeyStore
 {
-	/**
-	 * Store the identity key pair. Make sure that the private keys are kept safe.
-	 */
-	fun storeIdentityKeyPair(keyPair : IdentityKeyPair)
+	/** Store/Retrieve the [OlmAccount] stored in this key store. */
+	@get:Throws(IllegalStateException::class)
+	var account : OlmAccount
 	
-	/**
-	 * Return `true` if this key store has an identity key pair.
-	 */
-	val hasIdentityKeyPair : Boolean
-	
-	/**
-	 * Return the stored identity key pair. If no key pair is stored, [hasIdentityKeyPair] must return
-	 * `false` and this method must throw an [IllegalStateException].
-	 */
-	@Throws(IllegalStateException::class)
-	fun retrieveIdentityKeyPair() : IdentityKeyPair
+	/** Return true if this key store stores an [OlmAccount]. */
+	val hasAccount : Boolean
 }
 
 
 open class InMemoryKeyStore : KeyStore
 {
-	private var idKeyPair : IdentityKeyPair? = null
+	protected var _account : OlmAccount? = null
 	
-	override fun storeIdentityKeyPair(keyPair : IdentityKeyPair)
-	{
-		idKeyPair = keyPair
-	}
+	@get:Throws(IllegalStateException::class)
+	override var account : OlmAccount
+		get() = _account ?: throw IllegalStateException()
+		set(value) { _account = value }
 	
-	override val hasIdentityKeyPair get() = idKeyPair != null
-	
-	@Throws(IllegalStateException::class)
-	override fun retrieveIdentityKeyPair() = idKeyPair ?: throw IllegalStateException()
+	override val hasAccount get() = _account != null
 }

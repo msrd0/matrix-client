@@ -29,8 +29,7 @@ import msrd0.matrix.client.event.encryption.EncryptionAlgorithms
 import msrd0.matrix.client.filter.*
 import msrd0.matrix.client.listener.*
 import msrd0.matrix.client.util.*
-import org.matrix.olm.OlmAccount
-import org.matrix.olm.OlmManager
+import org.matrix.olm.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.URI
@@ -746,45 +745,41 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	}
 	
 	
-	/** The identity key pair for e2e. */
-	protected var identityKeyPair : IdentityKeyPair? = null
+	
+	/** The key store for e2e. */
+	var keyStore : KeyStore? = null
+		private set
 	
 	/**
-	 * Enable E2E encryption for this client. This involves retrieving/updating keys in the [keyStore] and
-	 * uploading the to the homeserver.
+	 * Enable E2E encryption for this client. If the [keyStore] contains no account, one will be created. Please
+	 * make sure that you call [uploadIdentityKeys] if necessary.
 	 */
 	fun enableE2E(keyStore : KeyStore)
 	{
-		if (keyStore.hasIdentityKeyPair)
-			identityKeyPair = keyStore.retrieveIdentityKeyPair()
-		else
-		{
-			val account = OlmAccount()
-			val idKeys = account.identityKeys()!! // TODO proper handling of null values
-			identityKeyPair = IdentityKeyPair(
-					idKeys.string("ed25519")?.fromBase64() ?: missing("ed25519"), ByteArray(0),
-					idKeys.string("curve25519")?.fromBase64() ?: missing("curve25519"), ByteArray(0)
-			)
-			keyStore.storeIdentityKeyPair(identityKeyPair!!)
-		}
-		
-		uploadIdentityKeys(identityKeyPair!!.toIdentityKey())
+		this.keyStore = keyStore
+		if (!keyStore.hasAccount)
+			keyStore.account = OlmAccount()
 	}
 	
 	/**
-	 * Upload the identity keys to the homeserver.
+	 * Upload the identity keys to the homeserver. The identity keys will be retrieved from the [keyStore].
+	 * Make sure to call [enableE2E] to populate the key store!
 	 *
-	 * @param idKey The identity keys to upload.
 	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 * @throws OlmException On errors while signing the keys.
 	 */
-	@Throws(MatrixAnswerException::class, NoDeviceIdException::class)
-	fun uploadIdentityKeys(idKey : IdentityKey)
+	@Throws(MatrixAnswerException::class, OlmException::class)
+	fun uploadIdentityKeys()
 	{
 		val json = JsonObject()
-		val deviceKeys = DeviceKeys(id, deviceId ?: throw NoDeviceIdException(), EncryptionAlgorithms.ALGORITHMS,
-				mapOf("ed25519" to idKey.ed25519.toUnpaddedBase64(), "curve25519" to idKey.curve25519.toUnpaddedBase64()),
-				DeviceKeySignatures(/* TODO populate the signatures */))
+		val deviceKeys = DeviceKeys(id,
+				deviceId ?: throw NoDeviceIdException(),
+				EncryptionAlgorithms.ALGORITHMS,
+				keyStore?.account?.identityKeys()?.mapValues { (_, v) -> v as String } ?: throw IllegalStateException()
+		)
+		deviceKeys.sign(keyStore?.account ?: throw IllegalStateException(), id, deviceId ?: throw NoDeviceIdException())
 		json["device_keys"] = deviceKeys.json
+		logger.debug(json.toJsonString(prettyPrint = true))
 		val res = target.post("_matrix/client/r0/keys/upload", token ?: throw NoTokenException(), id, json)
 		checkForError(res)
 	}

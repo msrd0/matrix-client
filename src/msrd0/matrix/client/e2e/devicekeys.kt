@@ -20,9 +20,11 @@ package msrd0.matrix.client.e2e
 
 import com.beust.klaxon.*
 import msrd0.matrix.client.*
-import msrd0.matrix.client.util.JsonSerializable
+import msrd0.matrix.client.util.*
+import org.matrix.olm.OlmAccount
+import org.matrix.olm.OlmException
 
-class DeviceKeySignatures() : HashMap<MatrixId, Map<String, String>>(), JsonSerializable
+class DeviceKeySignatures() : HashMap<MatrixId, MutableMap<String, String>>(), JsonSerializable
 {
 	constructor(json : JsonObject) : this()
 	{
@@ -32,19 +34,20 @@ class DeviceKeySignatures() : HashMap<MatrixId, Map<String, String>>(), JsonSeri
 	fun loadSignaturesFromJson(json : JsonObject) : DeviceKeySignatures
 	{
 		for ((id, obj) in json.map { (id, obj) -> MatrixId.fromString(id) to (obj as JsonObject) })
-			this[id] = obj.mapValues { it.value as String }
+			this[id] = obj.mapValues { it.value as String }.toMutableMap()
 		return this
 	}
 	
 	override val json : JsonObject get() = JsonObject(mapKeys { "${it.key}" })
 }
 
-class DeviceKeys(
+class DeviceKeys
+@JvmOverloads constructor(
 		val userId : MatrixId,
 		val deviceId : String,
 		val algorithms : List<String>,
 		val keys : Map<String, String>,
-		val signatures : DeviceKeySignatures
+		val signatures : DeviceKeySignatures = DeviceKeySignatures()
 ) : JsonSerializable
 {
 	@Throws(IllegalJsonException::class)
@@ -55,6 +58,17 @@ class DeviceKeys(
 			keys = json.obj("keys")?.mapValues { it.value as String } ?: missing("keys"),
 			signatures = DeviceKeySignatures(json.obj("signatures") ?: missing("signatures"))
 	)
+	
+	@Throws(OlmException::class)
+	fun sign(account : OlmAccount, id : MatrixId, deviceId : String)
+	{
+		val toSign = json
+		toSign.remove("signatures")
+		val signature = account.signMessage(toSign.toJsonString(canonical = true))
+		if (!signatures.containsKey(id))
+			signatures[id] = emptyMutableMap()
+		signatures[id]!!["ed25519:$deviceId"] = signature
+	}
 	
 	override val json : JsonObject get()
 			= JsonObject(mapOf(
