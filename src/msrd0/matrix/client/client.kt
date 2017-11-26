@@ -870,6 +870,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	 * Update the one time keys. The client will try to manage half the maximum amount of supported one-time
 	 * keys by olm.
 	 */
+	@Throws(OlmException::class)
 	fun updateOneTimeKeys()
 	{
 		val counts = oneTimeKeyCounts()
@@ -897,6 +898,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 				}
 			}
 			uploadOneTimeKeys(oneTimeKeysJson)
+			account.markOneTimeKeysAsPublished()
 		}
 	}
 	

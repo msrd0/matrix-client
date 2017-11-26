@@ -17,18 +17,43 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
  */
 
-package msrd0.matrix.client.e2e.test
+package msrd0.matrix.client.test
 
-import msrd0.matrix.client.e2e.olm
+import com.beust.klaxon.JsonObject
+import msrd0.matrix.client.e2e.verifySignature
 import org.hamcrest.Matchers.*
 import org.hamcrest.MatcherAssert.*
+import org.matrix.olm.*
+import org.testng.Assert.*
 import org.testng.annotations.Test
 
 class OlmTest
 {
+	companion object
+	{
+		val olm = OlmManager()
+		
+		lateinit var account : OlmAccount
+		lateinit var idKeys : JsonObject
+	}
+	
 	@Test(groups = arrayOf("base"))
 	fun version()
 	{
-		assertThat(olm.olmLibVersion, notNullValue())
+		assertNotNull(olm.olmLibVersion)
+	}
+	
+	@Test(groups = arrayOf("base"))
+	fun generateKeys()
+	{
+		account = OlmAccount()
+		idKeys = account.identityKeys()
+	}
+	
+	@Test(groups = arrayOf("base"), dependsOnMethods = arrayOf("generateKeys"))
+	fun sign()
+	{
+		val signature = account.signMessage(idKeys.toJsonString(canonical = true))
+		assert(verifySignature(signature, idKeys["ed25519"] as String, idKeys.toJsonString(canonical = true)))
 	}
 }
