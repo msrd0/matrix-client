@@ -782,7 +782,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	{
 		val json = JsonObject()
 		val deviceKeys = DeviceKeys(id, deviceId ?: throw NoDeviceIdException(), EncryptionAlgorithms.ALGORITHMS,
-				mapOf("ed25519" to idKey.ed25519.toBase64(), "curve25519" to idKey.curve25519.toBase64()),
+				mapOf("ed25519" to idKey.ed25519.toUnpaddedBase64(), "curve25519" to idKey.curve25519.toUnpaddedBase64()),
 				DeviceKeySignatures(/* TODO populate the signatures */))
 		json["device_keys"] = deviceKeys.json
 		val res = target.post("_matrix/client/r0/keys/upload", token ?: throw NoTokenException(), id, json)

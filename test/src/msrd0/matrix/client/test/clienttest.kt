@@ -25,6 +25,7 @@ import msrd0.matrix.client.e2e.KeyStore
 import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.encryption.EncryptionAlgorithms
 import msrd0.matrix.client.event.state.*
+import msrd0.matrix.client.util.fromBase64
 import org.apache.commons.io.IOUtils
 import org.hamcrest.MatcherAssert.*
 import org.hamcrest.Matchers.*
@@ -88,10 +89,18 @@ class MatrixClientTest
 		// enable e2e to populate our keys
 		client.enableE2E(keyStore)
 		assert(keyStore.hasIdentityKeyPair)
+		val keyPair = keyStore.retrieveIdentityKeyPair()
 		
 		// retrieve our own keys
 		val keys = client.queryIdentityKeys(listOf(id))
-		println("KEYS: " + keys.joinToString { "${it.userId}:${it.deviceId}=${it.keys}" })
+		val key = keys.find { it.userId == client.id && it.deviceId == client.deviceId }
+		assertNotNull(key)
+		key!!
+		assertThat(key.keys["ed25519"]?.fromBase64(), equalTo(keyPair.pubEd25519))
+		assertThat(key.keys["curve25519"]?.fromBase64(), equalTo(keyPair.pubCurve25519))
+		key.keys.values.forEach {
+			assertThat(it, not(endsWith("=")))
+		}
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
