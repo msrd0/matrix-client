@@ -95,7 +95,7 @@ class MatrixClientTest
 		
 		// enable e2e to populate our keys
 		client.enableE2E(keyStore)
-		assert(keyStore.hasAccount)
+		assert(keyStore.hasAccount())
 		client.uploadIdentityKeys()
 		client.updateOneTimeKeys()
 		val account = keyStore.account
