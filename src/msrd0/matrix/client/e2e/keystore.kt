@@ -17,8 +17,9 @@
  */
 package msrd0.matrix.client.e2e
 
-import org.matrix.olm.OlmAccount
-import org.matrix.olm.OlmException
+import msrd0.matrix.client.RoomId
+import org.matrix.olm.*
+import java.time.LocalDateTime
 
 interface KeyStore
 {
@@ -29,6 +30,14 @@ interface KeyStore
 	
 	/** Return true if this key store stores an [OlmAccount]. */
 	fun hasAccount() : Boolean
+	
+	/** Store the outbound [session] with its [timestamp] for the [room]. */
+	@Throws(OlmException::class)
+	fun storeOutboundSession(room : RoomId, session : OlmOutboundGroupSession, timestamp : LocalDateTime)
+	
+	/** Find the stored outbound session for the [room] and its timestamp or return null. */
+	@Throws(OlmException::class)
+	fun findOutboundSession(room : RoomId) : Pair<OlmOutboundGroupSession, LocalDateTime>?
 }
 
 
@@ -36,10 +45,20 @@ open class InMemoryKeyStore : KeyStore
 {
 	protected var _account : OlmAccount? = null
 	
-	@get:Throws(IllegalStateException::class)
 	override var account : OlmAccount
 		get() = _account ?: throw IllegalStateException()
 		set(value) { _account = value }
 	
 	override fun hasAccount() = _account != null
+	
+	
+	protected var _outboundSessions = HashMap<RoomId, Pair<OlmOutboundGroupSession, LocalDateTime>>()
+	
+	override fun storeOutboundSession(room : RoomId, session : OlmOutboundGroupSession, timestamp : LocalDateTime)
+	{
+		_outboundSessions[room] = session to timestamp
+	}
+	
+	override fun findOutboundSession(room : RoomId) : Pair<OlmOutboundGroupSession, LocalDateTime>?
+			= _outboundSessions[room]
 }

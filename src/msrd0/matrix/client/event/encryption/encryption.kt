@@ -27,10 +27,18 @@ import msrd0.matrix.client.event.MatrixEventTypes.*
 /**
  * The content of a room encryption event.
  */
-class RoomEncryptionEventContent(val algorithm : String) : MatrixEventContent()
+class RoomEncryptionEventContent(
+		val algorithm : String,
+		val rotationPeriodMsgs : Long = DEFAULT_ROTATION_PERIOD_MSGS,
+		val rotationPeriodMs : Long = DEFAULT_ROTATION_PERIOD_MS
+) : MatrixEventContent()
 {
 	companion object
 	{
+		// see https://matrix.org/docs/guides/e2e_implementation.html#rotating-megolm-sessions
+		@JvmField val DEFAULT_ROTATION_PERIOD_MSGS = 100L
+		@JvmField val DEFAULT_ROTATION_PERIOD_MS = 604800000L /* 1w */
+		
 		/**
 		 * Constructs a room encryption event content by parsing the supplied json.
 		 *
@@ -38,12 +46,18 @@ class RoomEncryptionEventContent(val algorithm : String) : MatrixEventContent()
 		 */
 		@JvmStatic
 		@Throws(IllegalJsonException::class)
-		fun fromJson(json : JsonObject) : RoomEncryptionEventContent
-				= RoomEncryptionEventContent(json.string("algorithm") ?: missing("algorithm"))
+		fun fromJson(json : JsonObject) = RoomEncryptionEventContent(
+				json.string("algorithm") ?: missing("algorithm"),
+				json.long("rotation_period_msgs") ?: DEFAULT_ROTATION_PERIOD_MSGS,
+				json.long("rotation_period_ms") ?: DEFAULT_ROTATION_PERIOD_MS
+		)
 	}
 	
-	override val json : JsonObject get()
-			= JsonObject(mapOf("algorithm" to algorithm))
+	override val json : JsonObject get() = JsonObject(mapOf(
+			"algorithm" to algorithm,
+			"rotation_period_msgs" to rotationPeriodMsgs,
+			"rotation_period_ms" to rotationPeriodMs
+	))
 }
 
 /**

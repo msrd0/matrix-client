@@ -53,6 +53,7 @@ class MatrixClientTest
 		var userData : MatrixUserData? = null
 		var keyStore : KeyStore = InMemoryKeyStore()
 		var roomId : RoomId? = null
+		var encryptedRoomId : RoomId? = null
 		
 		val testImage : RenderedImage = ImageIO.read(getSystemResourceAsStream("matrix-logo.png"))
 		var testAvatar : Avatar? = null
@@ -92,8 +93,12 @@ class MatrixClientTest
 		assertNotNull(userData)
 		id = client.id // to make sure the domain is what synapse think it would be
 		logger.info("Registered $id, deviceId=${userData!!.deviceId}, token=${userData!!.token}")
-		
-		// enable e2e to populate our keys
+	}
+	
+	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
+	fun client_enable_e2e()
+	{
+		val client = newClient()
 		client.enableE2E(keyStore)
 		assert(keyStore.hasAccount())
 		client.uploadIdentityKeys()
@@ -317,15 +322,33 @@ class MatrixClientTest
 		assertThat(String(downloaded, UTF_8), equalTo(testFile))
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_send_image", "room_update"))
-	fun room_encrypt()
+	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_enable_e2e"))
+	fun encrypted_room_create()
 	{
 		val client = newClient()
-		val room = Room(client, roomId!!)
+		val room = client.createRoom()
+		encryptedRoomId = room.id
 		
-		room.encryptionAlgorithm = EncryptionAlgorithms.MEGOLM_AES_SHA2
+		assert(!room.isEncrypted)
+		room.enableEncryption()
 		room.clearCache()
-		assertNotNull(room.encryptionAlgorithm)
-		assertThat(room.encryptionAlgorithm, equalTo(EncryptionAlgorithms.MEGOLM_AES_SHA2))
+		assert(room.isEncrypted)
+	}
+	
+	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("encrypted_room_create"))
+	fun encrypted_room_send_message()
+	{
+		val client = newClient()
+		client.enableE2E(keyStore)
+		val room = Room(client, encryptedRoomId!!)
+		
+		val msg = TextMessageContent("Hello Encrypted World")
+		room.sendEncryptedMessage(msg)
+		
+		val messages = room.retrieveMessages()
+		val filtered = messages.filter { it.body == msg.body }
+		assertThat(filtered.size, greaterThan(0))
+		val content = filtered.first().content
+		assertThat(content, instanceOf(TextMessageContent::class.java))
 	}
 }
