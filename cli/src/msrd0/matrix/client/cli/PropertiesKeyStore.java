@@ -73,7 +73,7 @@ public class PropertiesKeyStore implements KeyStore
 	}
 	
 	@Override
-	public boolean getHasAccount()
+	public boolean hasAccount()
 	{
 		return !properties.getProperty("olm.account", "").isEmpty();
 	}

@@ -759,7 +759,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	fun enableE2E(keyStore : KeyStore)
 	{
 		this.keyStore = keyStore
-		if (!keyStore.hasAccount)
+		if (!keyStore.hasAccount())
 			keyStore.account = OlmAccount()
 	}
 	

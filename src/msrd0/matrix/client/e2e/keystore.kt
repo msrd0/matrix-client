@@ -28,7 +28,7 @@ interface KeyStore
 		@Throws(OlmException::class) set
 	
 	/** Return true if this key store stores an [OlmAccount]. */
-	val hasAccount : Boolean
+	fun hasAccount() : Boolean
 }
 
 
@@ -41,5 +41,5 @@ open class InMemoryKeyStore : KeyStore
 		get() = _account ?: throw IllegalStateException()
 		set(value) { _account = value }
 	
-	override val hasAccount get() = _account != null
+	override fun hasAccount() = _account != null
 }
