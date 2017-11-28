@@ -34,6 +34,7 @@ import msrd0.matrix.client.event.*;
 import msrd0.matrix.client.listener.*;
 
 import com.google.common.base.Stopwatch;
+import org.matrix.olm.OlmException;
 import org.slf4j.*;
 
 public class Main
@@ -52,6 +53,15 @@ public class Main
 	}
 
 	private static MatrixClient client;
+	
+	private static void sendMessage(Room room, MessageContent msg)
+			throws MatrixAnswerException, OlmException
+	{
+		if (room.isEncrypted())
+			room.sendEncryptedMessage(msg);
+		else
+			room.sendMessage(msg);
+	}
 	
 	public static void main(String args[]) throws Exception
 	{
@@ -224,7 +234,7 @@ public class Main
 				else
 				{
 					MessageContent content = new TextMessageContent(query("Message"));
-					curr.sendMessage(content);
+					sendMessage(curr, content);
 				}
 			}
 			else if (line.equals("sendimg"))
@@ -237,7 +247,7 @@ public class Main
 					File file = new File(path);
 					ImageMessageContent content = new ImageMessageContent(file.getName());
 					content.uploadImage(ImageIO.read(file), client);
-					curr.sendMessage(content);
+					sendMessage(curr, content);
 				}
 			}
 		}

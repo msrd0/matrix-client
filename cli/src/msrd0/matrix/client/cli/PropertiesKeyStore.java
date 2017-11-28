@@ -22,16 +22,45 @@ import static msrd0.matrix.client.util.EncodingUtil.*;
 import static org.matrix.olm.OlmException.EXCEPTION_CODE_ACCOUNT_SERIALIZATION;
 
 import java.io.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
-import javax.annotation.Nonnull;
+import javax.annotation.*;
 
+import msrd0.matrix.client.RoomId;
 import msrd0.matrix.client.e2e.KeyStore;
 import msrd0.matrix.client.util.EncodingUtil;
 
+import kotlin.Pair;
 import org.matrix.olm.*;
 
 public class PropertiesKeyStore implements KeyStore
 {
+	@Nonnull
+	private static String serializeToString(@Nonnull Object obj)
+			throws IOException
+	{
+		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+		ObjectOutputStream out = new ObjectOutputStream(bytes);
+		out.writeObject(obj);
+		out.close();
+		return toBase64(bytes.toByteArray());
+	}
+	
+	@Nonnull
+	private static Object deserializeFromString(@Nonnull String str)
+			throws IOException, ClassNotFoundException
+	{
+		ByteArrayInputStream bytes = new ByteArrayInputStream(fromBase64(str));
+		ObjectInputStream in = new ObjectInputStream(bytes);
+		Object obj = in.readObject();
+		in.close();
+		return obj;
+	}
+	
+	private static DateTimeFormatter df = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+	
+	@Nonnull
 	private final Properties properties;
 	
 	public PropertiesKeyStore(@Nonnull Properties properties)
@@ -43,13 +72,12 @@ public class PropertiesKeyStore implements KeyStore
 	@Override
 	public OlmAccount getAccount() throws OlmException
 	{
-		byte[] bytes = fromBase64(properties.getProperty("olm.account", ""));
-		if (bytes.length == 0)
+		final String str = properties.getProperty("olm.account", "");
+		if (str.isEmpty())
 			throw new IllegalStateException();
 		try
 		{
-			ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(bytes));
-			return (OlmAccount) in.readObject();
+			return (OlmAccount) deserializeFromString(str);
 		}
 		catch (Exception ex)
 		{
@@ -60,21 +88,60 @@ public class PropertiesKeyStore implements KeyStore
 	@Override
 	public void setAccount(@Nonnull OlmAccount olmAccount) throws OlmException
 	{
-		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-		try (ObjectOutputStream out = new ObjectOutputStream(bytes))
+		String str;
+		try
 		{
-			out.writeObject(olmAccount);
+			str = serializeToString(olmAccount);
 		}
 		catch (Exception ex)
 		{
 			throw new OlmException(EXCEPTION_CODE_ACCOUNT_SERIALIZATION, ex.getMessage());
 		}
-		properties.setProperty("olm.account", toBase64(bytes.toByteArray()));
+		properties.setProperty("olm.account", str);
 	}
 	
 	@Override
 	public boolean hasAccount()
 	{
 		return !properties.getProperty("olm.account", "").isEmpty();
+	}
+	
+	
+	@Override
+	public void storeOutboundSession(@Nonnull RoomId room, @Nonnull OlmOutboundGroupSession session, @Nonnull LocalDateTime timestamp)
+			throws OlmException
+	{
+		String str;
+		try
+		{
+			str = serializeToString(session);
+		}
+		catch (Exception ex)
+		{
+			throw new OlmException(EXCEPTION_CODE_ACCOUNT_SERIALIZATION, ex.getMessage());
+		}
+		properties.setProperty("olm.outbound." + room, str);
+		properties.setProperty("olm.outbound." + room + ".timestamp", df.format(timestamp));
+	}
+	
+	@Nullable
+	@Override
+	public Pair<OlmOutboundGroupSession, LocalDateTime> findOutboundSession(@Nonnull RoomId room)
+			throws OlmException
+	{
+		final String str = properties.getProperty("olm.outbound." + room, "");
+		if (str.isEmpty())
+			return null;
+		OlmOutboundGroupSession outbound;
+		try
+		{
+			outbound = (OlmOutboundGroupSession) deserializeFromString(str);
+		}
+		catch (Exception ex)
+		{
+			throw new OlmException(EXCEPTION_CODE_ACCOUNT_SERIALIZATION, ex.getMessage());
+		}
+		final LocalDateTime timestamp = LocalDateTime.parse(properties.getProperty("olm.outbound." + room + ".timestamp"), df);
+		return new Pair<>(outbound, timestamp);
 	}
 }
