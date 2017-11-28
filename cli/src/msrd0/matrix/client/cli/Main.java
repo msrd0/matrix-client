@@ -163,6 +163,9 @@ public class Main
 		};
 		client.on(ROOM_MESSAGE, messageListener);
 		
+		// set a cool display name for our device
+		client.updateDeviceDisplayName(client.getDeviceId(), "Mextrix CLI Matrix Client");
+		
 		// synchronize the client
 		sync();
 		// run blocking synchronization in a coroutine
