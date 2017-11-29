@@ -518,7 +518,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 					fire(RoomInvitationEvent(inv))
 				}
 			}
-			catch (ex : MatrixAnswerException)
+			catch (ex : Exception)
 			{
 				logger.warn("syncBlocking received exception", ex)
 			}

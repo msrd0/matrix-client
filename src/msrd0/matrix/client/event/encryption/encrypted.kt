@@ -23,6 +23,8 @@ import com.beust.klaxon.*
 import msrd0.matrix.client.*
 import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.MatrixEventTypes.*
+import msrd0.matrix.client.event.encryption.EncryptionAlgorithms.*
+import org.matrix.olm.OlmException
 
 /**
  * The content of a room encrypted event.
@@ -35,24 +37,14 @@ class EncryptedEventContent(
 		val sessionId : String? = null
 ) : MatrixEventContent()
 {
-	companion object
-	{
-		/**
-		 * Constructs a room encrypted event content by parsing the supplied json.
-		 *
-		 * @throws IllegalJsonException On errors in the json.
-		 */
-		@JvmStatic
-		@Throws(IllegalJsonException::class)
-		fun fromJson(json : JsonObject) : EncryptedEventContent
-				= EncryptedEventContent(
-					algorithm = json.string("algorithm") ?: missing("algorithm"),
-					ciphertext = json.string("ciphertext") ?: missing("ciphertext"),
-					deviceId = json.string("device_id"),
-					senderKey = json.string("sender_key"),
-					sessionId = json.string("session_id")
-				)
-	}
+	@Throws(IllegalJsonException::class)
+	constructor(json : JsonObject) : this(
+			algorithm = json.string("algorithm") ?: missing("algorithm"),
+			ciphertext = json.string("ciphertext") ?: missing("ciphertext"),
+			deviceId = json.string("device_id"),
+			senderKey = json.string("sender_key"),
+			sessionId = json.string("session_id")
+	)
 	
 	override val json : JsonObject get()
 	{
@@ -90,6 +82,21 @@ class EncryptedRoomEvent(
 		content : EncryptedEventContent
 ) : MatrixRoomEvent<EncryptedEventContent>(room, data, content)
 {
-	constructor(room : Room, json : JsonObject, content : EncryptedEventContent)
-			: this(room, MatrixEventData(json), content)
+	@Throws(IllegalJsonException::class)
+	constructor(room : Room, json : JsonObject)
+			: this(room, MatrixEventData(json), EncryptedEventContent(json.obj("content") ?: missing("content")))
+	
+	@Throws(OlmException::class)
+	fun decrypt()
+	{
+		if (content.algorithm != MEGOLM_V1_RATCHET)
+			throw IllegalStateException("Unknown algorithm '${content.algorithm}'")
+		
+		val session = room.findOrCreateInboundSession()
+		val decrypted = session.decryptMessage(content.ciphertext)?.decryptedMessage
+		if (decrypted == null)
+			return; // TODO do something here
+		val json = Parser().parse(StringBuilder(decrypted))
+		println(json)
+	}
 }

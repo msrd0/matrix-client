@@ -73,7 +73,7 @@ class MegolmEncryptor(
 				val inSession = inSessions[sessionId]
 				if (inSession != null)
 				{
-					val string : String = inSession.decryptMessage(event.ciphertext).mDecryptedMessage
+					val string : String = inSession.decryptMessage(event.ciphertext)!!.decryptedMessage
 					return Parser().parse(StringBuilder(string)) as JsonObject
 				}
 			}
