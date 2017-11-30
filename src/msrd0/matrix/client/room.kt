@@ -122,12 +122,7 @@ open class Room(
 	)
 	
 	/** The members of this room. */
-	val members = ArrayList<MatrixId>()
-	
-	init
-	{
-		retrieveMembers()
-	}
+	val members : List<MatrixId> by lazy { retrieveMembers() }
 	
 	/**
 	 * Retrieves the room's members.
@@ -135,12 +130,12 @@ open class Room(
 	 * @throws MatrixAnswerException On errors in the matrix answer.
 	 */
 	@Throws(MatrixAnswerException::class)
-	protected fun retrieveMembers()
+	protected fun retrieveMembers() : List<MatrixId>
 	{
 		val res = client.target.get("_matrix/client/r0/rooms/$id/members", client.token ?: throw NoTokenException(), client.id)
 		checkForError(res)
 		
-		members.clear()
+		val members = ArrayList<MatrixId>()
 		
 		val chunk = res.json.array<JsonObject>("chunk") ?: missing("chunk")
 		for (member in chunk)
@@ -150,9 +145,11 @@ open class Room(
 			if (membership != "join")
 				continue
 			
-			val userid = member.string("state_key") ?: throw IllegalJsonException("Missing: 'chunk.[].state_key")
-			members.add(MatrixId.fromString(userid))
+			val userId = member.string("state_key") ?: throw IllegalJsonException("Missing: 'chunk.[].state_key")
+			members.add(MatrixId.fromString(userId))
 		}
+		
+		return members
 	}
 	
 	/** The previous batch of the last retrieveMessage call. */
