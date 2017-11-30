@@ -73,7 +73,7 @@ class MegolmEncryptor(val olm : OlmEncryption, val roomId : String, val maxMessa
 					val inSession = inSessions[sessionId]
 					if (inSession != null)
 					{
-						val string : String = inSession.decryptMessage(event.getNested("content.ciphertext") as String).mDecryptedMessage
+						val string : String = inSession.decryptMessage(event.getNested("content.ciphertext") as String)!!.decryptedMessage
 						return Parser().parse(StringBuilder(string)) as JsonObject
 					}
 				}
