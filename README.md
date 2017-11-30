@@ -2,7 +2,27 @@
 
 A [matrix](https://matrix.org/) client for Java and other JVM languages written in Kotlin.
 
-There is also a cli interface written in Java in the cli folder.
+There is also a cli interface written in Java in the `cli` folder.
+
+## Supported Modules
+
+| Module | Support | Branch |
+|--------|:-------:|:------:|
+| Instant Messaging | Partial | `master` |
+| Presence | Planned | -- |
+| Push Notifications | No | -- |
+| Receipts | Planned | -- |
+| Typing Notifications | No | -- |
+| VoIP | Partial | `master` |
+| Content Repository | Partial | `master` |
+| Managing History Visibility | Fully | `master` |
+| Server Side Search | No | -- |
+| Server Administration | No | -- |
+| Event Context | No | -- |
+| Device Management | Fully | `master` |
+| End-to-End Encryption | Partial | `e2e` |
+| Third-party Invites | No | -- |
+| Guest Access | No | -- |
 
 ## Gradle
 
