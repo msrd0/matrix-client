@@ -24,6 +24,8 @@ import kotlinx.coroutines.experimental.launch
 import kotlinx.coroutines.experimental.sync.Mutex
 import kotlinx.coroutines.experimental.sync.withLock
 import msrd0.matrix.client.event.*
+import msrd0.matrix.client.event.MatrixEventTypes.*
+import msrd0.matrix.client.event.RoomMessageEvent
 import msrd0.matrix.client.filter.Filter
 import msrd0.matrix.client.filter.uploadFilter
 import msrd0.matrix.client.listener.*
@@ -495,7 +497,17 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 					val timeline = join.obj("$roomId")?.obj("timeline") ?: missing("timeline")
 					val events = timeline.array<JsonObject>("events") ?: missing("timeline.events")
 					for (event in events)
-						fire(RoomMessageEvent(room, Message(room, event)))
+					{
+						var msg : Message? = null
+						val type = event.string("type")
+						if (type == ROOM_MESSAGE)
+							msg = RoomMessageEvent(room, event)
+						else
+							logger.error("Unknown message type $type for room $roomId in sync blocking")
+						
+						if (msg != null)
+							fire(RoomMessageReceivedEvent(room, msg))
+					}
 				}
 				val invite = rooms.obj("invite") ?: missing("rooms.invite")
 				for (roomId in invite.keys.map { RoomId.fromString(it) })

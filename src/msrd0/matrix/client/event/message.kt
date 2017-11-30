@@ -299,17 +299,29 @@ open class FileMessageContent
 	}
 }
 
+interface Message
+{
+	val body : String
+	val msgtype : String
+	
+	// from the event class
+	val content : MessageContent
+	val timestamp : LocalDateTime
+	val sender : MatrixId
+}
+
 /**
- * This class represents a message in a room.
+ * This class represents a plaintext message in a room.
  */
-class Message
+class RoomMessageEvent
 @Throws(IllegalJsonException::class)
 constructor(room : Room, json : JsonObject)
 	: MatrixRoomEvent<MessageContent>(room, json,
 		MessageContent.fromJson(json.obj("content") ?: missing("content")))
+	, Message
 {
-	val body get() = content.body
-	val msgtype get() = content.msgtype
+	override val body get() = content.body
+	override val msgtype get() = content.msgtype
 	
 	override fun toString() = "Message(from $sender in $roomId: $content)"
 }
@@ -319,3 +331,11 @@ class Messages(
 		val end : String,
 		messages : Collection<Message> = Collections.emptyList()
 ) : ArrayList<Message>(messages)
+{
+	constructor(start : String, end : String, room : Room, json : JsonArray<JsonObject>) : this(start, end, json.mapNotNull {
+		val type = it.string("type")
+		if (type == ROOM_MESSAGE)
+			RoomMessageEvent(room, it)
+		else null
+	})
+}

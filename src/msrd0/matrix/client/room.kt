@@ -177,8 +177,7 @@ open class Room(
 		val json = res.json
 		prev_batch = json.string("end")
 		val chunk = json.array<JsonObject>("chunk")!!
-		return Messages(json.string("start")!!, json.string("end")!!,
-				chunk.filter{ it.string("type") == "m.room.message" }.map { Message(this, it) })
+		return Messages(json.string("start")!!, json.string("end")!!, this, chunk)
 	}
 	
 	/**

@@ -33,5 +33,5 @@ object EventTypes
 	val ROOM_INVITATION = EventType("matrix.room.invitation", RoomInvitationListener::class.java)
 	
 	@JvmField
-	val ROOM_MESSAGE = EventType("matrix.room.message", RoomMessageListener::class.java)
+	val ROOM_MESSAGE_RECEIVED = EventType("matrix.room.message", RoomMessageReceivedListener::class.java)
 }
