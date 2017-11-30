@@ -292,6 +292,9 @@ open class Room(
 			keyStore.storeOutboundSession(id, outboundSession!!, outboundSessionTimestamp)
 			
 			// TODO send a lot of to-device events containing the new key
+			
+			// create corresponding inbound session
+			inboundSession = OlmInboundGroupSession(outboundSession!!.sessionKey())
 		}
 		
 		// we should have created an outbound session at this stage
