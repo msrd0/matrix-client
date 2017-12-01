@@ -624,7 +624,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 		}
 		val json = JsonObject(mapOf("messages" to messages))
 		
-		val res = target.put("_matrix/client/r0/sendToDevice/$evType/$nextTxnId", json)
+		val res = target.put("_matrix/client/r0/sendToDevice/$evType/$nextTxnId", token ?: throw NoTokenException(), id, json)
 		checkForError(res)
 	}
 	
