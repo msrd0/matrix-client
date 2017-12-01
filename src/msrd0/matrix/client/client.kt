@@ -496,18 +496,8 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 					val room = roomsJoined[roomId] ?: continue
 					val timeline = join.obj("$roomId")?.obj("timeline") ?: missing("timeline")
 					val events = timeline.array<JsonObject>("events") ?: missing("timeline.events")
-					for (event in events)
-					{
-						var msg : Message? = null
-						val type = event.string("type")
-						if (type == ROOM_MESSAGE)
-							msg = RoomMessageEvent(room, event)
-						else
-							logger.error("Unknown message type $type for room $roomId in sync blocking")
-						
-						if (msg != null)
-							fire(RoomMessageReceivedEvent(room, msg))
-					}
+					for (msg in Messages.fromJson(room, events))
+						fire(RoomMessageReceivedEvent(room, msg))
 				}
 				val invite = rooms.obj("invite") ?: missing("rooms.invite")
 				for (roomId in invite.keys.map { RoomId.fromString(it) })

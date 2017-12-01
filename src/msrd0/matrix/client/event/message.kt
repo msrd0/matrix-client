@@ -23,13 +23,13 @@ import com.beust.klaxon.*
 import msrd0.matrix.client.*
 import msrd0.matrix.client.event.MatrixEventTypes.*
 import msrd0.matrix.client.event.MessageTypes.*
-import org.slf4j.*
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.awt.image.RenderedImage
-import java.io.*
+import java.io.ByteArrayInputStream
+import java.io.IOException
 import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit.*
-import java.util.*
-import java.util.regex.Pattern
+import java.util.ArrayList
 import javax.imageio.ImageIO
 
 /**
@@ -329,13 +329,25 @@ constructor(room : Room, json : JsonObject)
 class Messages(
 		val start : String,
 		val end : String,
-		messages : Collection<Message> = Collections.emptyList()
-) : ArrayList<Message>(messages)
+		private val messages : List<Message> = emptyList()
+) : List<Message> by messages
 {
-	constructor(start : String, end : String, room : Room, json : JsonArray<JsonObject>) : this(start, end, json.mapNotNull {
-		val type = it.string("type")
-		if (type == ROOM_MESSAGE)
-			RoomMessageEvent(room, it)
-		else null
-	})
+	constructor(start : String, end : String, room : Room, json : JsonArray<JsonObject>)
+			: this(start, end, fromJson(room, json))
+	
+	companion object
+	{
+		private val logger : Logger = LoggerFactory.getLogger(Messages::class.java)
+		
+		fun fromJson(room : Room, json : JsonArray<JsonObject>) : List<Message> = json.mapNotNull {
+			val type = it.string("type")
+			if (type == ROOM_MESSAGE)
+				RoomMessageEvent(room, it)
+			else
+			{
+				logger.warn("Unknown message type $type")
+				null
+			}
+		}
+	}
 }
