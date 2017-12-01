@@ -343,15 +343,23 @@ class Messages(
 		
 		fun fromJson(room : Room, json : JsonArray<JsonObject>) : List<Message> = json.mapNotNull {
 			val type = it.string("type")
-			when (type)
+			try
 			{
-				ROOM_MESSAGE -> RoomMessageEvent(room, it)
-				ROOM_ENCRYPTED -> EncryptedRoomEvent(room, it)
-				else ->
+				when (type)
 				{
-					logger.warn("Unknown message type $type")
-					null as Message?
+					ROOM_MESSAGE -> RoomMessageEvent(room, it)
+					ROOM_ENCRYPTED -> EncryptedRoomEvent(room, it)
+					else ->
+					{
+						logger.warn("Unknown message type $type")
+						null as Message?
+					}
 				}
+			}
+			catch (ex : Exception)
+			{
+				logger.error("Exception while parsing message", ex)
+				null as Message?
 			}
 		}
 	}

@@ -84,13 +84,11 @@ class DeviceKeys
 		val userSignatures = signatures[userId]
 		val deviceSignature = userSignatures?.filter { (device, _) -> device.endsWith(deviceId) }?.entries?.firstOrNull()
 			?: return !forceSignature // there is no self-signature
-		var device = deviceSignature.key
-		val index = device.indexOf(":")
-		device = device.substring(0, index)
+		val device = deviceSignature.key
 		val signature = deviceSignature.value
 		val jsonToVerify = json
 		jsonToVerify.remove("signatures")
-		return verifySignature(signature, keys[device] ?: throw IllegalStateException("Device Key is missing"),
+		return verifySignature(signature, keys[device] ?: return false,
 				jsonToVerify.toJsonString(canonical = true))
 	}
 	
