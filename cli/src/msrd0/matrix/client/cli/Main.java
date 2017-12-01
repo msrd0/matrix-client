@@ -149,7 +149,7 @@ public class Main
 			return true;
 		};
 		client.on(ROOM_INVITATION, invitationListener);
-		RoomMessageListener messageListener = (ev) -> {
+		RoomMessageReceivedListener messageListener = (ev) -> {
 			System.out.println("New message in room " + ev.getRoom().getName());
 			try
 			{
@@ -161,7 +161,7 @@ public class Main
 			}
 			return true;
 		};
-		client.on(ROOM_MESSAGE, messageListener);
+		client.on(ROOM_MESSAGE_RECEIVED, messageListener);
 		
 		// set a cool display name for our device
 		client.updateDeviceDisplayName(client.getDeviceId(), "Mextrix CLI Matrix Client");

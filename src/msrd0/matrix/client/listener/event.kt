@@ -41,4 +41,4 @@ open class RoomJoinEvent(val room : Room) : Event(EventTypes.ROOM_JOIN)
 
 open class RoomInvitationEvent(val room : RoomInvitation) : Event(EventTypes.ROOM_INVITATION)
 
-open class RoomMessageEvent(val room : Room, val msg : Message) : Event(EventTypes.ROOM_MESSAGE)
+open class RoomMessageReceivedEvent(val room : Room, val msg : Message) : Event(EventTypes.ROOM_MESSAGE_RECEIVED)

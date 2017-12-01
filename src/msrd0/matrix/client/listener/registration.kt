@@ -21,7 +21,7 @@ package msrd0.matrix.client.listener
 
 import msrd0.matrix.client.listener.EventTypes.ROOM_INVITATION
 import msrd0.matrix.client.listener.EventTypes.ROOM_JOIN
-import msrd0.matrix.client.listener.EventTypes.ROOM_MESSAGE
+import msrd0.matrix.client.listener.EventTypes.ROOM_MESSAGE_RECEIVED
 
 interface ListenerRegistration
 {
@@ -40,8 +40,8 @@ fun ListenerRegistration.onRoomInvitation(callback : (event : RoomInvitationEven
 					= callback(event)
 		})
 
-fun ListenerRegistration.onRoomMessage(callback : (event : RoomMessageEvent) -> Boolean)
-		= on(ROOM_MESSAGE, object : RoomMessageListener {
-			override fun call(event : RoomMessageEvent) : Boolean
+fun ListenerRegistration.onRoomMessage(callback : (event : RoomMessageReceivedEvent) -> Boolean)
+		= on(ROOM_MESSAGE_RECEIVED, object : RoomMessageReceivedListener {
+			override fun call(event : RoomMessageReceivedEvent) : Boolean
 					= callback(event)
 		})

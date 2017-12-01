@@ -218,17 +218,7 @@ open class Room(
 		val json = res.json
 		prev_batch = json.string("end")
 		val chunk = json.array<JsonObject>("chunk")!!
-		return Messages(json.string("start")!!, json.string("end")!!, chunk.filter {
-			it.string("type") == ROOM_MESSAGE || it.string("type") == ROOM_ENCRYPTED
-		}.mapNotNull {
-			if (it.string("type") == ROOM_MESSAGE)
-				Message(this, it)
-			else
-			{
-				EncryptedRoomEvent(this, it).decrypt()
-				null
-			}
-		})
+		return Messages(json.string("start")!!, json.string("end")!!, this, chunk)
 	}
 	
 	/**

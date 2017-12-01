@@ -48,4 +48,4 @@ interface RoomInvitationListener : Listener<RoomInvitationEvent>
 /**
  * This listener is called as soon as a new message was sent to the room.
  */
-interface  RoomMessageListener : Listener<RoomMessageEvent>
+interface  RoomMessageReceivedListener : Listener<RoomMessageReceivedEvent>
