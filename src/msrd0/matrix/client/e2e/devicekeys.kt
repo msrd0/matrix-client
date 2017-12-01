@@ -70,6 +70,30 @@ class DeviceKeys
 		signatures[id]!!["ed25519:$deviceId"] = signature
 	}
 	
+	/**
+	 * Check the self-signatures of this device key. Signatures from a third-party account cannot be verified
+	 * because we don't know their keys.
+	 *
+	 * @return False if the signature is invalid or there is no signature and [forceSignature] is set to true.
+	 * @throws OlmException On errors while checking the signatures.
+	 */
+	@JvmOverloads
+	@Throws(OlmException::class)
+	fun checkSignatures(forceSignature : Boolean = true) : Boolean
+	{
+		val userSignatures = signatures[userId]
+		val deviceSignature = userSignatures?.filter { (device, _) -> device.endsWith(deviceId) }?.entries?.firstOrNull()
+			?: return !forceSignature // there is no self-signature
+		var device = deviceSignature.key
+		val index = device.indexOf(":")
+		device = device.substring(0, index)
+		val signature = deviceSignature.value
+		val jsonToVerify = json
+		jsonToVerify.remove("signatures")
+		return verifySignature(signature, keys[device] ?: throw IllegalStateException("Device Key is missing"),
+				jsonToVerify.toJsonString(canonical = true))
+	}
+	
 	override val json : JsonObject get()
 			= JsonObject(mapOf(
 				"user_id" to "$userId",

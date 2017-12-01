@@ -24,9 +24,8 @@ import msrd0.matrix.client.MatrixClient.Companion.checkForError
 import msrd0.matrix.client.e2e.*
 import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.MatrixEventTypes.*
-import msrd0.matrix.client.event.encryption.EncryptedRoomEvent
+import msrd0.matrix.client.event.encryption.*
 import msrd0.matrix.client.event.encryption.EncryptionAlgorithms.*
-import msrd0.matrix.client.event.encryption.RoomEncryptionEventContent
 import msrd0.matrix.client.event.state.*
 import org.matrix.olm.*
 import org.slf4j.Logger
@@ -193,6 +192,11 @@ open class Room(
 		return members
 	}
 	
+	/** The device list of this room. */
+	val deviceList : List<DeviceKeys> by lazy {
+		client.queryIdentityKeys(members)
+	}
+	
 	/** The previous batch of the last retrieveMessage call. */
 	var prev_batch : String? = null
 		private set
@@ -253,7 +257,10 @@ open class Room(
 	 * case that session will be returned.
 	 *
 	 * @throws IllegalStateException If the room is not encrypted or no [keyStore] is present
+	 * @throws MatrixAnswerException On errors while sending/receiving keys
+	 * @throws OlmException On errors while sending/receiving keys
 	 */
+	@Throws(MatrixAnswerException::class, OlmException::class)
 	fun findOrCreateOutboundSession() : OlmOutboundGroupSession
 	{
 		// get the encryption details for this room
@@ -280,11 +287,17 @@ open class Room(
 			outboundSession = OlmOutboundGroupSession()
 			outboundSessionTimestamp = LocalDateTime.now()
 			keyStore.storeOutboundSession(id, outboundSession!!, outboundSessionTimestamp)
+			val sessionId = outboundSession!!.sessionIdentifier()
+			val sessionKey = outboundSession!!.sessionKey()
 			
-			// TODO send a lot of to-device events containing the new key
+			// send the keys to every device in this room
+			// TODO provide a way to verify the devices and exclude unverified devices from this list
+			val devices = deviceList.filter { it.checkSignatures(false) }
+			val content = RoomKeyEventContent(MEGOLM_V1_RATCHET, id, sessionId, sessionKey)
+			client.sendToDevice(content, ROOM_KEY, devices.map { it.userId }.toSet())
 			
 			// create corresponding inbound session
-			inboundSession = OlmInboundGroupSession(outboundSession!!.sessionKey())
+			inboundSession = OlmInboundGroupSession(sessionKey)
 		}
 		
 		// we should have created an outbound session at this stage
@@ -294,6 +307,7 @@ open class Room(
 	/** OLM inbound session used to decrypt received messages. */
 	private var inboundSession : OlmInboundGroupSession? = null
 	
+	@Throws(MatrixAnswerException::class, OlmException::class)
 	fun findOrCreateInboundSession() : OlmInboundGroupSession
 	{
 		if (inboundSession != null)
