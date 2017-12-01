@@ -26,17 +26,16 @@ import kotlinx.coroutines.experimental.sync.Mutex
 import kotlinx.coroutines.experimental.sync.withLock
 import msrd0.matrix.client.e2e.*
 import msrd0.matrix.client.event.*
-import msrd0.matrix.client.event.MatrixEventTypes.*
-import msrd0.matrix.client.event.RoomMessageEvent
 import msrd0.matrix.client.event.encryption.EncryptionAlgorithms
-import msrd0.matrix.client.filter.*
+import msrd0.matrix.client.filter.Filter
+import msrd0.matrix.client.filter.uploadFilter
 import msrd0.matrix.client.listener.*
 import msrd0.matrix.client.util.*
 import org.matrix.olm.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.URI
-import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.TimeUnit.*
 
 /**
  * This class is the http client for the matrix server.
@@ -637,7 +636,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	/**
 	 * Send an event to a list of user ids.
 	 *
-	 * This call is equivalent to calling `sendToDevice` with the given user ids and a wildcard
+	 * This call is equivalent to calling [sendToDevice] with the given user ids and a wildcard
 	 * as device id.
 	 *
 	 * @param ev The event content to send.
@@ -653,6 +652,54 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 		for (user in users)
 			devices[user] = listOf("*")
 		sendToDevice(ev, evType, devices)
+	}
+	
+	/**
+	 * Encrypt and send an event to a list of user ids and devices. To send the event to all device ids of a certain
+	 * user id, one can use a wildcard as device id.
+	 *
+	 * @param ev The event content to send.
+	 * @param evType The type of the event, for example `m.new_device`.
+	 * @param devices A map of user id to a collection of devices of that user id.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 * @throws OlmException On errors while encrypting the message.
+	 */
+	@Throws(MatrixAnswerException::class, OlmException::class)
+	fun sendEncryptedToDevice(ev : MatrixEventContent, evType : String, devices : Map<MatrixId, Collection<String>>)
+	{
+		val evJson = ev.json
+		val messages = JsonObject()
+		for ((userId, deviceIds) in devices)
+		{
+			val json = JsonObject()
+			for (deviceId in deviceIds)
+				json[deviceId] = evJson
+			messages["$userId"] = json
+		}
+		
+		TODO("encrypt and send event")
+	}
+	
+	/**
+	 * Send an event to a list of user ids.
+	 *
+	 * This call is equivalent to calling [sendEncryptedToDevice] with the given user ids and a wildcard
+	 * as device id.
+	 *
+	 * @param ev The event content to send.
+	 * @param evType The type of the event, for example `m.new_device`.
+	 * @param users A list of user ids.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun sendEncryptedToDevice(ev : MatrixEventContent, evType : String, users : Collection<MatrixId>)
+	{
+		val devices = HashMap<MatrixId, Collection<String>>()
+		for (user in users)
+			devices[user] = listOf("*")
+		sendEncryptedToDevice(ev, evType, devices)
 	}
 	
 	
@@ -918,6 +965,41 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 		json["one_time_keys"] = oneTimeKeysJson
 		val res = target.post("_matrix/client/r0/keys/upload", token ?: throw NoTokenException(), id, json)
 		checkForError(res)
+	}
+	
+	
+	/**
+	 * Claim a one-time key for the given list of user ids and devices.
+	 *
+	 * @param devices A map of user id to list of device ids.
+	 * @param algorithm The algorithm of the one-time key.
+	 *
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@JvmOverloads
+	@Throws(MatrixAnswerException::class)
+	fun claimOneTimeKeys(devices : Map<MatrixId, Collection<String>>, algorithm : String = "signed_curve25519") : List<OneTimeKey>
+	{
+		val json = JsonObject()
+		for ((user, userDevices) in devices)
+		{
+			val userJson = JsonObject()
+			for (device in userDevices)
+				userJson[device] = algorithm
+			json["$user"] = userJson
+		}
+		
+		val res = target.post("_matrix/client/r0/keys/claim", token ?: throw NoTokenException(), id,
+				JsonObject(mapOf("one_time_keys" to json)))
+		checkForError(res)
+		
+		val oneTimeKeysJson = res.json.obj("one_time_keys") ?: missing("one_time_keys")
+		val oneTimeKeys = ArrayList<OneTimeKey>()
+		for ((userId, o0) in oneTimeKeysJson.map { (key, value) -> MatrixId.fromString(key) to (value as JsonObject) })
+			for ((deviceId, o1) in o0.mapValues { (_, value) -> value as JsonObject })
+				for ((keyName, o2) in o1.mapValues { (_, value) -> value as JsonObject })
+					oneTimeKeys.add(OneTimeKey(userId, deviceId, keyName, o2))
+		return oneTimeKeys
 	}
 }
 

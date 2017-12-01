@@ -21,8 +21,7 @@ package msrd0.matrix.client.test
 
 import com.beust.klaxon.string
 import msrd0.matrix.client.*
-import msrd0.matrix.client.e2e.InMemoryKeyStore
-import msrd0.matrix.client.e2e.KeyStore
+import msrd0.matrix.client.e2e.*
 import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.encryption.EncryptionAlgorithms
 import msrd0.matrix.client.event.state.*
@@ -116,6 +115,27 @@ class MatrixClientTest
 		key.keys.values.forEach {
 			assertThat(it, not(endsWith("=")))
 		}
+	}
+	
+	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_enable_e2e"))
+	fun client_claim_one_time_key()
+	{
+		val client = newClient()
+		client.enableE2E(keyStore)
+		
+		val oneTimeKeys = client.claimOneTimeKeys(mapOf(id to listOf(client.deviceId!!)))
+		assertThat(oneTimeKeys.size, equalTo(1))
+		val oneTimeKey = oneTimeKeys.first()
+		assertThat(oneTimeKey.userId, equalTo(id))
+		assertThat(oneTimeKey.deviceId, equalTo(client.deviceId!!))
+		
+		val account = keyStore.account
+		val signature = oneTimeKey.signatures[id]?.get("ed25519:${client.deviceId}")
+		assertNotNull(signature)
+		signature!!
+		val json = oneTimeKey.json
+		json.remove("signatures")
+		assert(verifySignature(signature, account.identityKeys().string("ed25519")!!, json.toJsonString(canonical = true)))
 	}
 	
 	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))

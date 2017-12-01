@@ -24,30 +24,13 @@ import msrd0.matrix.client.util.*
 import org.matrix.olm.OlmAccount
 import org.matrix.olm.OlmException
 
-class DeviceKeySignatures() : HashMap<MatrixId, MutableMap<String, String>>(), JsonSerializable
-{
-	constructor(json : JsonObject) : this()
-	{
-		loadSignaturesFromJson(json)
-	}
-	
-	fun loadSignaturesFromJson(json : JsonObject) : DeviceKeySignatures
-	{
-		for ((id, obj) in json.map { (id, obj) -> MatrixId.fromString(id) to (obj as JsonObject) })
-			this[id] = obj.mapValues { it.value as String }.toMutableMap()
-		return this
-	}
-	
-	override val json : JsonObject get() = JsonObject(mapKeys { "${it.key}" })
-}
-
 class DeviceKeys
 @JvmOverloads constructor(
 		val userId : MatrixId,
 		val deviceId : String,
 		val algorithms : List<String>,
 		val keys : Map<String, String>,
-		val signatures : DeviceKeySignatures = DeviceKeySignatures()
+		val signatures : KeySignatures = KeySignatures()
 ) : JsonSerializable
 {
 	@Throws(IllegalJsonException::class)
@@ -56,7 +39,7 @@ class DeviceKeys
 			deviceId = json.string("device_id") ?: missing("device_id"),
 			algorithms = json.array("algorithms") ?: missing("algorithms"),
 			keys = json.obj("keys")?.mapValues { it.value as String } ?: missing("keys"),
-			signatures = DeviceKeySignatures(json.obj("signatures") ?: missing("signatures"))
+			signatures = KeySignatures(json.obj("signatures") ?: missing("signatures"))
 	)
 	
 	@Throws(OlmException::class)
