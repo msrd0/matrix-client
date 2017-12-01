@@ -56,7 +56,7 @@ class EncryptedEventContent(
 		val decrypted = session.decryptMessage(ciphertext)?.decryptedMessage
 				?: throw RuntimeException("Decryption failed for unknown reasons") // TODO do something here
 		val json = Parser().parse(StringBuilder(decrypted)) as JsonObject
-		return MessageContent.fromJson(json)
+		return MessageContent.fromJson(json.obj("content") ?: json)
 	}
 	
 	override val json : JsonObject get()
