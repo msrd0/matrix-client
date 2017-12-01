@@ -25,6 +25,7 @@ import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.MatrixEventTypes.*
 import msrd0.matrix.client.event.encryption.EncryptionAlgorithms.*
 import org.matrix.olm.OlmException
+import org.matrix.olm.OlmException.*
 
 /**
  * The content of a room encrypted event.
@@ -52,9 +53,11 @@ class EncryptedEventContent(
 		if (algorithm != MEGOLM_V1_RATCHET)
 			throw IllegalStateException("Unknown algorithm '$algorithm'")
 		
-		val session = room.findOrCreateInboundSession()
+		val session = (if (sessionId == null) null else room.findInboundSession(sessionId))
+				?: throw OlmException(EXCEPTION_CODE_INBOUND_GROUP_SESSION_IDENTIFIER, "Unknown session for id '$sessionId'")
 		val decrypted = session.decryptMessage(ciphertext)?.decryptedMessage
 				?: throw RuntimeException("Decryption failed for unknown reasons") // TODO do something here
+		room.storeInboundSession(session)
 		val json = Parser().parse(StringBuilder(decrypted)) as JsonObject
 		return MessageContent.fromJson(json.obj("content") ?: json)
 	}

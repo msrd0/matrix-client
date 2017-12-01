@@ -19,7 +19,7 @@
 package msrd0.matrix.client.cli;
 
 import static msrd0.matrix.client.util.EncodingUtil.*;
-import static org.matrix.olm.OlmException.EXCEPTION_CODE_ACCOUNT_SERIALIZATION;
+import static org.matrix.olm.OlmException.*;
 
 import java.io.*;
 import java.time.LocalDateTime;
@@ -29,7 +29,6 @@ import javax.annotation.*;
 
 import msrd0.matrix.client.RoomId;
 import msrd0.matrix.client.e2e.KeyStore;
-import msrd0.matrix.client.util.EncodingUtil;
 
 import kotlin.Pair;
 import org.matrix.olm.*;
@@ -143,5 +142,42 @@ public class PropertiesKeyStore implements KeyStore
 		}
 		final LocalDateTime timestamp = LocalDateTime.parse(properties.getProperty("olm.outbound." + room + ".timestamp"), df);
 		return new Pair<>(outbound, timestamp);
+	}
+	
+	
+	@Override
+	public void storeInboundSession(@Nonnull OlmInboundGroupSession session)
+			throws OlmException
+	{
+		String str;
+		try
+		{
+			str = serializeToString(session);
+		}
+		catch (Exception ex)
+		{
+			throw new OlmException(EXCEPTION_CODE_ACCOUNT_SERIALIZATION, ex.getMessage());
+		}
+		properties.setProperty("olm.inbound." + session.sessionIdentifier(), str);
+	}
+	
+	@Nullable
+	@Override
+	public OlmInboundGroupSession findInboundSession(@Nonnull String sessionId)
+			throws OlmException
+	{
+		final String str = properties.getProperty("olm.inbound." + sessionId, "");
+		if (str.isEmpty())
+			return null;
+		OlmInboundGroupSession inbound;
+		try
+		{
+			inbound = (OlmInboundGroupSession) deserializeFromString(str);
+		}
+		catch (Exception ex)
+		{
+			throw new OlmException(EXCEPTION_CODE_ACCOUNT_SERIALIZATION, ex.getMessage());
+		}
+		return inbound;
 	}
 }

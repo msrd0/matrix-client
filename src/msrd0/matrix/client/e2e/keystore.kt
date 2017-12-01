@@ -38,6 +38,14 @@ interface KeyStore
 	/** Find the stored outbound session for the [room] and its timestamp or return null. */
 	@Throws(OlmException::class)
 	fun findOutboundSession(room : RoomId) : Pair<OlmOutboundGroupSession, LocalDateTime>?
+	
+	/** Store the inbound [session]. */
+	@Throws(OlmException::class)
+	fun storeInboundSession(session : OlmInboundGroupSession)
+	
+	/** Find the stored inbound session uniquely identified by the [sessionId] or return null. */
+	@Throws(OlmException::class)
+	fun findInboundSession(sessionId : String) : OlmInboundGroupSession?
 }
 
 
@@ -61,4 +69,15 @@ open class InMemoryKeyStore : KeyStore
 	
 	override fun findOutboundSession(room : RoomId) : Pair<OlmOutboundGroupSession, LocalDateTime>?
 			= _outboundSessions[room]
+	
+	
+	protected var _inboundSessions = HashMap<String, OlmInboundGroupSession>()
+	
+	override fun storeInboundSession(session : OlmInboundGroupSession)
+	{
+		_inboundSessions[session.sessionIdentifier()] = session
+	}
+	
+	override fun findInboundSession(sessionId : String) : OlmInboundGroupSession?
+			= _inboundSessions[sessionId]
 }

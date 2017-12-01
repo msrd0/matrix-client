@@ -296,26 +296,31 @@ open class Room(
 			val content = RoomKeyEventContent(MEGOLM_V1_RATCHET, id, sessionId, sessionKey)
 			client.sendToDevice(content, ROOM_KEY, devices.map { it.userId }.toSet())
 			
-			// create corresponding inbound session
-			inboundSession = OlmInboundGroupSession(sessionKey)
+			// create and store corresponding inbound session
+			val inboundSession = OlmInboundGroupSession(sessionKey)
+			keyStore.storeInboundSession(inboundSession)
 		}
 		
 		// we should have created an outbound session at this stage
 		return outboundSession!!
 	}
 	
-	/** OLM inbound session used to decrypt received messages. */
-	private var inboundSession : OlmInboundGroupSession? = null
+	/**
+	 * This method looks for the inbound session in the clients [keyStore]. See [KeyStore.findInboundSession].
+	 */
+	@Throws(OlmException::class)
+	fun findInboundSession(sessionId : String) : OlmInboundGroupSession?
+			= keyStore.findInboundSession(sessionId)
 	
-	@Throws(MatrixAnswerException::class, OlmException::class)
-	fun findOrCreateInboundSession() : OlmInboundGroupSession
-	{
-		if (inboundSession != null)
-			return inboundSession!! // TODO how can we check that the inbound session belongs to the outbound session?
-		val outboundSession = findOrCreateOutboundSession()
-		inboundSession = OlmInboundGroupSession(outboundSession.sessionKey())
-		return inboundSession!!
-	}
+	/**
+	 * This method stores the inbound session in the clients [keyStore]. See [KeyStore.storeInboundSession].
+	 *
+	 * Call this method after every decrypted message. Otherwise the index of the inbound session will be
+	 * inaccurate which might lead to unencryptable messages.
+	 */
+	@Throws(OlmException::class)
+	fun storeInboundSession(session : OlmInboundGroupSession)
+			= keyStore.storeInboundSession(session)
 	
 	/**
 	 * Encrypt and send the message to this room. To send unencrypted messages, see [sendMessage].
