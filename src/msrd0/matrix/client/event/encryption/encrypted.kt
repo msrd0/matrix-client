@@ -46,6 +46,19 @@ class EncryptedEventContent(
 			sessionId = json.string("session_id")
 	)
 	
+	@Throws(OlmException::class)
+	fun decrypt(room : Room) : MessageContent
+	{
+		if (algorithm != MEGOLM_V1_RATCHET)
+			throw IllegalStateException("Unknown algorithm '$algorithm'")
+		
+		val session = room.findOrCreateInboundSession()
+		val decrypted = session.decryptMessage(ciphertext)?.decryptedMessage
+				?: throw RuntimeException("Decryption failed for unknown reasons") // TODO do something here
+		val json = Parser().parse(StringBuilder(decrypted)) as JsonObject
+		return MessageContent.fromJson(json)
+	}
+	
 	override val json : JsonObject get()
 	{
 		val json = JsonObject()
@@ -74,29 +87,18 @@ class EncryptedEvent(
 }
 
 /**
- * A room encrypted event.
+ * A room encrypted message event.
  */
 class EncryptedRoomEvent(
 		room : Room,
 		data : MatrixEventData,
-		content : EncryptedEventContent
-) : MatrixRoomEvent<EncryptedEventContent>(room, data, content)
+		content : MessageContent
+) : MatrixRoomEvent<MessageContent>(room, data, content), Message
 {
-	@Throws(IllegalJsonException::class)
+	@Throws(IllegalJsonException::class, OlmException::class)
 	constructor(room : Room, json : JsonObject)
-			: this(room, MatrixEventData(json), EncryptedEventContent(json.obj("content") ?: missing("content")))
+			: this(room, MatrixEventData(json), EncryptedEventContent(json.obj("content") ?: missing("content")).decrypt(room))
 	
-	@Throws(OlmException::class)
-	fun decrypt()
-	{
-		if (content.algorithm != MEGOLM_V1_RATCHET)
-			throw IllegalStateException("Unknown algorithm '${content.algorithm}'")
-		
-		val session = room.findOrCreateInboundSession()
-		val decrypted = session.decryptMessage(content.ciphertext)?.decryptedMessage
-		if (decrypted == null)
-			return; // TODO do something here
-		val json = Parser().parse(StringBuilder(decrypted))
-		println(json)
-	}
+	override val body get() = content.body
+	override val msgtype get() = content.msgtype
 }
