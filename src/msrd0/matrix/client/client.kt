@@ -688,7 +688,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	 * @throws OlmException On errors while encrypting the message.
 	 */
 	@Throws(MatrixAnswerException::class, OlmException::class)
-	fun sendEncryptedToDevice(ev : MatrixEventContent, evType : String, devices : Map<MatrixId, Iterable<String>>)
+	fun sendEncryptedToDevice(ev : MatrixEventContent, evType : String, devices : Map<MatrixId, Collection<String>>)
 	{
 		val account = keyStore?.account ?: throw IllegalStateException("E2E has not been enabled")
 		
@@ -886,14 +886,18 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	 * @throws MatrixAnswerException On errors in the matrix answer.
 	 */
 	@Throws(MatrixAnswerException::class)
-	fun queryIdentityKeys(devices : Map<MatrixId, Iterable<String>>) : List<DeviceKeys>
+	fun queryIdentityKeys(devices : Map<MatrixId, Collection<String>>) : List<DeviceKeys>
 	{
 		val json = JsonObject()
 		val keys = JsonObject()
-		for ((user, userDevices) in devices)
+		for ((user, userDevices) in devices.filterValues { it.isNotEmpty() })
 			keys["$user"] = userDevices
+		if (keys.isEmpty())
+		{
+			logger.warn("Called queryIdentityKeys without any devices")
+			return emptyList()
+		}
 		json["device_keys"] = keys
-		logger.debug(json.toJsonString(prettyPrint = true))
 		val res = target.post("_matrix/client/r0/keys/query", token ?: throw NoTokenException(), id, json)
 		checkForError(res)
 		return (res.json.obj("device_keys") ?: missing("device_keys"))
@@ -1039,15 +1043,20 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	 */
 	@JvmOverloads
 	@Throws(MatrixAnswerException::class)
-	fun claimOneTimeKeys(devices : Map<MatrixId, Iterable<String>>, algorithm : String = "signed_curve25519") : List<OneTimeKey>
+	fun claimOneTimeKeys(devices : Map<MatrixId, Collection<String>>, algorithm : String = "signed_curve25519") : List<OneTimeKey>
 	{
 		val json = JsonObject()
-		for ((user, userDevices) in devices)
+		for ((user, userDevices) in devices.filterValues { it.isNotEmpty() })
 		{
 			val userJson = JsonObject()
 			for (device in userDevices)
 				userJson[device] = algorithm
 			json["$user"] = userJson
+		}
+		if (json.isEmpty())
+		{
+			logger.warn("Called claimOneTimeKeys without any device")
+			return emptyList()
 		}
 		
 		val res = target.post("_matrix/client/r0/keys/claim", token ?: throw NoTokenException(), id,
