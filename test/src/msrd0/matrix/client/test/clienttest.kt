@@ -50,6 +50,7 @@ class MatrixClientTest
 		var id = MatrixId("test${System.currentTimeMillis()}", "synapse")
 		val password = "Eish2nies9peifaez7uX"
 		var userData : MatrixUserData? = null
+		val deviceId get() = userData!!.deviceId
 		var keyStore : KeyStore = InMemoryKeyStore()
 		var roomId : RoomId? = null
 		var encryptedRoomId : RoomId? = null
@@ -110,8 +111,8 @@ class MatrixClientTest
 		val key = keys.find { it.userId == client.id && it.deviceId == client.deviceId }
 		assertNotNull(key)
 		key!!
-		assertThat(key.keys["ed25519"]?.fromBase64(), equalTo(idKeys.string("ed25519")?.fromBase64()))
-		assertThat(key.keys["curve25519"]?.fromBase64(), equalTo(idKeys.string("curve25519")?.fromBase64()))
+		assertThat(key.keys["ed25519:$deviceId"]?.fromBase64(), equalTo(idKeys.string("ed25519")?.fromBase64()))
+		assertThat(key.keys["curve25519:$deviceId"]?.fromBase64(), equalTo(idKeys.string("curve25519")?.fromBase64()))
 		key.keys.values.forEach {
 			assertThat(it, not(endsWith("=")))
 		}
