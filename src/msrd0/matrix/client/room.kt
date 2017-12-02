@@ -292,9 +292,9 @@ open class Room(
 			
 			// send the keys to every device in this room
 			// TODO provide a way to verify the devices and exclude unverified devices from this list
-			val devices = deviceList.filter { it.checkSignatures(false) }
+			val devices = deviceList.filter { it.checkSignatures(false) }.toMap()
 			val content = RoomKeyEventContent(MEGOLM_V1_RATCHET, id, sessionId, sessionKey)
-			client.sendEncryptedToDevice(content, ROOM_KEY, devices.map { it.userId }.toSet())
+			client.sendEncryptedToDevice(content, ROOM_KEY, devices.mapValues { (_, v) -> v.keys })
 			
 			// create and store corresponding inbound session
 			val inboundSession = OlmInboundGroupSession(sessionKey)

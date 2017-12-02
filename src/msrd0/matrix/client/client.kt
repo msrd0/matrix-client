@@ -638,16 +638,21 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	 * @throws MatrixAnswerException On errors in the matrix answer.
 	 */
 	@Throws(MatrixAnswerException::class)
-	fun sendToDevice(ev : MatrixEventContent, evType : String, devices : Map<MatrixId, Iterable<String>>)
+	fun sendToDevice(ev : MatrixEventContent, evType : String, devices : Map<MatrixId, Collection<String>>)
 	{
 		val evJson = ev.json
 		val messages = JsonObject()
-		for ((userId, deviceIds) in devices)
+		for ((userId, deviceIds) in devices.filterValues { it.isNotEmpty() })
 		{
 			val json = JsonObject()
 			for (deviceId in deviceIds)
 				json[deviceId] = evJson
 			messages["$userId"] = json
+		}
+		if (messages.isEmpty())
+		{
+			logger.warn("Called sendToDevice without any devices")
+			return
 		}
 		val json = JsonObject(mapOf("messages" to messages))
 		
@@ -678,7 +683,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	
 	/**
 	 * Encrypt and send an event to a list of user ids and devices. To send the event to all device ids of a certain
-	 * user id, one can use a wildcard as device id.
+	 * user id, one can use an empty list of device ids.
 	 *
 	 * @param ev The event content to send.
 	 * @param evType The type of the event, for example `m.new_device`.
@@ -700,15 +705,18 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 		plain["keys"] = account.identityKeys()
 		
 		val deviceKeys = queryIdentityKeys(devices).toMap()
-		val oneTimeKeys = claimOneTimeKeys(devices).toMap()
+		val oneTimeKeys = claimOneTimeKeys(devices.mapValues { (_, v) -> if (v.isEmpty()) listOf("*") else v }).toMap()
 		
 		val messages = JsonObject()
-		for ((userId, userDevices) in devices)
+		for ((userId, userDevices) in devices.mapValues { (k, v) -> if (v.isEmpty()) deviceKeys[k]?.keys else v })
 		{
+			if (userDevices == null)
+				continue
+			
 			val json = JsonObject()
 			for (deviceId in userDevices)
 			{
-				val deviceKey = deviceKeys[userId]?.get(deviceId)?.keys?.get("ed25519")
+				val deviceKey = deviceKeys[userId]?.get(deviceId)?.keys?.get("ed25519:$deviceId")
 				val oneTimeKey = oneTimeKeys[userId]?.get(deviceId)?.key
 				if (deviceKey == null || oneTimeKey == null)
 				{
@@ -729,6 +737,11 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 				json[deviceId] = encrypted
 			}
 			messages["$userId"] = json
+		}
+		if (messages.isEmpty())
+		{
+			logger.warn("Called sendEncryptedToDevice without any devices")
+			return
 		}
 		
 		val json = JsonObject()
@@ -751,9 +764,9 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	 * @throws MatrixAnswerException On errors in the matrix answer.
 	 */
 	@Throws(MatrixAnswerException::class)
-	fun sendEncryptedToDevice(ev : MatrixEventContent, evType : String, users : Collection<MatrixId>)
+	fun sendEncryptedToDevice(ev : MatrixEventContent, evType : String, users : Iterable<MatrixId>)
 	{
-		val devices = HashMap<MatrixId, Collection<String>>()
+		val devices = HashMap<MatrixId, List<String>>()
 		for (user in users)
 			devices[user] = listOf("*")
 		sendEncryptedToDevice(ev, evType, devices)
@@ -886,18 +899,19 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	 * @throws MatrixAnswerException On errors in the matrix answer.
 	 */
 	@Throws(MatrixAnswerException::class)
-	fun queryIdentityKeys(devices : Map<MatrixId, Collection<String>>) : List<DeviceKeys>
+	fun queryIdentityKeys(devices : Map<MatrixId, Iterable<String>>) : List<DeviceKeys>
 	{
 		val json = JsonObject()
 		val keys = JsonObject()
-		for ((user, userDevices) in devices.filterValues { it.isNotEmpty() })
-			keys["$user"] = userDevices
+		for ((user, userDevices) in devices)
+			keys["$user"] = JsonArray<String>(userDevices.toMutableList())
 		if (keys.isEmpty())
 		{
 			logger.warn("Called queryIdentityKeys without any devices")
 			return emptyList()
 		}
 		json["device_keys"] = keys
+		println(json.toJsonString(prettyPrint = true))
 		val res = target.post("_matrix/client/r0/keys/query", token ?: throw NoTokenException(), id, json)
 		checkForError(res)
 		return (res.json.obj("device_keys") ?: missing("device_keys"))
@@ -915,7 +929,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	@Throws(MatrixAnswerException::class)
 	fun queryIdentityKeys(users : Iterable<MatrixId>) : List<DeviceKeys>
 	{
-		val devices = HashMap<MatrixId, Collection<String>>()
+		val devices = HashMap<MatrixId, List<String>>()
 		for (user in users)
 			devices[user] = emptyList()
 		return queryIdentityKeys(devices)
