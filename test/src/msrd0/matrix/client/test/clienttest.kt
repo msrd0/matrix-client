@@ -23,7 +23,6 @@ import com.beust.klaxon.string
 import msrd0.matrix.client.*
 import msrd0.matrix.client.e2e.*
 import msrd0.matrix.client.event.*
-import msrd0.matrix.client.event.encryption.EncryptionAlgorithms
 import msrd0.matrix.client.event.state.*
 import msrd0.matrix.client.util.fromBase64
 import org.apache.commons.io.IOUtils
@@ -36,8 +35,8 @@ import org.testng.annotations.Test
 import java.awt.image.RenderedImage
 import java.lang.ClassLoader.*
 import java.net.URI
-import java.nio.charset.StandardCharsets.*
 import javax.imageio.ImageIO
+import kotlin.text.Charsets.UTF_8
 
 class MatrixClientTest
 {
@@ -49,14 +48,15 @@ class MatrixClientTest
 		val hs = HomeServer(domain, URI("http://$domain"))
 		var id = MatrixId("test${System.currentTimeMillis()}", "synapse")
 		val password = "Eish2nies9peifaez7uX"
-		var userData : MatrixUserData? = null
-		val deviceId get() = userData!!.deviceId
+		lateinit var userData : MatrixUserData
+		val deviceId get() = userData.deviceId
+		val token get() = userData.token
 		var keyStore : KeyStore = InMemoryKeyStore()
-		var roomId : RoomId? = null
-		var encryptedRoomId : RoomId? = null
+		lateinit var roomId : RoomId
+		lateinit var encryptedRoomId : RoomId
 		
 		val testImage : RenderedImage = ImageIO.read(getSystemResourceAsStream("matrix-logo.png"))
-		var testAvatar : Avatar? = null
+		lateinit var testAvatar : Avatar
 		var testFile : String = IOUtils.toString(getSystemResource("blindtext.txt"), UTF_8)
 		
 		var numClient : Long = 0
@@ -72,14 +72,14 @@ class MatrixClientTest
 		}
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
+	@Test(groups = ["api"], dependsOnMethods = ["client_register"])
 	fun avatar()
 	{
 		val client = newClient()
 		testAvatar = Avatar.fromImage(testImage, client)
 	}
 	
-	@Test(groups = arrayOf("api"))
+	@Test(groups = ["api"])
 	fun client_register()
 	{
 		val client = MatrixClient.register(id.localpart, hs, password)
@@ -89,13 +89,14 @@ class MatrixClientTest
 		
 		// sync to make sure our token is working
 		client.sync()
-		userData = client.userData
-		assertNotNull(userData)
+		val clientUserData = client.userData
+		assertNotNull(clientUserData)
+		userData = clientUserData!!
 		id = client.id // to make sure the domain is what synapse think it would be
-		logger.info("Registered $id, deviceId=${userData!!.deviceId}, token=${userData!!.token}")
+		logger.info("Registered $id, deviceId=$deviceId, token=$token")
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
+	@Test(groups = ["api"], dependsOnMethods = ["client_register"])
 	fun client_enable_e2e()
 	{
 		val client = newClient()
@@ -108,7 +109,7 @@ class MatrixClientTest
 		
 		// retrieve our own keys
 		val keys = client.queryIdentityKeys(listOf(id))
-		val key = keys.find { it.userId == client.id && it.deviceId == client.deviceId }
+		val key = keys.find { it.userId == client.id && it.deviceId == deviceId }
 		assertNotNull(key)
 		key!!
 		assertThat(key.keys["ed25519:$deviceId"]?.fromBase64(), equalTo(idKeys.string("ed25519")?.fromBase64()))
@@ -118,20 +119,20 @@ class MatrixClientTest
 		}
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_enable_e2e"))
+	@Test(groups = ["api"], dependsOnMethods = ["client_enable_e2e"])
 	fun client_claim_one_time_key()
 	{
 		val client = newClient()
 		client.enableE2E(keyStore)
 		
-		val oneTimeKeys = client.claimOneTimeKeys(mapOf(id to listOf(client.deviceId!!)))
+		val oneTimeKeys = client.claimOneTimeKeys(mapOf(id to listOf(deviceId)))
 		assertThat(oneTimeKeys.size, equalTo(1))
 		val oneTimeKey = oneTimeKeys.first()
 		assertThat(oneTimeKey.userId, equalTo(id))
-		assertThat(oneTimeKey.deviceId, equalTo(client.deviceId!!))
+		assertThat(oneTimeKey.deviceId, equalTo(deviceId))
 		
 		val account = keyStore.account
-		val signature = oneTimeKey.signatures[id]?.get("ed25519:${client.deviceId}")
+		val signature = oneTimeKey.signatures[id]?.get("ed25519:$deviceId")
 		assertNotNull(signature)
 		signature!!
 		val json = oneTimeKey.json
@@ -139,7 +140,7 @@ class MatrixClientTest
 		assert(verifySignature(signature, account.identityKeys().string("ed25519")!!, json.toJsonString(canonical = true)))
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
+	@Test(groups = ["api"], dependsOnMethods = ["client_register"])
 	fun client_login()
 	{
 		val client = newClient()
@@ -158,34 +159,34 @@ class MatrixClientTest
 		client.sync()
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register", "avatar"))
+	@Test(groups = ["api"], dependsOnMethods = ["client_register", "avatar"])
 	fun client_update()
 	{
 		val client = newClient()
 		val displayname = "test user"
 		client.updateDisplayname(displayname)
-		client.updateAvatar(testAvatar!!)
+		client.updateAvatar(testAvatar)
 		assertThat(client.displayname(), equalTo(displayname))
 		val avatar = client.avatar()
 		assertNotNull(avatar)
 		avatar as Avatar // asserted not null
-		assertThat(avatar.url, equalTo(testAvatar!!.url))
-		assertThat(client.downloadBytes(avatar.url).first.size, equalTo(testAvatar!!.info!!.size))
+		assertThat(avatar.url, equalTo(testAvatar.url))
+		assertThat(client.downloadBytes(avatar.url).first.size, equalTo(testAvatar.info!!.size))
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
+	@Test(groups = ["api"], dependsOnMethods = ["client_register"])
 	fun device_update()
 	{
 		val client = newClient()
 		val name = "this device was created by matrix client tests"
-		client.updateDeviceDisplayName(client.deviceId!!, name)
+		client.updateDeviceDisplayName(deviceId, name)
 		
-		val device = client.device(client.deviceId!!)
+		val device = client.device(deviceId)
 		assertNotNull(device)
 		assertThat(device!!.displayName, equalTo(name))
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
+	@Test(groups = ["api"], dependsOnMethods = ["client_register"])
 	fun room_create()
 	{
 		val client = newClient()
@@ -227,7 +228,7 @@ class MatrixClientTest
 		assertThat(room.historyVisibility, equalTo(RoomHistoryVisibility.SHARED))
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create", "avatar"))
+	@Test(groups = ["api"], dependsOnMethods = ["room_create", "avatar"])
 	fun room_update()
 	{
 		val client = newClient()
@@ -237,7 +238,7 @@ class MatrixClientTest
 				"#test${System.currentTimeMillis()}:synapse",
 				"#dummy${System.currentTimeMillis()}:synapse"
 		).map { RoomAlias.fromString(it) }
-		val room = Room(client, roomId!!)
+		val room = Room(client, roomId)
 		
 		var powerLevels = room.powerLevels
 		val powerLevelEvent = "msrd0.matrix.client.test.power_level_event" to 7
@@ -267,16 +268,16 @@ class MatrixClientTest
 		val avatar = room.avatar
 		assertNotNull(avatar)
 		avatar as Avatar // asserted not null
-		assertThat(avatar.url, equalTo(testAvatar!!.url))
-		assertThat(client.downloadBytes(avatar.url).first.size, equalTo(testAvatar!!.info!!.size))
+		assertThat(avatar.url, equalTo(testAvatar.url))
+		assertThat(client.downloadBytes(avatar.url).first.size, equalTo(testAvatar.info!!.size))
 		
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create"))
+	@Test(groups = ["api"], dependsOnMethods = ["room_create"])
 	fun room_send_message()
 	{
 		val client = newClient()
-		val room = Room(client, roomId!!)
+		val room = Room(client, roomId)
 		
 		val msg = FormattedTextMessageContent(
 				"This is a test message",
@@ -295,11 +296,11 @@ class MatrixClientTest
 		assertThat(content.formattedBody, equalTo(msg.formattedBody))
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create"))
+	@Test(groups = ["api"], dependsOnMethods = ["room_create"])
 	fun room_send_image()
 	{
 		val client = newClient()
-		val room = Room(client, roomId!!)
+		val room = Room(client, roomId)
 		
 		val msg = ImageMessageContent("matrix-logo.png")
 		val img = testImage
@@ -319,11 +320,11 @@ class MatrixClientTest
 		assertThat(downloaded.height, equalTo(img.height))
 	}	
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create"))
+	@Test(groups = ["api"], dependsOnMethods = ["room_create"])
 	fun room_send_file()
 	{
 		val client = newClient()
-		val room = Room(client, roomId!!)
+		val room = Room(client, roomId)
 		
 		val msg = FileMessageContent("blindtext.txt")
 		val bytes = testFile.toByteArray(UTF_8)
@@ -343,7 +344,7 @@ class MatrixClientTest
 		assertThat(String(downloaded, UTF_8), equalTo(testFile))
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_enable_e2e"))
+	@Test(groups = ["api"], dependsOnMethods = ["client_enable_e2e"])
 	fun encrypted_room_create()
 	{
 		val client = newClient()
@@ -356,12 +357,12 @@ class MatrixClientTest
 		assert(room.isEncrypted)
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("encrypted_room_create"))
+	@Test(groups = ["api"], dependsOnMethods = ["encrypted_room_create"])
 	fun encrypted_room_send_message()
 	{
 		val client = newClient()
 		client.enableE2E(keyStore)
-		val room = Room(client, encryptedRoomId!!)
+		val room = Room(client, encryptedRoomId)
 		
 		val msg = TextMessageContent("Hello Encrypted World")
 		room.sendEncryptedMessage(msg)

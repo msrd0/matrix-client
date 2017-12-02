@@ -20,6 +20,7 @@
 package msrd0.matrix.client.test
 
 import com.beust.klaxon.JsonObject
+import com.beust.klaxon.string
 import msrd0.matrix.client.e2e.verifySignature
 import org.hamcrest.Matchers.*
 import org.hamcrest.MatcherAssert.*
@@ -37,23 +38,23 @@ class OlmTest
 		lateinit var idKeys : JsonObject
 	}
 	
-	@Test(groups = arrayOf("base"))
+	@Test(groups = ["base"])
 	fun version()
 	{
 		assertNotNull(olm.olmLibVersion)
 	}
 	
-	@Test(groups = arrayOf("base"))
+	@Test(groups = ["base"])
 	fun generateKeys()
 	{
 		account = OlmAccount()
 		idKeys = account.identityKeys()
 	}
 	
-	@Test(groups = arrayOf("base"), dependsOnMethods = arrayOf("generateKeys"))
+	@Test(groups = ["base"], dependsOnMethods = ["generateKeys"])
 	fun sign()
 	{
 		val signature = account.signMessage(idKeys.toJsonString(canonical = true))
-		assert(verifySignature(signature, idKeys["ed25519"] as String, idKeys.toJsonString(canonical = true)))
+		assert(verifySignature(signature, idKeys.string("ed25519")!!, idKeys.toJsonString(canonical = true)))
 	}
 }
