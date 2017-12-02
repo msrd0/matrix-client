@@ -26,6 +26,7 @@ import kotlinx.coroutines.experimental.sync.Mutex
 import kotlinx.coroutines.experimental.sync.withLock
 import msrd0.matrix.client.e2e.*
 import msrd0.matrix.client.event.*
+import msrd0.matrix.client.event.MatrixEventTypes.*
 import msrd0.matrix.client.event.encryption.EncryptionAlgorithms
 import msrd0.matrix.client.event.encryption.EncryptionAlgorithms.*
 import msrd0.matrix.client.filter.Filter
@@ -716,24 +717,29 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 			val json = JsonObject()
 			for (deviceId in userDevices)
 			{
-				val deviceKey = deviceKeys[userId]?.get(deviceId)?.keys?.get("ed25519:$deviceId")
+				val deviceKey = deviceKeys[userId]?.get(deviceId)?.keys
+				val receiverEd25519 = deviceKey?.get("ed25519")
+				val receiverCurve25519 = deviceKey?.get("curve25519")
 				val oneTimeKey = oneTimeKeys[userId]?.get(deviceId)?.key
-				if (deviceKey == null || oneTimeKey == null)
+				if (receiverEd25519 == null || receiverCurve25519 == null || oneTimeKey == null)
 				{
 					logger.warn("Unable to find required keys for $userId/$deviceId to send encrypted to-device message")
 					continue
 				}
 				
 				plain["recipient"] = "$userId"
-				plain["recipient_keys"] = mapOf("ed25519" to deviceKey)
+				plain["recipient_keys"] = mapOf("ed25519" to receiverEd25519)
 				
-				session.initOutboundSession(account, deviceKey, oneTimeKey)
+				session.initOutboundSession(account, receiverEd25519, oneTimeKey)
 				val message = session.encryptMessage(plain.toJsonString())
 				
 				val encrypted = JsonObject()
 				encrypted["algorithm"] = OLM_V1_RATCHET
 				encrypted["sender_key"] = account.identityKeys().string("curve25519")
-				encrypted["ciphertext"] = message.cipherText
+				val ciphertext = JsonObject()
+				ciphertext["type"] = message.type
+				ciphertext["body"] = message.cipherText
+				encrypted["ciphertext"] = mapOf(receiverCurve25519 to ciphertext)
 				json[deviceId] = encrypted
 			}
 			messages["$userId"] = json
@@ -747,7 +753,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 		val json = JsonObject()
 		json["messages"] = messages
 		
-		val res = target.put("_matrix/client/r0/sendToDevice/$evType/$nextTxnId", token ?: throw NoTokenException(), id, json)
+		val res = target.put("_matrix/client/r0/sendToDevice/$ROOM_ENCRYPTED/$nextTxnId", token ?: throw NoTokenException(), id, json)
 		checkForError(res)
 	}
 	
@@ -881,7 +887,10 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 		val deviceKeys = DeviceKeys(id,
 				deviceId ?: throw NoDeviceIdException(),
 				EncryptionAlgorithms.ALGORITHMS,
-				keyStore?.account?.identityKeys()?.mapValues { (_, v) -> v as String } ?: throw IllegalStateException()
+				keyStore?.account?.identityKeys()
+						?.mapKeys { (k, _) -> "$k:$deviceId" }
+						?.mapValues { (_, v) -> v as String }
+						?: throw IllegalStateException()
 		)
 		deviceKeys.sign(keyStore?.account ?: throw IllegalStateException(), id, deviceId ?: throw NoDeviceIdException())
 		json["device_keys"] = deviceKeys.json
