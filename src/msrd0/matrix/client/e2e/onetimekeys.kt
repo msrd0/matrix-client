@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
  */
-
+@file:JvmName("OneTimeKeyUtil")
 package msrd0.matrix.client.e2e
 
 import com.beust.klaxon.*
@@ -48,4 +48,16 @@ class OneTimeKey
 		json["signatures"] = signatures.json
 		return json
 	}
+}
+
+fun Iterable<OneTimeKey>.toMap() : Map<MatrixId, Map<String, OneTimeKey>>
+{
+	val map = HashMap<MatrixId, HashMap<String, OneTimeKey>>()
+	for (oneTimeKey in this)
+	{
+		val userMap = map[oneTimeKey.userId] ?: HashMap()
+		userMap[oneTimeKey.deviceId] = oneTimeKey
+		map[oneTimeKey.userId] = userMap
+	}
+	return map
 }

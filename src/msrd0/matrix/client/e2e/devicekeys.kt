@@ -15,7 +15,7 @@
  You should have received a copy of the GNU General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
 */
-
+@file:JvmName("DeviceKeysUtil")
 package msrd0.matrix.client.e2e
 
 import com.beust.klaxon.*
@@ -75,12 +75,23 @@ class DeviceKeys
 				jsonToVerify.toJsonString(canonical = true))
 	}
 	
-	override val json : JsonObject get()
-			= JsonObject(mapOf(
-				"user_id" to "$userId",
-				"device_id" to deviceId,
-				"algorithms" to JsonArray(algorithms),
-				"keys" to keys,
-				"signatures" to signatures.json
-			))
+	override val json : JsonObject get() = JsonObject(mapOf(
+			"user_id" to "$userId",
+			"device_id" to deviceId,
+			"algorithms" to JsonArray(algorithms),
+			"keys" to keys,
+			"signatures" to signatures.json
+	))
+}
+
+fun Iterable<DeviceKeys>.toMap() : Map<MatrixId, Map<String, DeviceKeys>>
+{
+	val map = HashMap<MatrixId, HashMap<String, DeviceKeys>>()
+	for (deviceKeys in this)
+	{
+		val userMap = map[deviceKeys.userId] ?: HashMap()
+		userMap[deviceKeys.deviceId] = deviceKeys
+		map[deviceKeys.userId] = userMap
+	}
+	return map
 }

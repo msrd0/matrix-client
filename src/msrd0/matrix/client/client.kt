@@ -27,6 +27,7 @@ import kotlinx.coroutines.experimental.sync.withLock
 import msrd0.matrix.client.e2e.*
 import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.encryption.EncryptionAlgorithms
+import msrd0.matrix.client.event.encryption.EncryptionAlgorithms.*
 import msrd0.matrix.client.filter.Filter
 import msrd0.matrix.client.filter.uploadFilter
 import msrd0.matrix.client.listener.*
@@ -605,6 +606,27 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	}
 	
 	
+	
+	/** The key store for e2e. */
+	var keyStore : KeyStore? = null
+		private set
+	
+	/**
+	 * Enable E2E encryption for this client. If the [keyStore] contains no account, one will be created. Please
+	 * make sure that you call [uploadIdentityKeys] if necessary.
+	 */
+	fun enableE2E(keyStore : KeyStore)
+	{
+		this.keyStore = keyStore
+		if (!keyStore.hasAccount())
+			keyStore.account = OlmAccount()
+	}
+	
+	/** The OLM session used to encrypt/decrypt to-device events. */
+	val session : OlmSession by lazy { OlmSession() }
+	
+	
+	
 	/**
 	 * Send an event to a list of user ids and devices. To send the event to all device ids of a certain
 	 * user id, one can use a wildcard as device id.
@@ -616,7 +638,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	 * @throws MatrixAnswerException On errors in the matrix answer.
 	 */
 	@Throws(MatrixAnswerException::class)
-	fun sendToDevice(ev : MatrixEventContent, evType : String, devices : Map<MatrixId, Collection<String>>)
+	fun sendToDevice(ev : MatrixEventContent, evType : String, devices : Map<MatrixId, Iterable<String>>)
 	{
 		val evJson = ev.json
 		val messages = JsonObject()
@@ -646,9 +668,9 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	 * @throws MatrixAnswerException On errors in the matrix answer.
 	 */
 	@Throws(MatrixAnswerException::class)
-	fun sendToDevice(ev : MatrixEventContent, evType : String, users : Collection<MatrixId>)
+	fun sendToDevice(ev : MatrixEventContent, evType : String, users : Iterable<MatrixId>)
 	{
-		val devices = HashMap<MatrixId, Collection<String>>()
+		val devices = HashMap<MatrixId, List<String>>()
 		for (user in users)
 			devices[user] = listOf("*")
 		sendToDevice(ev, evType, devices)
@@ -666,19 +688,54 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	 * @throws OlmException On errors while encrypting the message.
 	 */
 	@Throws(MatrixAnswerException::class, OlmException::class)
-	fun sendEncryptedToDevice(ev : MatrixEventContent, evType : String, devices : Map<MatrixId, Collection<String>>)
+	fun sendEncryptedToDevice(ev : MatrixEventContent, evType : String, devices : Map<MatrixId, Iterable<String>>)
 	{
-		val evJson = ev.json
+		val account = keyStore?.account ?: throw IllegalStateException("E2E has not been enabled")
+		
+		val plain = JsonObject()
+		plain["type"] = evType
+		plain["content"] = ev.json
+		plain["sender"] = "$id"
+		plain["sender_device"] = deviceId ?: throw NoDeviceIdException()
+		plain["keys"] = account.identityKeys()
+		
+		val deviceKeys = queryIdentityKeys(devices).toMap()
+		val oneTimeKeys = claimOneTimeKeys(devices).toMap()
+		
 		val messages = JsonObject()
-		for ((userId, deviceIds) in devices)
+		for ((userId, userDevices) in devices)
 		{
 			val json = JsonObject()
-			for (deviceId in deviceIds)
-				json[deviceId] = evJson
+			for (deviceId in userDevices)
+			{
+				val deviceKey = deviceKeys[userId]?.get(deviceId)?.keys?.get("ed25519")
+				val oneTimeKey = oneTimeKeys[userId]?.get(deviceId)?.key
+				if (deviceKey == null || oneTimeKey == null)
+				{
+					logger.warn("Unable to find required keys for $userId/$deviceId to send encrypted to-device message")
+					continue
+				}
+				
+				plain["recipient"] = "$userId"
+				plain["recipient_keys"] = mapOf("ed25519" to deviceKey)
+				
+				session.initOutboundSession(account, deviceKey, oneTimeKey)
+				val message = session.encryptMessage(plain.toJsonString())
+				
+				val encrypted = JsonObject()
+				encrypted["algorithm"] = OLM_V1_RATCHET
+				encrypted["sender_key"] = account.identityKeys().string("curve25519")
+				encrypted["ciphertext"] = message.cipherText
+				json[deviceId] = encrypted
+			}
 			messages["$userId"] = json
 		}
 		
-		TODO("encrypt and send event")
+		val json = JsonObject()
+		json["messages"] = messages
+		
+		val res = target.put("_matrix/client/r0/sendToDevice/$evType/$nextTxnId", token ?: throw NoTokenException(), id, json)
+		checkForError(res)
 	}
 	
 	/**
@@ -797,21 +854,6 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	
 	
 	
-	/** The key store for e2e. */
-	var keyStore : KeyStore? = null
-		private set
-	
-	/**
-	 * Enable E2E encryption for this client. If the [keyStore] contains no account, one will be created. Please
-	 * make sure that you call [uploadIdentityKeys] if necessary.
-	 */
-	fun enableE2E(keyStore : KeyStore)
-	{
-		this.keyStore = keyStore
-		if (!keyStore.hasAccount())
-			keyStore.account = OlmAccount()
-	}
-	
 	/**
 	 * Upload the identity keys to the homeserver. The identity keys will be retrieved from the [keyStore].
 	 * Make sure to call [enableE2E] to populate the key store!
@@ -835,6 +877,32 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	}
 	
 	/**
+	 * Query the identity keys for the given list of user and device ids from the homeserver.
+	 *
+	 * If the list of devices is empty for one or more user ids, all device ids for that user will
+	 * be queried.
+	 *
+	 * @param devices A map of user id to list of device ids.
+	 * @throws MatrixAnswerException On errors in the matrix answer.
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun queryIdentityKeys(devices : Map<MatrixId, Iterable<String>>) : List<DeviceKeys>
+	{
+		val json = JsonObject()
+		val keys = JsonObject()
+		for ((user, userDevices) in devices)
+			keys["$user"] = userDevices
+		json["device_keys"] = keys
+		logger.debug(json.toJsonString(prettyPrint = true))
+		val res = target.post("_matrix/client/r0/keys/query", token ?: throw NoTokenException(), id, json)
+		checkForError(res)
+		return (res.json.obj("device_keys") ?: missing("device_keys"))
+				.map { (_, obj) -> obj as JsonObject } // returns a list of all user objects
+				.flatMap { it.map { (_, obj) -> obj as JsonObject } } // returns a list of all device objects
+				.map { deviceJson -> DeviceKeys(deviceJson) } // maps the device objects to a DeviceKey
+	}
+	
+	/**
 	 * Query the identity keys for the given list of user ids from the homeserver.
 	 *
 	 * @param users The user ids to query.
@@ -843,17 +911,10 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	@Throws(MatrixAnswerException::class)
 	fun queryIdentityKeys(users : Iterable<MatrixId>) : List<DeviceKeys>
 	{
-		val json = JsonObject()
-		val keys = JsonObject()
+		val devices = HashMap<MatrixId, Collection<String>>()
 		for (user in users)
-			keys["$user"] = JsonArray<Nothing>()
-		json["device_keys"] = keys
-		val res = target.post("_matrix/client/r0/keys/query", token ?: throw NoTokenException(), id, json)
-		checkForError(res)
-		return (res.json.obj("device_keys") ?: missing("device_keys"))
-				.map { (_, obj) -> obj as JsonObject } // returns a list of all user objects
-				.flatMap { it.map { (_, obj) -> obj as JsonObject } } // returns a list of all device objects
-				.map { deviceJson -> DeviceKeys(deviceJson) } // maps the device objects to a DeviceKey
+			devices[user] = emptyList()
+		return queryIdentityKeys(devices)
 	}
 	
 	/**
@@ -978,7 +1039,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	 */
 	@JvmOverloads
 	@Throws(MatrixAnswerException::class)
-	fun claimOneTimeKeys(devices : Map<MatrixId, Collection<String>>, algorithm : String = "signed_curve25519") : List<OneTimeKey>
+	fun claimOneTimeKeys(devices : Map<MatrixId, Iterable<String>>, algorithm : String = "signed_curve25519") : List<OneTimeKey>
 	{
 		val json = JsonObject()
 		for ((user, userDevices) in devices)
