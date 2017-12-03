@@ -575,6 +575,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 				{
 					session.initInboundSessionFrom(account, senderKey, message.cipherText)
 					account.removeOneTimeKeys(session)
+					keyStore!!.account = account
 					decrypted = session.decryptMessage(message)
 				}
 				logger.info("DECRYPTED TO-DEVICE EVENT: $decrypted")

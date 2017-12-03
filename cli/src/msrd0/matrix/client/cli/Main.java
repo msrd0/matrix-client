@@ -135,6 +135,10 @@ public class Main
 			conf.setProperty("deviceId", client.getDeviceId());
 		}
 		
+		// load the last txn id
+		if (conf.containsKey("txnid"))
+			client.setLastTxnId(Long.parseLong(conf.getProperty("txnid")));
+		
 		// store the configuration
 		conf.store(new FileWriter(confFile), null);
 		
@@ -254,6 +258,9 @@ public class Main
 				}
 			}
 		}
+		
+		// update the txn id
+		conf.setProperty("txnid", Long.toString(client.getLastTxnId()));
 		
 		// store the configuration
 		conf.store(new FileWriter(confFile), null);
