@@ -373,11 +373,13 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 			params["since"] = next_batch!!
 		val res = target.get("_matrix/client/r0/sync", params)
 		checkForError(res)
+		val json = res.json
+		logger.debug(json.toJsonString(prettyPrint = true))
 		
-		next_batch = res.json.string("next_batch") ?: missing("next_batch")
+		next_batch = json.string("next_batch") ?: missing("next_batch")
 		
 		// parse all rooms and add them
-		val rooms = res.json.obj("rooms") ?: missing("rooms")
+		val rooms = json.obj("rooms") ?: missing("rooms")
 		val roomsJoined = rooms.obj("join") ?: missing("rooms.join")
 		val roomsInvited = rooms.obj("invite") ?: missing("rooms.invite")
 		
@@ -397,6 +399,9 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 			this.roomsInvited.add(room)
 			fire(RoomInvitationEvent(room))
 		}
+		
+		// parse to-device events
+		parseSyncToDeviceSection(json)
 		
 		// TODO!!
 	}
@@ -487,8 +492,9 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 				params["since"] = next_batch ?: throw IllegalStateException("Please call sync at least once before calling syncBlocking")
 				val res = target.get("_matrix/client/r0/sync", params)
 				checkForError(res)
-				
 				val json = res.json
+				logger.debug(json.toJsonString(prettyPrint = true))
+				
 				next_batch = json.string("next_batch") ?: missing("next_batch")
 				val rooms = json.obj("rooms") ?: missing("rooms")
 				val join = rooms.obj("join") ?: missing("rooms.join")
@@ -513,6 +519,8 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 					roomsInvited.add(inv)
 					fire(RoomInvitationEvent(inv))
 				}
+				
+				parseSyncToDeviceSection(json)
 			}
 			catch (ex : Exception)
 			{
@@ -531,6 +539,67 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 			syncBlocking(timeout)
 		}
 	}
+	
+	
+	private fun parseSyncToDeviceSection(json : JsonObject)
+	{
+		val toDevice = json.obj("to_device")?.array<JsonObject>("events") ?: missing("to_device.events")
+		for (event in toDevice.map { it as JsonObject })
+		{
+			val plain : JsonObject
+			
+			// if the event is encrypted, decrypt the event
+			if (event.string("type") == ROOM_ENCRYPTED)
+			{
+				val sender = MatrixId.fromString(event.string("sender") ?: missing("sender"))
+				val content = event.obj("content") ?: missing("content")
+				if (content.string("algorithm") != OLM_V1_RATCHET)
+				{
+					logger.warn("Unknown encryption algorithm ${content.string("algorithm")}")
+					continue
+				}
+				val senderKey = content.string("sender_key") ?: missing("content.sender_key")
+				val ciphertext = content.obj("ciphertext") ?: missing("content.ciphertext")
+				val account = keyStore?.account ?: throw IllegalStateException("E2E has not been initialised")
+				val curve25519 = account.identityKeys().string("curve25519")!!
+				val ourCiphertext = ciphertext.obj(curve25519) ?: missing("content.ciphertext.$curve25519")
+				val message = OlmMessage(
+						ourCiphertext.string("body") ?: missing("content.ciphertext.$curve25519.body"),
+						ourCiphertext.int("type") ?: missing("content.ciphertext.$curve25519.type"))
+				
+				// attempt to decrypt
+				var decrypted : String? = null
+				if (message.type == 0 && session.matchesInboundSession(message.cipherText))
+					decrypted = session.decryptMessage(message)
+				if (decrypted == null)
+				{
+					session.initInboundSessionFrom(account, senderKey, message.cipherText)
+					account.removeOneTimeKeys(session)
+					decrypted = session.decryptMessage(message)
+				}
+				logger.info("DECRYPTED TO-DEVICE EVENT: $decrypted")
+				plain = Parser().parse(StringBuilder(decrypted)) as JsonObject
+			}
+			else
+				plain = event
+			
+			
+			// parse the plain event
+			when (plain.string("type") ?: missing("type"))
+			{
+				ROOM_KEY -> {
+					val content = plain.obj("content") ?: missing("content")
+					val session = OlmInboundGroupSession(content.string("session_key") ?: missing("content.session_key"))
+					keyStore!!.storeInboundSession(session)
+				}
+				
+				else -> {
+					logger.warn("Received unknown to-device event of type ${plain.string("type")}")
+				}
+			}
+		}
+	}
+	
 	
 	
 	/**
@@ -718,8 +787,8 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 			for (deviceId in userDevices)
 			{
 				val deviceKey = deviceKeys[userId]?.get(deviceId)?.keys
-				val receiverEd25519 = deviceKey?.get("ed25519")
-				val receiverCurve25519 = deviceKey?.get("curve25519")
+				val receiverEd25519 = deviceKey?.get("ed25519:$deviceId")
+				val receiverCurve25519 = deviceKey?.get("curve25519:$deviceId")
 				val oneTimeKey = oneTimeKeys[userId]?.get(deviceId)?.key
 				if (receiverEd25519 == null || receiverCurve25519 == null || oneTimeKey == null)
 				{
@@ -1036,6 +1105,9 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 			}
 			uploadOneTimeKeys(oneTimeKeysJson)
 			account.markOneTimeKeysAsPublished()
+			
+			// store the account since it has been modified
+			keyStore!!.account = account
 		}
 	}
 	
