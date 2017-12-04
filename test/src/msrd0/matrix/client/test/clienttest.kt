@@ -372,5 +372,8 @@ class MatrixClientTest
 		assertThat(filtered.size, greaterThan(0))
 		val content = filtered.first().content
 		assertThat(content, instanceOf(TextMessageContent::class.java))
+		
+		// let's sync the client to receive to-device events
+		client.sync()
 	}
 }
