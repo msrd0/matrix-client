@@ -6,8 +6,8 @@
         </encoder>
     </appender>
 
-    <logger name="msrd0.matrix" level="INFO" />
-    <logger name="msrd0.matrix.client.util.HttpTarget" level="WARN" />
+    <logger name="msrd0.matrix" level="DEBUG" />
+    <logger name="msrd0.matrix.client.util.HttpTarget" level="DEBUG" />
 
     <root level="WARN">
         <appender-ref ref="STDOUT" />

@@ -374,7 +374,6 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 		val res = target.get("_matrix/client/r0/sync", params)
 		checkForError(res)
 		val json = res.json
-		logger.debug(json.toJsonString(prettyPrint = true))
 		
 		next_batch = json.string("next_batch") ?: missing("next_batch")
 		
@@ -493,7 +492,6 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 				val res = target.get("_matrix/client/r0/sync", params)
 				checkForError(res)
 				val json = res.json
-				logger.debug(json.toJsonString(prettyPrint = true))
 				
 				next_batch = json.string("next_batch") ?: missing("next_batch")
 				val rooms = json.obj("rooms") ?: missing("rooms")
@@ -568,17 +566,11 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 						ourCiphertext.int("type") ?: missing("content.ciphertext.$curve25519.type"))
 				
 				// attempt to decrypt
-				var decrypted : String? = null
-				if (message.type == 0 && session.matchesInboundSession(message.cipherText))
-					decrypted = session.decryptMessage(message)
-				if (decrypted == null)
-				{
-					session.initInboundSessionFrom(account, senderKey, message.cipherText)
-					account.removeOneTimeKeys(session)
-					keyStore!!.account = account
-					decrypted = session.decryptMessage(message)
-				}
-				logger.info("DECRYPTED TO-DEVICE EVENT: $decrypted")
+				val session = OlmSession()
+				session.initInboundSessionFrom(account, senderKey, message.cipherText)
+				account.removeOneTimeKeys(session)
+				val decrypted = session.decryptMessage(message)
+				keyStore!!.account = account
 				plain = Parser().parse(StringBuilder(decrypted)) as JsonObject
 			}
 			else
@@ -693,9 +685,6 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 			keyStore.account = OlmAccount()
 	}
 	
-	/** The OLM session used to encrypt/decrypt to-device events. */
-	val session : OlmSession by lazy { OlmSession() }
-	
 	
 	
 	/**
@@ -798,9 +787,13 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 				}
 				
 				plain["recipient"] = "$userId"
-				plain["recipient_keys"] = mapOf("ed25519" to receiverEd25519)
+				plain["recipient_keys"] = mapOf(
+						"ed25519" to receiverEd25519,
+						"curve25519" to receiverCurve25519
+				)
 				
-				session.initOutboundSession(account, receiverEd25519, oneTimeKey)
+				val session = OlmSession()
+				session.initOutboundSession(account, receiverCurve25519, oneTimeKey)
 				val message = session.encryptMessage(plain.toJsonString())
 				
 				val encrypted = JsonObject()
@@ -990,7 +983,6 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 			return emptyList()
 		}
 		json["device_keys"] = keys
-		println(json.toJsonString(prettyPrint = true))
 		val res = target.post("_matrix/client/r0/keys/query", token ?: throw NoTokenException(), id, json)
 		checkForError(res)
 		return (res.json.obj("device_keys") ?: missing("device_keys"))
