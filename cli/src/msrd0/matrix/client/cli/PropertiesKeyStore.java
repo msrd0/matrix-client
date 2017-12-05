@@ -25,6 +25,7 @@ import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 import javax.annotation.*;
 
 import msrd0.matrix.client.RoomId;
@@ -80,7 +81,7 @@ public class PropertiesKeyStore implements KeyStore
 		}
 		catch (Exception ex)
 		{
-			throw new OlmException(EXCEPTION_CODE_ACCOUNT_SERIALIZATION, ex.getMessage());
+			throw new OlmException(EXCEPTION_CODE_ACCOUNT_DESERIALIZATION, ex.getMessage());
 		}
 	}
 	
@@ -103,6 +104,59 @@ public class PropertiesKeyStore implements KeyStore
 	public boolean hasAccount()
 	{
 		return !properties.getProperty("olm.account", "").isEmpty();
+	}
+	
+	
+	@Override
+	public void storeSession(@Nonnull OlmSession session)
+			throws OlmException
+	{
+		String str;
+		try
+		{
+			str = serializeToString(session);
+		}
+		catch (Exception ex)
+		{
+			throw new OlmException(EXCEPTION_CODE_ACCOUNT_SERIALIZATION, ex.getMessage());
+		}
+		properties.setProperty("olm.session." + session.sessionIdentifier(), str);
+	}
+	
+	@Nullable
+	@Override
+	public OlmSession findSession(@Nonnull String sessionId)
+			throws OlmException
+	{
+		final String str = properties.getProperty("olm.session." + sessionId);
+		if (str.isEmpty())
+			return null;
+		OlmSession session;
+		try
+		{
+			session = (OlmSession) deserializeFromString(str);
+		}
+		catch (Exception ex)
+		{
+			throw new OlmException(EXCEPTION_CODE_ACCOUNT_DESERIALIZATION, ex.getMessage());
+		}
+		return session;
+	}
+	
+	@Nonnull
+	@Override
+	public Collection<OlmSession> allSessions()
+			throws OlmException
+	{
+		final List<String> keys = properties.keySet().stream()
+				.map((key) -> (String)key)
+				.filter((key) -> key.startsWith("olm.session."))
+				.map((key) -> key.substring(12))
+				.collect(Collectors.toList());
+		final List<OlmSession> sessions = new ArrayList<>(keys.size());
+		for (String key : keys)
+			sessions.add(findSession(key));
+		return sessions;
 	}
 	
 	
@@ -138,7 +192,7 @@ public class PropertiesKeyStore implements KeyStore
 		}
 		catch (Exception ex)
 		{
-			throw new OlmException(EXCEPTION_CODE_ACCOUNT_SERIALIZATION, ex.getMessage());
+			throw new OlmException(EXCEPTION_CODE_ACCOUNT_DESERIALIZATION, ex.getMessage());
 		}
 		final LocalDateTime timestamp = LocalDateTime.parse(properties.getProperty("olm.outbound." + room + ".timestamp"), df);
 		return new Pair<>(outbound, timestamp);
@@ -176,7 +230,7 @@ public class PropertiesKeyStore implements KeyStore
 		}
 		catch (Exception ex)
 		{
-			throw new OlmException(EXCEPTION_CODE_ACCOUNT_SERIALIZATION, ex.getMessage());
+			throw new OlmException(EXCEPTION_CODE_ACCOUNT_DESERIALIZATION, ex.getMessage());
 		}
 		return inbound;
 	}

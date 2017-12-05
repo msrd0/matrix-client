@@ -566,11 +566,16 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 						ourCiphertext.int("type") ?: missing("content.ciphertext.$curve25519.type"))
 				
 				// attempt to decrypt
-				val session = OlmSession()
-				session.initInboundSessionFrom(account, senderKey, message.cipherText)
-				account.removeOneTimeKeys(session)
+				var session : OlmSession? = keyStore!!.allSessions().find { it.matchesInboundSession(message.cipherText) }
+				if (session == null)
+				{
+					session = OlmSession()
+					session.initInboundSessionFrom(account, senderKey, message.cipherText)
+					account.removeOneTimeKeys(session)
+				}
 				val decrypted = session.decryptMessage(message)
 				keyStore!!.account = account
+				keyStore!!.storeSession(session)
 				plain = Parser().parse(StringBuilder(decrypted)) as JsonObject
 			}
 			else
@@ -856,6 +861,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 				val session = OlmSession()
 				session.initOutboundSession(account, receiverCurve25519, oneTimeKey)
 				val message = session.encryptMessage(plain.toJsonString())
+				keyStore!!.storeSession(session)
 				
 				val encrypted = JsonObject()
 				encrypted["algorithm"] = OLM_V1_RATCHET
