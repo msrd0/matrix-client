@@ -353,6 +353,9 @@ open class Room(
 		json["session_id"] = session.sessionIdentifier()
 		json["device_id"] = client.deviceId ?: throw NoDeviceIdException()
 		
+		// store the outbound session to update its index
+		keyStore.storeOutboundSession(id, session, outboundSessionTimestamp)
+		
 		val res = client.target.put("_matrix/client/r0/rooms/$id/send/$ROOM_ENCRYPTED/${client.nextTxnId}",
 				client.token ?: throw NoTokenException(), client.id, json)
 		checkForError(res)
