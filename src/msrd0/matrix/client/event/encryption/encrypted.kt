@@ -54,7 +54,7 @@ class EncryptedEventContent(
 			throw IllegalStateException("Unknown algorithm '$algorithm'")
 		
 		val session = (if (sessionId == null) null else room.findInboundSession(sessionId))
-				?: throw OlmException(EXCEPTION_CODE_INBOUND_GROUP_SESSION_IDENTIFIER, "Unknown session for id '$sessionId'")
+				?: throw NoSuchSessionException(sessionId ?: "null")
 		val decrypted = session.decryptMessage(ciphertext)?.decryptedMessage
 				?: throw RuntimeException("Decryption failed for unknown reasons") // TODO do something here
 		room.storeInboundSession(session)

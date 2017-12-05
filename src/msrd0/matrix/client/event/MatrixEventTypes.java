@@ -65,11 +65,6 @@ public class MatrixEventTypes
 	public static final String ROOM_JOIN_RULES = "m.room.join_rules";
 	
 	/**
-	 * This event is used to exchange keys for e2e-encryption. It should be encrypted as a `ROOM_ENCRYPTED` event.
-	 */
-	public static final String ROOM_KEY = "m.room_key";
-	
-	/**
 	 * This event adjusts the membership of a user in a room.
 	 */
 	public static final String ROOM_MEMBER = "m.room.member";
@@ -88,6 +83,25 @@ public class MatrixEventTypes
 	 * This event sets the room's topic.
 	 */
 	public static final String ROOM_TOPIC = "m.room.topic";
+	
+	
+	// ### room to-device events #######################################################################################
+	
+	/**
+	 * This event is used to exchange keys for e2e-encryption. It should be encrypted as a `ROOM_ENCRYPTED` event.
+	 */
+	public static final String ROOM_KEY = "m.room_key";
+	
+	/**
+	 * This event is used to request a room key for e2e-encryption. It is up to the receiver to decide if the request
+	 * will be answered by a [FORWARDED_ROOM_KEY] event or ignored.
+	 */
+	public static final String ROOM_KEY_REQUEST = "m.room_key_request";
+	
+	/**
+	 * This event is used as to answer a [ROOM_KEY_REQUEST].
+	 */
+	public static final String FORWARDED_ROOM_KEY = "m.forwarded_room_key";
 	
 	
 	// ### message events ##############################################################################################

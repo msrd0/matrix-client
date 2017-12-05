@@ -27,7 +27,7 @@ import kotlinx.coroutines.experimental.sync.withLock
 import msrd0.matrix.client.e2e.*
 import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.MatrixEventTypes.*
-import msrd0.matrix.client.event.encryption.EncryptionAlgorithms
+import msrd0.matrix.client.event.encryption.*
 import msrd0.matrix.client.event.encryption.EncryptionAlgorithms.*
 import msrd0.matrix.client.filter.Filter
 import msrd0.matrix.client.filter.uploadFilter
@@ -542,14 +542,14 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	private fun parseSyncToDeviceSection(json : JsonObject)
 	{
 		val toDevice = json.obj("to_device")?.array<JsonObject>("events") ?: missing("to_device.events")
-		for (event in toDevice.map { it as JsonObject })
+		eventLoop@for (event in toDevice.map { it as JsonObject })
 		{
+			val sender = MatrixId.fromString(event.string("sender") ?: missing("sender"))
 			val plain : JsonObject
 			
 			// if the event is encrypted, decrypt the event
 			if (event.string("type") == ROOM_ENCRYPTED)
 			{
-				val sender = MatrixId.fromString(event.string("sender") ?: missing("sender"))
 				val content = event.obj("content") ?: missing("content")
 				if (content.string("algorithm") != OLM_V1_RATCHET)
 				{
@@ -584,6 +584,67 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 					val content = plain.obj("content") ?: missing("content")
 					val session = OlmInboundGroupSession(content.string("session_key") ?: missing("content.session_key"))
 					keyStore!!.storeInboundSession(session)
+				}
+				
+				FORWARDED_ROOM_KEY -> {
+					val content = ForwardedRoomKeyEventContent(plain.obj("content") ?: missing("content"))
+					if (content.algorithm != MEGOLM_V1_RATCHET)
+					{
+						logger.warn("received forwarded room key for unknown algorithm ${content.algorithm}")
+						continue@eventLoop
+					}
+					// TODO verify the sender of the forwarded room key event
+					val session = OlmInboundGroupSession.importSession(content.sessionKey)
+					if (session.sessionIdentifier() != content.sessionId)
+					{
+						logger.warn("received forwarded room key, but session ${content.sessionId} doesn't match imported ${session.sessionIdentifier()}")
+						continue@eventLoop
+					}
+					keyStore!!.storeInboundSession(session)
+				}
+				
+				ROOM_KEY_REQUEST -> {
+					val content = RoomKeyRequestEventContent(plain.obj("content") ?: missing("content"))
+					if (content.algorithm != MEGOLM_V1_RATCHET)
+					{
+						logger.warn("received room key request for unknown algorithm ${content.algorithm}")
+						continue@eventLoop
+					}
+					if (content.action != RoomKeyRequestActions.REQUEST)
+					{
+						logger.warn("received room key request with unknown action ${content.action}")
+						continue@eventLoop
+					}
+					// TODO check that the requested key was issued for that room
+					// find the room
+					val room = roomsJoined[content.roomId]
+					if (room == null)
+					{
+						logger.warn("received room key request for unknown room ${content.roomId}")
+						continue@eventLoop
+					}
+					// check that the requesting user is in that room
+					if (!room.members.contains(sender))
+					{
+						logger.warn("received room key request from $sender, but he is not a member of ${content.roomId}")
+						continue@eventLoop
+					}
+					// send him the keys
+					val session = room.findInboundSession(content.sessionId ?: missing("content.session_id"))
+					if (session != null)
+					{
+						val account = keyStore!!.account
+						val curve25519 = account.identityKeys().string("curve25519")!!
+						val ed25519 = account.identityKeys().string("ed25519")!!
+						
+						val roomKey = ForwardedRoomKeyEventContent(
+								MEGOLM_V1_RATCHET, room.id, curve25519,
+								"", // TODO ed25519 keys of the original sender, not our own
+								session.sessionIdentifier(),
+								session.export(session.firstKnownIndex),
+								chainIndex = session.firstKnownIndex
+						)
+					}
 				}
 				
 				else -> {
@@ -1158,6 +1219,32 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 				for ((keyName, o2) in o1.mapValues { (_, value) -> value as JsonObject })
 					oneTimeKeys.add(OneTimeKey(userId, deviceId, keyName, o2))
 		return oneTimeKeys
+	}
+	
+	
+	/**
+	 * Send a [ROOM_KEY_REQUEST] for the given [roomId] and [sessionId] to the [receivers].
+	 */
+	@Throws(MatrixAnswerException::class)
+	fun requestRoomKey(roomId : RoomId, sessionId : String, receivers : Collection<MatrixId>)
+	{
+		if (receivers.isEmpty())
+		{
+			logger.warn("receivers of room key request is empty, not sending anything")
+			return
+		}
+		
+		val account = keyStore!!.account
+		val curve25519 = account.identityKeys().string("curve25519")!!
+		
+		val request = RoomKeyRequestEventContent(
+				RoomKeyRequestActions.REQUEST, deviceId ?: throw NoDeviceIdException(),
+				"$roomId$sessionId${System.currentTimeMillis()}".toUtf8().md5().toUnpaddedBase64(),
+				roomId, MEGOLM_V1_RATCHET, curve25519, sessionId
+		)
+		
+		println("Sending ${request.json.toJsonString(prettyPrint = true)} to $receivers")
+		sendToDevice(request, ROOM_KEY_REQUEST, receivers)
 	}
 }
 

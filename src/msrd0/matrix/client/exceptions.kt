@@ -19,6 +19,8 @@
 
 package msrd0.matrix.client
 
+import org.matrix.olm.OlmException
+
 /**
  * This exception indicates that no token has been specified while the api call requires one.
  */
@@ -82,3 +84,10 @@ open class MatrixInfoMismatchException(
 		val expected : Any,
 		val actual : Any
 ) : MatrixAnswerException("Mismatch for '$variable': Expected '$expected' but was '$actual'")
+
+/**
+ * This exception indicates that the inbound session for the given session id is missing.
+ */
+open class NoSuchSessionException(
+		val sessionId : String
+) : OlmException(EXCEPTION_CODE_INBOUND_GROUP_SESSION_IDENTIFIER, "Unknown session for id '$sessionId'")

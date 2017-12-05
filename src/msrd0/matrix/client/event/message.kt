@@ -24,6 +24,8 @@ import msrd0.matrix.client.*
 import msrd0.matrix.client.event.MatrixEventTypes.*
 import msrd0.matrix.client.event.MessageTypes.*
 import msrd0.matrix.client.event.encryption.EncryptedRoomEvent
+import org.matrix.olm.OlmException
+import org.matrix.olm.OlmException.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.awt.image.RenderedImage
@@ -358,6 +360,8 @@ class Messages(
 			}
 			catch (ex : Exception)
 			{
+				if (ex is NoSuchSessionException)
+					room.client.requestRoomKey(room.id, ex.sessionId, room.members)
 				logger.error("Exception while parsing message", ex)
 				null as Message?
 			}

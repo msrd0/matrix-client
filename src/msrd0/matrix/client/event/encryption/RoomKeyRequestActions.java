@@ -15,20 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
  */
-@file:JvmName("EncodingUtil")
-package msrd0.matrix.client.util
 
-import org.apache.commons.codec.binary.Base64
-import java.security.MessageDigest
-import kotlin.text.Charsets.UTF_8
+package msrd0.matrix.client.event.encryption;
 
-fun String.toUtf8() : ByteArray = toByteArray(UTF_8)
-fun ByteArray.fromUtf8() : String = String(this, UTF_8)
+import static lombok.AccessLevel.PRIVATE;
 
-private val base64 by lazy { Base64(0, ByteArray(0), false) }
-fun ByteArray.toBase64() : String = base64.encodeToString(this)
-fun ByteArray.toUnpaddedBase64() : String = toBase64().trimEnd('=')
-fun String.fromBase64() : ByteArray = base64.decode(this)
+import lombok.NoArgsConstructor;
 
-private val md5 by lazy { MessageDigest.getInstance("MD5") }
-fun ByteArray.md5() : ByteArray = md5.digest(this)
+@NoArgsConstructor(access = PRIVATE)
+public class RoomKeyRequestActions
+{
+	public static final String REQUEST = "request";
+	public static final String REQUEST_CANCELLATION = "request_cancellation";
+}

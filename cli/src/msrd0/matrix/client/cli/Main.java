@@ -167,6 +167,11 @@ public class Main
 		};
 		client.on(ROOM_MESSAGE_RECEIVED, messageListener);
 		
+		// initialize e2e
+		client.enableE2E(new PropertiesKeyStore(conf));
+		client.uploadIdentityKeys();
+		client.startUpdateOneTimeKeysBlocking();
+		
 		// set a cool display name for our device
 		client.updateDeviceDisplayName(client.getDeviceId(), "Mextrix CLI Matrix Client");
 		
@@ -174,11 +179,6 @@ public class Main
 		sync();
 		// run blocking synchronization in a coroutine
 		client.startSyncBlocking();
-		
-		// initialize e2e
-		client.enableE2E(new PropertiesKeyStore(conf));
-		client.uploadIdentityKeys();
-		client.startUpdateOneTimeKeysBlocking();
 		
 		Room curr = null;
 		while (true)
