@@ -112,8 +112,8 @@ class MatrixClientTest
 		val key = keys.find { it.userId == client.id && it.deviceId == deviceId }
 		assertNotNull(key)
 		key!!
-		assertThat(key.keys["ed25519:$deviceId"]?.fromBase64(), equalTo(idKeys.string("ed25519")?.fromBase64()))
-		assertThat(key.keys["curve25519:$deviceId"]?.fromBase64(), equalTo(idKeys.string("curve25519")?.fromBase64()))
+		assertThat(key.keys["ed25519:$deviceId"]?.fromBase64(), equalTo(idKeys.ed25519.fromBase64()))
+		assertThat(key.keys["curve25519:$deviceId"]?.fromBase64(), equalTo(idKeys.curve25519.fromBase64()))
 		key.keys.values.forEach {
 			assertThat(it, not(endsWith("=")))
 		}
@@ -137,7 +137,7 @@ class MatrixClientTest
 		signature!!
 		val json = oneTimeKey.json
 		json.remove("signatures")
-		assert(verifySignature(signature, account.identityKeys().string("ed25519")!!, json.toJsonString(canonical = true)))
+		assert(verifySignature(signature, account.identityKeys().ed25519, json.toJsonString(canonical = true)))
 	}
 	
 	@Test(groups = ["api"], dependsOnMethods = ["client_register"])

@@ -19,12 +19,10 @@
 
 package msrd0.matrix.client.test
 
-import com.beust.klaxon.JsonObject
-import com.beust.klaxon.string
 import msrd0.matrix.client.e2e.verifySignature
-import org.hamcrest.Matchers.*
-import org.hamcrest.MatcherAssert.*
-import org.matrix.olm.*
+import org.matrix.olm.OlmAccount
+import org.matrix.olm.OlmAccount.*
+import org.matrix.olm.OlmManager
 import org.testng.Assert.*
 import org.testng.annotations.Test
 
@@ -35,7 +33,7 @@ class OlmTest
 		val olm = OlmManager()
 		
 		lateinit var account : OlmAccount
-		lateinit var idKeys : JsonObject
+		lateinit var idKeys : IdentityKeys
 	}
 	
 	@Test(groups = ["base"])
@@ -54,7 +52,8 @@ class OlmTest
 	@Test(groups = ["base"], dependsOnMethods = ["generateKeys"])
 	fun sign()
 	{
-		val signature = account.signMessage(idKeys.toJsonString(canonical = true))
-		assert(verifySignature(signature, idKeys.string("ed25519")!!, idKeys.toJsonString(canonical = true)))
+		val message = idKeys.json.toJsonString(canonical = true)
+		val signature = account.signMessage(message)
+		assert(verifySignature(signature, idKeys.ed25519, message))
 	}
 }

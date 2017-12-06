@@ -559,7 +559,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 				val senderKey = content.string("sender_key") ?: missing("content.sender_key")
 				val ciphertext = content.obj("ciphertext") ?: missing("content.ciphertext")
 				val account = keyStore?.account ?: throw IllegalStateException("E2E has not been initialised")
-				val curve25519 = account.identityKeys().string("curve25519")!!
+				val curve25519 = account.identityKeys().curve25519
 				val ourCiphertext = ciphertext.obj(curve25519) ?: missing("content.ciphertext.$curve25519")
 				val message = OlmMessage(
 						ourCiphertext.string("body") ?: missing("content.ciphertext.$curve25519.body"),
@@ -639,11 +639,10 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 					if (session != null)
 					{
 						val account = keyStore!!.account
-						val curve25519 = account.identityKeys().string("curve25519")!!
-						val ed25519 = account.identityKeys().string("ed25519")!!
+						val idKeys = account.identityKeys()
 						
 						val roomKey = ForwardedRoomKeyEventContent(
-								MEGOLM_V1_RATCHET, room.id, curve25519,
+								MEGOLM_V1_RATCHET, room.id, idKeys.curve25519,
 								"", // TODO ed25519 keys of the original sender, not our own
 								session.sessionIdentifier(),
 								session.export(session.firstKnownIndex),
@@ -865,7 +864,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 				
 				val encrypted = JsonObject()
 				encrypted["algorithm"] = OLM_V1_RATCHET
-				encrypted["sender_key"] = account.identityKeys().string("curve25519")
+				encrypted["sender_key"] = account.identityKeys().curve25519
 				val ciphertext = JsonObject()
 				ciphertext["type"] = message.type
 				ciphertext["body"] = message.cipherText
@@ -1017,7 +1016,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 		val deviceKeys = DeviceKeys(id,
 				deviceId ?: throw NoDeviceIdException(),
 				EncryptionAlgorithms.ALGORITHMS,
-				keyStore?.account?.identityKeys()
+				keyStore?.account?.identityKeysJson()
 						?.mapKeys { (k, _) -> "$k:$deviceId" }
 						?.mapValues { (_, v) -> v as String }
 						?: throw IllegalStateException()
@@ -1241,7 +1240,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 		}
 		
 		val account = keyStore!!.account
-		val curve25519 = account.identityKeys().string("curve25519")!!
+		val curve25519 = account.identityKeys().curve25519
 		
 		val request = RoomKeyRequestEventContent(
 				RoomKeyRequestActions.REQUEST, deviceId ?: throw NoDeviceIdException(),

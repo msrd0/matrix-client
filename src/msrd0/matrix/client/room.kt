@@ -349,7 +349,7 @@ open class Room(
 		val json = JsonObject()
 		json["ciphertext"] = session.encryptMessage(plain.toJsonString(prettyPrint = false))
 		json["algorithm"] = MEGOLM_V1_RATCHET
-		json["sender_key"] = account.identityKeys().string("curve25519")
+		json["sender_key"] = account.identityKeys().curve25519
 		json["session_id"] = session.sessionIdentifier()
 		json["device_id"] = client.deviceId ?: throw NoDeviceIdException()
 		
