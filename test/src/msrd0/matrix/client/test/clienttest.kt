@@ -20,8 +20,8 @@
 package msrd0.matrix.client.test
 
 import msrd0.matrix.client.*
-import msrd0.matrix.client.e2e.olm.InMemoryKeyStore
-import msrd0.matrix.client.e2e.olm.KeyStore
+import msrd0.matrix.client.e2e.E2E
+import msrd0.matrix.client.e2e.olm.*
 import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.state.*
 import msrd0.matrix.client.util.fromBase64
@@ -52,6 +52,7 @@ class MatrixClientTest
 		val deviceId get() = userData.deviceId
 		val token get() = userData.token
 		var keyStore : KeyStore = InMemoryKeyStore()
+		var e2e : E2E = OlmE2E(keyStore)
 		lateinit var roomId : RoomId
 		lateinit var encryptedRoomId : RoomId
 		
@@ -100,7 +101,7 @@ class MatrixClientTest
 	fun client_enable_e2e()
 	{
 		val client = newClient()
-		client.enableE2E(keyStore)
+		client.enableE2E(e2e)
 		assert(keyStore.hasAccount())
 		client.uploadIdentityKeys()
 		client.updateOneTimeKeys()
@@ -123,7 +124,7 @@ class MatrixClientTest
 	fun client_claim_one_time_key()
 	{
 		val client = newClient()
-		client.enableE2E(keyStore)
+		client.enableE2E(e2e)
 		
 		val oneTimeKeys = client.claimOneTimeKeys(mapOf(id to listOf(deviceId)))
 		assertThat(oneTimeKeys.size, equalTo(1))
@@ -348,6 +349,7 @@ class MatrixClientTest
 	fun encrypted_room_create()
 	{
 		val client = newClient()
+		client.enableE2E(e2e)
 		val room = client.createRoom()
 		encryptedRoomId = room.id
 		
@@ -361,7 +363,7 @@ class MatrixClientTest
 	fun encrypted_room_send_message()
 	{
 		val client = newClient()
-		client.enableE2E(keyStore)
+		client.enableE2E(e2e)
 		val room = Room(client, encryptedRoomId)
 		
 		val msg = TextMessageContent("Hello Encrypted World")

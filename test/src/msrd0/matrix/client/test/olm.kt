@@ -19,41 +19,31 @@
 
 package msrd0.matrix.client.test
 
-import msrd0.matrix.client.e2e.verifySignature
-import org.matrix.olm.OlmAccount
-import org.matrix.olm.OlmAccount.*
-import org.matrix.olm.OlmManager
-import org.testng.Assert.*
+import com.beust.klaxon.JsonObject
+import msrd0.matrix.client.e2e.olm.InMemoryKeyStore
+import msrd0.matrix.client.e2e.olm.OlmE2E
 import org.testng.annotations.Test
 
 class OlmTest
 {
 	companion object
 	{
-		val olm = OlmManager()
-		
-		lateinit var account : OlmAccount
-		lateinit var idKeys : IdentityKeys
-	}
-	
-	@Test(groups = ["base"])
-	fun version()
-	{
-		assertNotNull(olm.olmLibVersion)
+		val olm = OlmE2E(InMemoryKeyStore())
+		lateinit var idKeys : JsonObject
 	}
 	
 	@Test(groups = ["base"])
 	fun generateKeys()
 	{
-		account = OlmAccount()
-		idKeys = account.identityKeys()
+		olm.initialise()
+		idKeys = olm.identityKeys
 	}
 	
 	@Test(groups = ["base"], dependsOnMethods = ["generateKeys"])
 	fun sign()
 	{
-		val message = idKeys.json.toJsonString(canonical = true)
-		val signature = account.signMessage(message)
-		assert(verifySignature(signature, idKeys.ed25519, message))
+		val message = idKeys.toJsonString(canonical = true)
+		val signature = olm.sign(message)
+		assert(olm.verifySignature(signature, olm.fingerprintKey, message))
 	}
 }

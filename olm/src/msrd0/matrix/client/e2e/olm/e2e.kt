@@ -68,7 +68,7 @@ open class OlmE2E(val keyStore : KeyStore) : E2E
 	@Throws(MatrixOlmException::class)
 	override fun initialise()
 	{
-		if (!this::account.isInitialized)
+		if (this::account.isInitialized)
 			return
 		wrapOlmEx {
 			account = if (keyStore.hasAccount()) keyStore.account else newAccount()

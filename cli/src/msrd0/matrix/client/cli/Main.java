@@ -26,15 +26,15 @@ import java.net.URI;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
-
 import javax.imageio.ImageIO;
 
 import msrd0.matrix.client.*;
+import msrd0.matrix.client.e2e.MatrixE2EException;
+import msrd0.matrix.client.e2e.olm.OlmE2E;
 import msrd0.matrix.client.event.*;
 import msrd0.matrix.client.listener.*;
 
 import com.google.common.base.Stopwatch;
-import org.matrix.olm.OlmException;
 import org.slf4j.*;
 
 public class Main
@@ -55,7 +55,7 @@ public class Main
 	private static MatrixClient client;
 	
 	private static void sendMessage(Room room, MessageContent msg)
-			throws MatrixAnswerException, OlmException
+			throws MatrixAnswerException, MatrixE2EException
 	{
 		if (room.isEncrypted())
 			room.sendEncryptedMessage(msg);
@@ -168,7 +168,7 @@ public class Main
 		client.on(ROOM_MESSAGE_RECEIVED, messageListener);
 		
 		// initialize e2e
-		client.enableE2E(new PropertiesKeyStore(conf));
+		client.enableE2E(new OlmE2E(new PropertiesKeyStore(conf)));
 		client.uploadIdentityKeys();
 		client.startUpdateOneTimeKeysBlocking();
 		

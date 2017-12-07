@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 import javax.annotation.*;
 
 import msrd0.matrix.client.RoomId;
-import msrd0.matrix.client.e2e.KeyStore;
+import msrd0.matrix.client.e2e.olm.KeyStore;
 
 import kotlin.Pair;
 import org.matrix.olm.*;

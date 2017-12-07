@@ -54,7 +54,6 @@ class EncryptedEventContent(
 		val session = (if (sessionId == null) null else room.findInboundSession(sessionId))
 				?: throw NoSuchSessionException(sessionId ?: "null")
 		val decrypted = session.decrypt(ciphertext)
-				?: throw RuntimeException("Decryption failed for unknown reasons") // TODO do something here
 		val json = Parser().parse(StringBuilder(decrypted)) as JsonObject
 		return MessageContent.fromJson(json.obj("content") ?: json)
 	}
