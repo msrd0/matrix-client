@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
  */
 
-package msrd0.matrix.client.event.encryption;
+package msrd0.matrix.client.e2e.olm;
 
 import static kotlin.collections.CollectionsKt.*;
 import static lombok.AccessLevel.*;

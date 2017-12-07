@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
  */
 @file:JvmName("Util")
-package msrd0.matrix.client.e2e
+package msrd0.matrix.client.e2e.olm
 
 import com.beust.klaxon.JsonObject
 import org.matrix.olm.*
@@ -69,13 +69,4 @@ fun verifySignature(signature : String, deviceKey : String, message : String) : 
 		return false
 	}
 	return true
-}
-
-fun getErrorMessageJson() : JsonObject
-{
-	val json = JsonObject()
-	json["type"] = "m.room.message"
-	json.mapNested("content.msgtype","m.bad.encrypted")
-	json.mapNested("content.body", "** Unable to decrypt: The sender's device has not sent us the keys for this message. **")
-	return json
 }

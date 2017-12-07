@@ -21,11 +21,9 @@ package msrd0.matrix.client.event.encryption
 
 import com.beust.klaxon.*
 import msrd0.matrix.client.*
+import msrd0.matrix.client.e2e.MatrixE2EException
+import msrd0.matrix.client.e2e.NoSuchSessionException
 import msrd0.matrix.client.event.*
-import msrd0.matrix.client.event.MatrixEventTypes.*
-import msrd0.matrix.client.event.encryption.EncryptionAlgorithms.*
-import org.matrix.olm.OlmException
-import org.matrix.olm.OlmException.*
 
 /**
  * The content of a room encrypted event.
@@ -47,17 +45,16 @@ class EncryptedEventContent(
 			sessionId = json.string("session_id")
 	)
 	
-	@Throws(OlmException::class)
+	@Throws(MatrixE2EException::class)
 	fun decrypt(room : Room) : MessageContent
 	{
-		if (algorithm != MEGOLM_V1_RATCHET)
+		if (algorithm != room.e2e().roomEncryptionAlgorithm)
 			throw IllegalStateException("Unknown algorithm '$algorithm'")
 		
 		val session = (if (sessionId == null) null else room.findInboundSession(sessionId))
 				?: throw NoSuchSessionException(sessionId ?: "null")
-		val decrypted = session.decryptMessage(ciphertext)?.decryptedMessage
+		val decrypted = session.decrypt(ciphertext)
 				?: throw RuntimeException("Decryption failed for unknown reasons") // TODO do something here
-		room.storeInboundSession(session)
 		val json = Parser().parse(StringBuilder(decrypted)) as JsonObject
 		return MessageContent.fromJson(json.obj("content") ?: json)
 	}
@@ -98,7 +95,7 @@ class EncryptedRoomEvent(
 		content : MessageContent
 ) : MatrixRoomEvent<MessageContent>(room, data, content), Message
 {
-	@Throws(IllegalJsonException::class, OlmException::class)
+	@Throws(IllegalJsonException::class, MatrixE2EException::class)
 	constructor(room : Room, json : JsonObject)
 			: this(room, MatrixEventData(json), EncryptedEventContent(json.obj("content") ?: missing("content")).decrypt(room))
 	

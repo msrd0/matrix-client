@@ -89,7 +89,6 @@ configure(allprojects - project('matrix-client-cli')) {
 		// stdlib
 		compile "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
 		compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlinVersion"
-		compile "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion"
 	}
 	
 	sourceSets {
@@ -176,6 +175,7 @@ configure(allprojects - project('matrix-client-cli')) {
 }
 
 dependencies {
+	compile "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion"
 	
 	// apache commons
 	compile "commons-codec:commons-codec:$commonsCodecVersion"
@@ -187,6 +187,6 @@ dependencies {
 	// json lib
 	compile "com.beust:klaxon:$klaxonVersion"
 	
-	// olm java
-	compile "msrd0.matrix:matrix-olm-java:2.+"
+	// olm lib for the tests
+	testCompile project(':matrix-client-olm')
 }

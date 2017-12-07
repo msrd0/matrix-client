@@ -24,22 +24,18 @@ import msrd0.matrix.client.MatrixClient.Companion.checkForError
 import msrd0.matrix.client.e2e.*
 import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.MatrixEventTypes.*
-import msrd0.matrix.client.event.encryption.*
-import msrd0.matrix.client.event.encryption.EncryptionAlgorithms.*
+import msrd0.matrix.client.event.encryption.RoomEncryptionEventContent
+import msrd0.matrix.client.event.encryption.RoomKeyEventContent
 import msrd0.matrix.client.event.state.*
-import org.matrix.olm.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit.*
 
 /**
  * This class represents a matrix room.
  */
 open class Room(
 		val client : MatrixClient,
-		val id : RoomId,
-		var roomEncryptor : RoomEncryptor = Room.newRoomEncryptor(client, id)
+		val id : RoomId
 ) : RoomCache()
 {
 	override fun toString() = "Room(name=$name, id=$id)"
@@ -47,16 +43,6 @@ open class Room(
 	companion object
 	{
 		private val logger : Logger = LoggerFactory.getLogger(Room::class.java)
-		
-		private val olmManager = OlmManager()
-		
-		@Throws(NoDeviceIdException::class)
-		fun newRoomEncryptor(client : MatrixClient, id : RoomId) : RoomEncryptor
-		{
-			val olm = OlmEncryption(client.deviceId ?: throw NoDeviceIdException())
-			val megolm = MegolmEncryptor(olm, id)
-			return megolm
-		}
 	}
 	
 	/**
@@ -141,7 +127,7 @@ open class Room(
 	
 	/** The encryption of this room, or null if this room is not encrypted. */
 	var encryption : RoomEncryptionEventContent? by RoomEventDelegate(
-			{ RoomEncryptionEventContent.fromJson(retrieveStateEvent(ROOM_ENCRYPTION) ?: return@RoomEventDelegate null) },
+			{ RoomEncryptionEventContent(retrieveStateEvent(ROOM_ENCRYPTION) ?: return@RoomEventDelegate null) },
 			{ sendStateEvent(ROOM_ENCRYPTION, it!!) }
 	)
 	
@@ -157,7 +143,7 @@ open class Room(
 	/** Enable encryption for this room. Cannot be undone. */
 	fun enableEncryption()
 	{
-		encryptionAlgorithm = MEGOLM_V1_RATCHET
+		encryptionAlgorithm = e2e().roomEncryptionAlgorithm
 	}
 	
 	
@@ -242,13 +228,12 @@ open class Room(
 		checkForError(res)
 	}
 	
-	/** The key store mirrored from the [client]. */
-	val keyStore get() = client.keyStore ?: throw IllegalStateException("E2E has not been enabled for the client")
+	/** The [E2E] implementation mirrored from the [client]. */
+	fun e2e() : E2E = client.e2e()
 	
-	/** OLM Outbound Session used to send encrypted messages. */
-	private var outboundSession : OlmOutboundGroupSession? = null
-	/** OLM Outbound Session creation or last rotation timestamp. */
-	private var outboundSessionTimestamp : LocalDateTime = LocalDateTime.now()
+	
+	/** Outbound Session used to send encrypted messages. */
+	private var outboundSession : E2EOutboundGroupSession? = null
 	
 	/**
 	 * This method returns an outbound session for this room. If [outboundSession] is not null and does not
@@ -258,47 +243,33 @@ open class Room(
 	 *
 	 * @throws IllegalStateException If the room is not encrypted or no [keyStore] is present
 	 * @throws MatrixAnswerException On errors while sending/receiving keys
-	 * @throws OlmException On errors while sending/receiving keys
+	 * @throws MatrixE2EException On errors while sending/receiving keys
 	 */
-	@Throws(MatrixAnswerException::class, OlmException::class)
-	fun findOrCreateOutboundSession() : OlmOutboundGroupSession
+	@Throws(MatrixAnswerException::class, MatrixE2EException::class)
+	fun findOrCreateOutboundSession() : E2EOutboundGroupSession
 	{
 		// get the encryption details for this room
 		val enc = encryption ?: throw IllegalStateException("Cannot send encrypted message to an unencrypted room")
-		if (enc.algorithm != MEGOLM_V1_RATCHET)
+		if (enc.algorithm != e2e().roomEncryptionAlgorithm)
 			throw IllegalStateException("Unknown encryption algorithm: '${enc.algorithm}'")
 		
-		// try to find the outbound session in the key store if we don't have one yet
+		// try to find the outbound session if we don't have one yet
 		if (outboundSession == null)
-		{
-			val session = keyStore.findOutboundSession(id)
-			if (session != null)
-			{
-				outboundSession = session.first
-				outboundSessionTimestamp = session.second
-			}
-		}
+			outboundSession = e2e().findOutboundGroupSession(id)
 		
 		// check if we need to create and/or rotate the current outbound session
 		if (outboundSession == null
-				|| outboundSession!!.messageIndex() >= enc.rotationPeriodMsgs
-				|| outboundSessionTimestamp.until(LocalDateTime.now(), MILLIS) >= enc.rotationPeriodMs)
+				|| outboundSession!!.needsRotation(enc.rotationPeriodMsgs, enc.rotationPeriodMs))
 		{
-			outboundSession = OlmOutboundGroupSession()
-			outboundSessionTimestamp = LocalDateTime.now()
-			keyStore.storeOutboundSession(id, outboundSession!!, outboundSessionTimestamp)
-			val sessionId = outboundSession!!.sessionIdentifier()
-			val sessionKey = outboundSession!!.sessionKey()
+			outboundSession = e2e().newOutboundGroupSession(id)
+			val sessionId = outboundSession!!.sessionId
+			val sessionKey = outboundSession!!.sessionKey
 			
 			// send the keys to every device in this room
 			// TODO provide a way to verify the devices and exclude unverified devices from this list
-			val devices = deviceList.filter { it.checkSignatures(false) }.toMap()
-			val content = RoomKeyEventContent(MEGOLM_V1_RATCHET, id, sessionId, sessionKey)
+			val devices = deviceList.filter { it.checkSignatures(e2e(), false) }.toMap()
+			val content = RoomKeyEventContent(e2e().roomEncryptionAlgorithm, id, sessionId, sessionKey)
 			client.sendEncryptedToDevice(content, ROOM_KEY, devices.mapValues { (_, v) -> v.keys })
-			
-			// create and store corresponding inbound session
-			val inboundSession = OlmInboundGroupSession(sessionKey)
-			keyStore.storeInboundSession(inboundSession)
 		}
 		
 		// we should have created an outbound session at this stage
@@ -308,36 +279,21 @@ open class Room(
 	/**
 	 * This method looks for the inbound session in the clients [keyStore]. See [KeyStore.findInboundSession].
 	 */
-	@Throws(OlmException::class)
-	fun findInboundSession(sessionId : String) : OlmInboundGroupSession?
-			= keyStore.findInboundSession(sessionId)
-	
-	/**
-	 * This method stores the inbound session in the clients [keyStore]. See [KeyStore.storeInboundSession].
-	 *
-	 * Call this method after every decrypted message. Otherwise the index of the inbound session will be
-	 * inaccurate which might lead to unencryptable messages.
-	 */
-	@Throws(OlmException::class)
-	fun storeInboundSession(session : OlmInboundGroupSession)
-			= keyStore.storeInboundSession(session)
+	fun findInboundSession(sessionId : String) : E2EInboundGroupSession?
+			= e2e().findInboundGroupSession(id, sessionId)
 	
 	/**
 	 * Encrypt and send the message to this room. To send unencrypted messages, see [sendMessage].
 	 *
 	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 * @throws OlmException On errors while encrypting the message.
+	 * @throws MatrixE2EException On errors while encrypting the message.
 	 * @throws IllegalStateException If this room is not encrypted or the algorithm used to encrypt the room
 	 * 		is unknown.
 	 */
-	@Throws(MatrixAnswerException::class, OlmException::class)
+	@Throws(MatrixAnswerException::class, MatrixE2EException::class)
 	fun sendEncryptedMessage(msg : MessageContent)
 	{
 		val session = findOrCreateOutboundSession()
-		
-		// get the clients key store and account
-		val keyStore = client.keyStore ?: throw IllegalStateException("E2E has not been enabled for $client")
-		val account = keyStore.account
 		
 		// build the plain json to encrypt
 		val plain = JsonObject()
@@ -347,14 +303,11 @@ open class Room(
 		
 		// build the encrypted json
 		val json = JsonObject()
-		json["ciphertext"] = session.encryptMessage(plain.toJsonString(prettyPrint = false))
-		json["algorithm"] = MEGOLM_V1_RATCHET
-		json["sender_key"] = account.identityKeys().curve25519
-		json["session_id"] = session.sessionIdentifier()
+		json["ciphertext"] = session.encrypt(plain)
+		json["algorithm"] = e2e().roomEncryptionAlgorithm
+		json["sender_key"] = e2e().identityKey
+		json["session_id"] = session.sessionId
 		json["device_id"] = client.deviceId ?: throw NoDeviceIdException()
-		
-		// store the outbound session to update its index
-		keyStore.storeOutboundSession(id, session, outboundSessionTimestamp)
 		
 		val res = client.target.put("_matrix/client/r0/rooms/$id/send/$ROOM_ENCRYPTED/${client.nextTxnId}",
 				client.token ?: throw NoTokenException(), client.id, json)

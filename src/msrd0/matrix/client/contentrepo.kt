@@ -140,7 +140,7 @@ object ContentRepo
 		val status = res.status
 		if (status.family != 2)
 			throw MatrixErrorResponseException("${status.status}", status.phrase)
-		return Pair(res.bytes, res.header("Content-Type") ?: throw MatrixAnswerException("Missing Content-Type header"))
+		return Pair(res.bytes, res.header("Content-Type") ?: throw MatrixIllegalAnswerException("Missing Content-Type header"))
 	}
 	
 	/**
@@ -167,7 +167,7 @@ object ContentRepo
 		val status = res.status
 		if (status.family != 2)
 			throw MatrixErrorResponseException("${status.status}", status.phrase)
-		return Pair(res.stream, res.header("Content-Type") ?: throw MatrixAnswerException("Missing Content-Type header"))
+		return Pair(res.stream, res.header("Content-Type") ?: throw MatrixIllegalAnswerException("Missing Content-Type header"))
 	}
 	
 	/**

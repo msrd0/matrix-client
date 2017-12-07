@@ -34,31 +34,20 @@ class RoomKeyEventContent(
 		val sessionKey : String
 ) : MatrixEventContent()
 {
-	companion object
-	{
-		/**
-		 * Constructs a room key event content by parsing the supplied json.
-		 *
-		 * @throws IllegalJsonException On errors in the json.
-		 */
-		@JvmStatic
-		@Throws(IllegalJsonException::class)
-		fun fromJson(json : JsonObject) : RoomKeyEventContent
-				= RoomKeyEventContent(
-					algorithm = json.string("algorithm") ?: missing("algorithm"),
-					roomId = RoomId.fromString(json.string("room_id") ?: missing("room_id")),
-					sessionId = json.string("session_id") ?: missing("session_id"),
-					sessionKey = json.string("session_key") ?: missing("session_key")
-				)
-	}
+	@Throws(IllegalJsonException::class)
+	constructor(json : JsonObject) : this(
+			json.string("algorithm") ?: missing("algorithm"),
+			json.string("room_id")?.let { RoomId.fromString(it) } ?: missing("room_id"),
+			json.string("session_id") ?: missing("session_id"),
+			json.string("session_key") ?: missing("session_key")
+	)
 	
-	override val json : JsonObject get()
-			= JsonObject(mapOf(
-				"algorithm" to algorithm,
-				"room_id" to "$roomId",
-				"session_id" to sessionId,
-				"session_key" to sessionKey
-			))
+	override val json : JsonObject get() = JsonObject(mapOf(
+			"algorithm" to algorithm,
+			"room_id" to "$roomId",
+			"session_id" to sessionId,
+			"session_key" to sessionKey
+	))
 }
 
 /**

@@ -19,9 +19,9 @@
 
 package msrd0.matrix.client.test
 
-import com.beust.klaxon.string
 import msrd0.matrix.client.*
-import msrd0.matrix.client.e2e.*
+import msrd0.matrix.client.e2e.olm.InMemoryKeyStore
+import msrd0.matrix.client.e2e.olm.KeyStore
 import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.state.*
 import msrd0.matrix.client.util.fromBase64

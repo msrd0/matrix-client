@@ -20,9 +20,8 @@ package msrd0.matrix.client.e2e
 
 import com.beust.klaxon.*
 import msrd0.matrix.client.*
-import msrd0.matrix.client.util.*
-import org.matrix.olm.OlmAccount
-import org.matrix.olm.OlmException
+import msrd0.matrix.client.util.JsonSerializable
+import msrd0.matrix.client.util.emptyMutableMap
 
 class DeviceKeys
 @JvmOverloads constructor(
@@ -42,15 +41,15 @@ class DeviceKeys
 			signatures = KeySignatures(json.obj("signatures") ?: missing("signatures"))
 	)
 	
-	@Throws(OlmException::class)
-	fun sign(account : OlmAccount, id : MatrixId, deviceId : String)
+	@Throws(MatrixE2EException::class)
+	fun sign(e2e : E2E, id : MatrixId, deviceId : String)
 	{
 		val toSign = json
 		toSign.remove("signatures")
-		val signature = account.signMessage(toSign.toJsonString(canonical = true))
+		val signature = e2e.sign(toSign.toJsonString(canonical = true))
 		if (!signatures.containsKey(id))
 			signatures[id] = emptyMutableMap()
-		signatures[id]!!["ed25519:$deviceId"] = signature
+		signatures[id]!!["${e2e.fingerprintKeyName}:$deviceId"] = signature
 	}
 	
 	/**
@@ -58,22 +57,22 @@ class DeviceKeys
 	 * because we don't know their keys.
 	 *
 	 * @return False if the signature is invalid or there is no signature and [forceSignature] is set to true.
-	 * @throws OlmException On errors while checking the signatures.
+	 * @throws MatrixE2EException On errors while checking the signatures.
 	 */
 	@JvmOverloads
-	@Throws(OlmException::class)
-	fun checkSignatures(forceSignature : Boolean = true) : Boolean
+	@Throws(MatrixE2EException::class)
+	fun checkSignatures(e2e : E2E, forceSignature : Boolean = true) : Boolean
 	{
 		val userSignatures = signatures[userId]
 		val deviceSignature = userSignatures?.filter { (device, _) -> device.endsWith(deviceId) }?.entries?.firstOrNull()
-			?: return !forceSignature // there is no self-signature
+				?: return !forceSignature // there is no self-signature
 		val device = deviceSignature.key
 		val signature = deviceSignature.value
 		val jsonToVerify = json
 		jsonToVerify.remove("signatures")
-		return verifySignature(signature, keys[device] ?: return false,
-				jsonToVerify.toJsonString(canonical = true))
+		return e2e.verifySignature(signature, keys[device] ?: return false, jsonToVerify)
 	}
+	
 	
 	override val json : JsonObject get() = JsonObject(mapOf(
 			"user_id" to "$userId",

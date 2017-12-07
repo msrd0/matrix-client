@@ -1,7 +1,6 @@
 /*
  * matrix-client
  * Copyright (C) 2017 Dominic Meiser
- * Copyright (C) 2017 Julius Lehmann
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,12 +18,7 @@
 
 package msrd0.matrix.client.e2e
 
-import com.beust.klaxon.string
-import org.matrix.olm.OlmAccount
-
-open class OlmEncryption(val deviceId : String)
-{
-	val account : OlmAccount = OlmAccount()
-	val identityKey : String = account.identityKeys().curve25519
-	val fingerprintKey : String = account.identityKeys().ed25519
-}
+data class E2EMessage(
+		val type : Int,
+		val ciphertext : String
+)

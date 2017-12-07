@@ -21,19 +21,16 @@ package msrd0.matrix.client.event
 
 import com.beust.klaxon.*
 import msrd0.matrix.client.*
+import msrd0.matrix.client.e2e.NoSuchSessionException
 import msrd0.matrix.client.event.MatrixEventTypes.*
 import msrd0.matrix.client.event.MessageTypes.*
 import msrd0.matrix.client.event.encryption.EncryptedRoomEvent
-import org.matrix.olm.OlmException
-import org.matrix.olm.OlmException.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.awt.image.RenderedImage
-import java.io.*
+import java.io.ByteArrayInputStream
+import java.io.IOException
 import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit.*
-import java.util.*
-import java.util.regex.Pattern
 import javax.imageio.ImageIO
 
 /**
@@ -52,9 +49,10 @@ abstract class MessageContent(
 		 * specifications.
 		 *
 		 * @throws MatrixAnswerException On errors in the json.
+		 * @throws UnknownMessageTypeException When the message type is unknown.
 		 */
 		@JvmStatic
-		@Throws(MatrixAnswerException::class)
+		@Throws(MatrixAnswerException::class, UnknownMessageTypeException::class)
 		fun fromJson(json : JsonObject) : MessageContent
 		{
 			val type = json.string("msgtype") ?: missing("msgtype")
@@ -86,7 +84,7 @@ abstract class MessageContent(
 				return content
 			}
 			
-			throw MatrixAnswerException("Unknown message type $type")
+			throw UnknownMessageTypeException("Unknown message type $type")
 		}
 	}
 	

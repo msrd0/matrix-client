@@ -28,12 +28,10 @@ import msrd0.matrix.client.e2e.*
 import msrd0.matrix.client.event.*
 import msrd0.matrix.client.event.MatrixEventTypes.*
 import msrd0.matrix.client.event.encryption.*
-import msrd0.matrix.client.event.encryption.EncryptionAlgorithms.*
 import msrd0.matrix.client.filter.Filter
 import msrd0.matrix.client.filter.uploadFilter
 import msrd0.matrix.client.listener.*
 import msrd0.matrix.client.util.*
-import org.matrix.olm.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.URI
@@ -47,9 +45,6 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	companion object
 	{
 		private val logger : Logger = LoggerFactory.getLogger(MatrixClient::class.java)
-		
-		// make sure we load the olm library just in case somebody want's to use it
-		init { OlmManager() }
 		
 		
 		/**
@@ -551,31 +546,23 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 			if (event.string("type") == ROOM_ENCRYPTED)
 			{
 				val content = event.obj("content") ?: missing("content")
-				if (content.string("algorithm") != OLM_V1_RATCHET)
+				if (content.string("algorithm") != e2e().encryptionAlgorithm)
 				{
 					logger.warn("Unknown encryption algorithm ${content.string("algorithm")}")
 					continue
 				}
 				val senderKey = content.string("sender_key") ?: missing("content.sender_key")
 				val ciphertext = content.obj("ciphertext") ?: missing("content.ciphertext")
-				val account = keyStore?.account ?: throw IllegalStateException("E2E has not been initialised")
-				val curve25519 = account.identityKeys().curve25519
-				val ourCiphertext = ciphertext.obj(curve25519) ?: missing("content.ciphertext.$curve25519")
-				val message = OlmMessage(
-						ourCiphertext.string("body") ?: missing("content.ciphertext.$curve25519.body"),
-						ourCiphertext.int("type") ?: missing("content.ciphertext.$curve25519.type"))
+				val identityKey = e2e().identityKey
+				val ourCiphertext = ciphertext.obj(identityKey) ?: missing("content.ciphertext.$identityKey")
+				val message = E2EMessage(
+						ourCiphertext.int("type") ?: missing("content.ciphertext.$identityKey.type"),
+						ourCiphertext.string("body") ?: missing("content.ciphertext.$identityKey.body")
+				)
 				
 				// attempt to decrypt
-				var session : OlmSession? = keyStore!!.allSessions().find { it.matchesInboundSession(message.cipherText) }
-				if (session == null)
-				{
-					session = OlmSession()
-					session.initInboundSessionFrom(account, senderKey, message.cipherText)
-					account.removeOneTimeKeys(session)
-				}
-				val decrypted = session.decryptMessage(message)
-				keyStore!!.account = account
-				keyStore!!.storeSession(session)
+				val session = e2e().inboundSession(message)
+				val decrypted = session.decrypt(message)
 				plain = Parser().parse(StringBuilder(decrypted)) as JsonObject
 			}
 			else
@@ -583,38 +570,23 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 			
 			
 			// parse the plain event
+			val type = plain.string("type") ?: missing("type")
+			val contentJson = plain.obj("content") ?: missing("content")
 			when (plain.string("type") ?: missing("type"))
 			{
 				ROOM_KEY -> {
-					val content = plain.obj("content") ?: missing("content")
-					val session = OlmInboundGroupSession(content.string("session_key") ?: missing("content.session_key"))
-					keyStore!!.storeInboundSession(session)
+					val content = RoomKeyEventContent(contentJson)
+					e2e().roomKeyReceived(content)
 				}
 				
 				FORWARDED_ROOM_KEY -> {
 					val content = ForwardedRoomKeyEventContent(plain.obj("content") ?: missing("content"))
-					if (content.algorithm != MEGOLM_V1_RATCHET)
-					{
-						logger.warn("received forwarded room key for unknown algorithm ${content.algorithm}")
-						continue@eventLoop
-					}
 					// TODO verify the sender of the forwarded room key event
-					val session = OlmInboundGroupSession.importSession(content.sessionKey)
-					if (session.sessionIdentifier() != content.sessionId)
-					{
-						logger.warn("received forwarded room key, but session ${content.sessionId} doesn't match imported ${session.sessionIdentifier()}")
-						continue@eventLoop
-					}
-					keyStore!!.storeInboundSession(session)
+					e2e().roomKeyReceived(content)
 				}
 				
 				ROOM_KEY_REQUEST -> {
 					val content = RoomKeyRequestEventContent(plain.obj("content") ?: missing("content"))
-					if (content.algorithm != MEGOLM_V1_RATCHET)
-					{
-						logger.warn("received room key request for unknown algorithm ${content.algorithm}")
-						continue@eventLoop
-					}
 					if (content.action != RoomKeyRequestActions.REQUEST)
 					{
 						logger.warn("received room key request with unknown action ${content.action}")
@@ -638,16 +610,14 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 					val session = room.findInboundSession(content.sessionId ?: missing("content.session_id"))
 					if (session != null)
 					{
-						val account = keyStore!!.account
-						val idKeys = account.identityKeys()
-						
+						val export = session.export()
 						val roomKey = ForwardedRoomKeyEventContent(
-								MEGOLM_V1_RATCHET, room.id, idKeys.curve25519,
-								"", // TODO ed25519 keys of the original sender, not our own
-								session.sessionIdentifier(),
-								session.export(session.firstKnownIndex),
-								chainIndex = session.firstKnownIndex
+								e2e().roomEncryptionAlgorithm, room.id, e2e().identityKey,
+								e2e().fingerprintKey, // TODO fingerprint key of the original sender, not our own
+								session.sessionId, export.export,
+								chainIndex = export.chainIndex
 						)
+						sendEncryptedToDevice(roomKey, FORWARDED_ROOM_KEY, mapOf(sender to listOf(/* TODO */)))
 					}
 				}
 				
@@ -735,20 +705,24 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	
 	
 	
-	/** The key store for e2e. */
-	var keyStore : KeyStore? = null
-		private set
+	/** The [E2E] implementation of this client, or null. */
+	private var e2e : E2E? = null
+	
+	/** Return the [E2E] instance of this client or throw an [E2ENotEnabledException]. */
+	fun e2e() : E2E = e2e ?: throw E2ENotEnabledException()
 	
 	/**
-	 * Enable E2E encryption for this client. If the [keyStore] contains no account, one will be created. Please
-	 * make sure that you call [uploadIdentityKeys] if necessary.
+	 * Enable E2E encryption for this client. Please make sure that you call [uploadIdentityKeys] if necessary.
 	 */
-	fun enableE2E(keyStore : KeyStore)
+	@Throws(MatrixE2EException::class)
+	fun enableE2E(e2e : E2E)
 	{
-		this.keyStore = keyStore
-		if (!keyStore.hasAccount())
-			keyStore.account = OlmAccount()
+		e2e.initialise()
+		this.e2e = e2e
 	}
+	
+	/** True if end-to-end encryption is enabled for this client. See [enableE2E]. */
+	val isE2EEnabled : Boolean get() = e2e != null
 	
 	
 	
@@ -815,19 +789,17 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	 * @param devices A map of user id to a collection of devices of that user id.
 	 *
 	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 * @throws OlmException On errors while encrypting the message.
+	 * @throws MatrixE2EException On errors while encrypting the message.
 	 */
-	@Throws(MatrixAnswerException::class, OlmException::class)
+	@Throws(MatrixAnswerException::class, MatrixE2EException::class)
 	fun sendEncryptedToDevice(ev : MatrixEventContent, evType : String, devices : Map<MatrixId, Collection<String>>)
 	{
-		val account = keyStore?.account ?: throw IllegalStateException("E2E has not been enabled")
-		
 		val plain = JsonObject()
 		plain["type"] = evType
 		plain["content"] = ev.json
 		plain["sender"] = "$id"
 		plain["sender_device"] = deviceId ?: throw NoDeviceIdException()
-		plain["keys"] = account.identityKeys()
+		plain["keys"] = e2e().identityKeys
 		
 		val deviceKeys = queryIdentityKeys(devices).toMap()
 		val oneTimeKeys = claimOneTimeKeys(devices.mapValues { (_, v) -> if (v.isEmpty()) listOf("*") else v }).toMap()
@@ -842,10 +814,10 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 			for (deviceId in userDevices)
 			{
 				val deviceKey = deviceKeys[userId]?.get(deviceId)?.keys
-				val receiverEd25519 = deviceKey?.get("ed25519:$deviceId")
-				val receiverCurve25519 = deviceKey?.get("curve25519:$deviceId")
-				val oneTimeKey = oneTimeKeys[userId]?.get(deviceId)?.key
-				if (receiverEd25519 == null || receiverCurve25519 == null || oneTimeKey == null)
+				val receiverIdentityKey = deviceKey?.get("${e2e().identityKeyName}:$deviceId")
+				val receiverFingerprintKey = deviceKey?.get("${e2e().fingerprintKeyName}:$deviceId")
+				val receiverOneTimeKey = oneTimeKeys[userId]?.get(deviceId)?.key
+				if (receiverIdentityKey == null || receiverFingerprintKey == null || receiverOneTimeKey == null)
 				{
 					logger.warn("Unable to find required keys for $userId/$deviceId to send encrypted to-device message")
 					continue
@@ -853,22 +825,20 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 				
 				plain["recipient"] = "$userId"
 				plain["recipient_keys"] = mapOf(
-						"ed25519" to receiverEd25519,
-						"curve25519" to receiverCurve25519
+						e2e().identityKeyName to receiverIdentityKey,
+						e2e().fingerprintKeyName to receiverFingerprintKey
 				)
 				
-				val session = OlmSession()
-				session.initOutboundSession(account, receiverCurve25519, oneTimeKey)
-				val message = session.encryptMessage(plain.toJsonString())
-				keyStore!!.storeSession(session)
+				val session = e2e().outboundSession(receiverIdentityKey, receiverOneTimeKey)
+				val message = session.encrypt(plain)
 				
 				val encrypted = JsonObject()
-				encrypted["algorithm"] = OLM_V1_RATCHET
-				encrypted["sender_key"] = account.identityKeys().curve25519
+				encrypted["algorithm"] = e2e().encryptionAlgorithm
+				encrypted["sender_key"] = e2e().identityKey
 				val ciphertext = JsonObject()
 				ciphertext["type"] = message.type
-				ciphertext["body"] = message.cipherText
-				encrypted["ciphertext"] = mapOf(receiverCurve25519 to ciphertext)
+				ciphertext["body"] = message.ciphertext
+				encrypted["ciphertext"] = mapOf(receiverIdentityKey to ciphertext)
 				json[deviceId] = encrypted
 			}
 			messages["$userId"] = json
@@ -1007,21 +977,20 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	 * Make sure to call [enableE2E] to populate the key store!
 	 *
 	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 * @throws OlmException On errors while signing the keys.
+	 * @throws MatrixE2EException On errors while signing the keys.
 	 */
-	@Throws(MatrixAnswerException::class, OlmException::class)
+	@Throws(MatrixAnswerException::class, MatrixE2EException::class)
 	fun uploadIdentityKeys()
 	{
 		val json = JsonObject()
 		val deviceKeys = DeviceKeys(id,
 				deviceId ?: throw NoDeviceIdException(),
-				EncryptionAlgorithms.ALGORITHMS,
-				keyStore?.account?.identityKeysJson()
-						?.mapKeys { (k, _) -> "$k:$deviceId" }
-						?.mapValues { (_, v) -> v as String }
-						?: throw IllegalStateException()
+				e2e().supportedAlgorithms,
+				e2e().identityKeys
+						.mapKeys { (k, _) -> "$k:$deviceId" }
+						.mapValues { (_, v) -> v as String }
 		)
-		deviceKeys.sign(keyStore?.account ?: throw IllegalStateException(), id, deviceId ?: throw NoDeviceIdException())
+		deviceKeys.sign(e2e(), id, deviceId ?: throw NoDeviceIdException())
 		json["device_keys"] = deviceKeys.json
 		val res = target.post("_matrix/client/r0/keys/upload", token ?: throw NoTokenException(), id, json)
 		checkForError(res)
@@ -1135,18 +1104,16 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	 * Update the one time keys. The client will try to manage half the maximum amount of supported one-time
 	 * keys by olm.
 	 */
-	@Throws(OlmException::class)
+	@Throws(MatrixE2EException::class)
 	fun updateOneTimeKeys()
 	{
 		val counts = oneTimeKeyCounts()
-		val signedCurve25519 = counts["signed_curve25519"] ?: 0
-		val account = keyStore?.account ?: throw IllegalStateException()
-		val intendedKeys = (account.maxOneTimeKeys() / 2).toInt()
+		val currentKeys = counts[e2e().oneTimeKeyName] ?: 0
+		val intendedKeys = e2e().maxOneTimeKeyCount / 2
 		
-		if (signedCurve25519 < intendedKeys)
+		if (currentKeys < intendedKeys)
 		{
-			account.generateOneTimeKeys(intendedKeys - signedCurve25519)
-			val keys = account.oneTimeKeys()
+			val keys = e2e().generateOneTimeKeys(intendedKeys - currentKeys)
 			
 			val oneTimeKeysJson = JsonObject()
 			for ((algo, obj) in keys.mapValues { (_, it) -> it as JsonObject })
@@ -1155,18 +1122,15 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 				{
 					val json = JsonObject()
 					json["key"] = key
-					val signature = account.signMessage(json.toJsonString(canonical = true))
+					val signature = e2e().sign(json)
 					val signatures = JsonObject()
-					signatures["$id"] = mapOf("ed25519:$deviceId" to signature)
+					signatures["$id"] = mapOf("${e2e().fingerprintKeyName}:$deviceId" to signature)
 					json["signatures"] = signatures
 					oneTimeKeysJson["signed_$algo:$name"] = json
 				}
 			}
 			uploadOneTimeKeys(oneTimeKeysJson)
-			account.markOneTimeKeysAsPublished()
-			
-			// store the account since it has been modified
-			keyStore!!.account = account
+			e2e().markOneTimeKeysAsPublished()
 		}
 	}
 	
@@ -1239,13 +1203,10 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 			return
 		}
 		
-		val account = keyStore!!.account
-		val curve25519 = account.identityKeys().curve25519
-		
 		val request = RoomKeyRequestEventContent(
 				RoomKeyRequestActions.REQUEST, deviceId ?: throw NoDeviceIdException(),
 				"$roomId$sessionId${System.currentTimeMillis()}".toUtf8().md5().toUnpaddedBase64(),
-				roomId, MEGOLM_V1_RATCHET, curve25519, sessionId
+				roomId, e2e().roomEncryptionAlgorithm, e2e().identityKey, sessionId
 		)
 		
 		println("Sending ${request.json.toJsonString(prettyPrint = true)} to $receivers")

@@ -19,7 +19,7 @@
 
 package msrd0.matrix.client
 
-import org.matrix.olm.OlmException
+import msrd0.matrix.client.event.MatrixEventTypes.ROOM_MESSAGE
 
 /**
  * This exception indicates that no token has been specified while the api call requires one.
@@ -42,14 +42,24 @@ open class UnsupportedFlowsException : Exception
 }
 
 /**
+ * This exception indicates that the message type of a [ROOM_MESSAGE] is unknown.
+ */
+open class UnknownMessageTypeException(val msgtype : String) : Exception("Unknown message type $msgtype")
+
+/**
  * This exception indicates that there was an error in the matrix answer. Please use one of the subclasses or create
  * one yourself if no one fits your needs.
  */
-open class MatrixAnswerException : Exception
+abstract class MatrixAnswerException : Exception
 {
 	constructor() : super()
 	constructor(msg : String) : super(msg)
 }
+
+/**
+ * This exception indicates that the matrix answer was illegal.
+ */
+open class MatrixIllegalAnswerException(msg : String) : Exception(msg)
 
 /**
  * This exception indicates that there is an error in the json. Usually, this means that a required value is missing.
@@ -84,10 +94,3 @@ open class MatrixInfoMismatchException(
 		val expected : Any,
 		val actual : Any
 ) : MatrixAnswerException("Mismatch for '$variable': Expected '$expected' but was '$actual'")
-
-/**
- * This exception indicates that the inbound session for the given session id is missing.
- */
-open class NoSuchSessionException(
-		val sessionId : String
-) : OlmException(EXCEPTION_CODE_INBOUND_GROUP_SESSION_IDENTIFIER, "Unknown session for id '$sessionId'")

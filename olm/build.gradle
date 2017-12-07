@@ -1,0 +1,5 @@
+dependencies {
+	compile rootProject
+	
+	compile "msrd0.matrix:matrix-olm-java:2.+"
+}

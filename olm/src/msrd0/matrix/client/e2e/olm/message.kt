@@ -15,22 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
  */
-package msrd0.matrix.client.e2e
+@file:JvmName("OlmMessageExt")
+package msrd0.matrix.client.e2e.olm
 
-import com.beust.klaxon.JsonObject
-import msrd0.matrix.client.util.JsonSerializable
+import msrd0.matrix.client.e2e.E2EMessage
+import org.matrix.olm.OlmMessage
 
-class IdentityKey(
-		val ed25519 : ByteArray,
-		val curve25519 : ByteArray
-)
+val OlmMessage.e2eMessage : E2EMessage
+	get() = E2EMessage(type, cipherText)
 
-class IdentityKeyPair(
-		val pubEd25519 : ByteArray,
-		val privEd25519 : ByteArray,
-		val pubCurve25519 : ByteArray,
-		val privCurve25519 : ByteArray
-)
-{
-	fun toIdentityKey() = IdentityKey(pubEd25519, pubCurve25519)
-}
+val E2EMessage.olmMessage : OlmMessage
+	get() = OlmMessage(ciphertext, type)

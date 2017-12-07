@@ -4,6 +4,7 @@ run.standardInput = System.in
 
 dependencies {
 	compile rootProject
+	compile project(':matrix-client-olm')
 	
 	// guava
 	compile "com.google.guava:guava:$guavaVersion"
