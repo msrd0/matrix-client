@@ -148,7 +148,7 @@ interface E2E
 	 * Return an inbound session for the [message].
 	 */
 	@Throws(MatrixE2EException::class)
-	fun inboundSession(message : E2EMessage) : E2ESession
+	fun inboundSession(message : E2EMessage, senderIdentityKey : String) : E2ESession
 	
 	// room keys
 	

@@ -136,12 +136,14 @@ open class OlmE2E(val keyStore : KeyStore) : E2E
 	}
 	
 	@Throws(MatrixOlmException::class)
-	override fun inboundSession(message : E2EMessage) : E2ESession
+	override fun inboundSession(message : E2EMessage, senderIdentityKey : String) : E2ESession
 	{
 		val olmSession : OlmSession = wrapOlmEx olmSession@ {
 			val session = OlmSession()
-			session.initInboundSession(account, message.ciphertext)
+			session.initInboundSessionFrom(account, senderIdentityKey, message.ciphertext)
 			keyStore.storeSession(session)
+			account.removeOneTimeKeys(session)
+			keyStore.account = account
 			return@olmSession session
 		}
 		return OlmSessionWrapper(olmSession)
@@ -199,7 +201,7 @@ open class OlmE2E(val keyStore : KeyStore) : E2E
 	override fun findOutboundGroupSession(roomId : RoomId) : E2EOutboundGroupSession?
 	{
 		val (olmSession, timestamp) = wrapOlmEx { keyStore.findOutboundSession(roomId) } ?: return null
-		return OlmOutboundGroupSessionWrapper(olmSession, timestamp)
+		return OlmOutboundGroupSessionWrapper(this, roomId, olmSession, timestamp)
 	}
 	
 	@Throws(MatrixOlmException::class)
@@ -211,13 +213,13 @@ open class OlmE2E(val keyStore : KeyStore) : E2E
 		val inboundSession = OlmInboundGroupSession(olmSession.sessionKey())
 		keyStore.storeInboundSession(inboundSession)
 		
-		return OlmOutboundGroupSessionWrapper(olmSession, timestamp)
+		return OlmOutboundGroupSessionWrapper(this, roomId, olmSession, timestamp)
 	}
 	
 	@Throws(MatrixOlmException::class)
 	override fun findInboundGroupSession(roomId : RoomId, sessionId : String) : E2EInboundGroupSession?
 	{
 		val olmSession = wrapOlmEx { keyStore.findInboundSession(sessionId) } ?: return null
-		return OlmInboundGroupSessionWrapper(olmSession)
+		return OlmInboundGroupSessionWrapper(this, olmSession)
 	}
 }

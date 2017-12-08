@@ -561,7 +561,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 				)
 				
 				// attempt to decrypt
-				val session = e2e().inboundSession(message)
+				val session = e2e().inboundSession(message, senderKey)
 				val decrypted = session.decrypt(message)
 				plain = Parser().parse(StringBuilder(decrypted)) as JsonObject
 			}
