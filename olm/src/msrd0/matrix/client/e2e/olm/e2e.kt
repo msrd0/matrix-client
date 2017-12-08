@@ -151,7 +151,16 @@ open class OlmE2E(val keyStore : KeyStore) : E2E
 	@Throws(OlmException::class, RoomKeyMismatchException::class)
 	protected open fun storeInboundSessionForRoomKey(roomId : RoomId, roomKey : String, sessionId : String? = null)
 	{
-		val inboundSession = OlmInboundGroupSession.importSession(roomKey)
+		val inboundSession = OlmInboundGroupSession(roomKey)
+		if (sessionId != null && inboundSession.sessionIdentifier() != sessionId)
+			throw RoomKeyMismatchException("Received key session ${inboundSession.sessionIdentifier()} does not match received session $sessionId")
+		keyStore.storeInboundSession(inboundSession)
+	}
+	
+	@Throws(OlmException::class, RoomKeyMismatchException::class)
+	protected open fun storeInboundSessionForSessionKey(roomId : RoomId, sessionKey : String, sessionId : String? = null)
+	{
+		val inboundSession = OlmInboundGroupSession.importSession(sessionKey)
 		if (sessionId != null && inboundSession.sessionIdentifier() != sessionId)
 			throw RoomKeyMismatchException("Received key session ${inboundSession.sessionIdentifier()} does not match received session $sessionId")
 		keyStore.storeInboundSession(inboundSession)
@@ -177,7 +186,7 @@ open class OlmE2E(val keyStore : KeyStore) : E2E
 		{
 			if (roomKey.algorithm != MEGOLM_V1_RATCHET)
 				throw RoomKeyMismatchException("Received key algorithm is not $MEGOLM_V1_RATCHET")
-			storeInboundSessionForRoomKey(roomKey.roomId, roomKey.sessionKey, roomKey.sessionId)
+			storeInboundSessionForSessionKey(roomKey.roomId, roomKey.sessionKey, roomKey.sessionId)
 		}
 		catch (ex : Exception) // TODO once kotlin supports multicatch, make this `OlmException | RoomKeyMismatchException`
 		{
