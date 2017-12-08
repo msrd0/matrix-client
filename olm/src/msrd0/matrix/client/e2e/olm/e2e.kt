@@ -86,12 +86,10 @@ open class OlmE2E(val keyStore : KeyStore) : E2E
 		get() = account.maxOneTimeKeys().toInt()
 	
 	@Throws(MatrixOlmException::class)
-	override fun generateOneTimeKeys(number : Int) : JsonObject
-	{
-		return wrapOlmEx {
-			account.generateOneTimeKeys(number)
-			account.oneTimeKeys()
-		}
+	override fun generateOneTimeKeys(number : Int) : JsonObject = wrapOlmEx {
+		account.generateOneTimeKeys(number)
+		keyStore.account = account
+		account.oneTimeKeys()
 	}
 	
 	override fun markOneTimeKeysAsPublished()
@@ -99,6 +97,7 @@ open class OlmE2E(val keyStore : KeyStore) : E2E
 		try
 		{
 			account.markOneTimeKeysAsPublished()
+			keyStore.account = account
 		}
 		catch (ex : OlmException)
 		{
@@ -150,10 +149,10 @@ open class OlmE2E(val keyStore : KeyStore) : E2E
 	
 	
 	@Throws(OlmException::class, RoomKeyMismatchException::class)
-	protected open fun storeInboundSessionForRoomKey(roomId : RoomId, roomKey : String, sessionId : String)
+	protected open fun storeInboundSessionForRoomKey(roomId : RoomId, roomKey : String, sessionId : String? = null)
 	{
 		val inboundSession = OlmInboundGroupSession.importSession(roomKey)
-		if (inboundSession.sessionIdentifier() != sessionId)
+		if (sessionId != null && inboundSession.sessionIdentifier() != sessionId)
 			throw RoomKeyMismatchException("Received key session ${inboundSession.sessionIdentifier()} does not match received session $sessionId")
 		keyStore.storeInboundSession(inboundSession)
 	}
@@ -199,6 +198,10 @@ open class OlmE2E(val keyStore : KeyStore) : E2E
 		val olmSession = OlmOutboundGroupSession()
 		val timestamp = LocalDateTime.now()
 		keyStore.storeOutboundSession(roomId, olmSession, timestamp)
+		
+		val inboundSession = OlmInboundGroupSession(olmSession.sessionKey())
+		keyStore.storeInboundSession(inboundSession)
+		
 		return OlmOutboundGroupSessionWrapper(olmSession, timestamp)
 	}
 	
