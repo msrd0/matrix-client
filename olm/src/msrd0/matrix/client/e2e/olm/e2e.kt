@@ -88,8 +88,9 @@ open class OlmE2E(val keyStore : KeyStore) : E2E
 	@Throws(MatrixOlmException::class)
 	override fun generateOneTimeKeys(number : Int) : JsonObject = wrapOlmEx {
 		account.generateOneTimeKeys(number)
+		val keys = account.oneTimeKeys()
 		keyStore.account = account
-		account.oneTimeKeys()
+		return keys
 	}
 	
 	override fun markOneTimeKeysAsPublished()
