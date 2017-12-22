@@ -133,13 +133,21 @@ open class OlmE2E(val keyStore : KeyStore) : E2E
 			session.initOutboundSession(account, receiverIdentityKey, receiverOneTimeKey)
 			return@olmSession session
 		}
-		return OlmSessionWrapper(olmSession)
+		return OlmSessionWrapper(this, olmSession)
 	}
 	
 	@Throws(MatrixOlmException::class)
 	override fun inboundSession(message : E2EMessage, senderIdentityKey : String) : E2ESession
 	{
 		val olmSession : OlmSession = wrapOlmEx olmSession@ {
+			// try to find an existing session
+			keyStore.allSessions().find {
+				it.matchesInboundSession(message.ciphertext)
+			}?.let {
+				return@olmSession it
+			}
+			
+			// create a new one
 			val session = OlmSession()
 			session.initInboundSessionFrom(account, senderIdentityKey, message.ciphertext)
 			keyStore.storeSession(session)
@@ -147,7 +155,7 @@ open class OlmE2E(val keyStore : KeyStore) : E2E
 			keyStore.account = account
 			return@olmSession session
 		}
-		return OlmSessionWrapper(olmSession)
+		return OlmSessionWrapper(this, olmSession)
 	}
 	
 	

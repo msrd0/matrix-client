@@ -24,18 +24,27 @@ import org.matrix.olm.*
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit.MILLIS
 
-open class OlmSessionWrapper(val olmSession : OlmSession) : E2ESession
+open class OlmSessionWrapper(
+		val e2e : OlmE2E,
+		val olmSession : OlmSession
+) : E2ESession
 {
 	override val sessionId : String
 		get() = olmSession.sessionIdentifier()
 	
 	@Throws(MatrixOlmException::class)
-	override fun encrypt(message : String) : E2EMessage
-			= wrapOlmEx { olmSession.encryptMessage(message) }.e2eMessage
+	override fun encrypt(message : String) : E2EMessage = wrapOlmEx encrypted@ {
+		val encrypted = olmSession.encryptMessage(message)
+		e2e.keyStore.storeSession(olmSession)
+		return@encrypted encrypted
+	}.e2eMessage
 	
 	@Throws(MatrixOlmException::class)
-	override fun decrypt(message : E2EMessage) : String
-			= wrapOlmEx { olmSession.decryptMessage(message.olmMessage) }
+	override fun decrypt(message : E2EMessage) : String = wrapOlmEx decrypted@ {
+		val decrypted = olmSession.decryptMessage(message.olmMessage)
+		e2e.keyStore.storeSession(olmSession)
+		return@decrypted decrypted
+	}
 }
 
 
@@ -57,12 +66,11 @@ open class OlmOutboundGroupSessionWrapper(
 					|| olmSessionTimestamp.until(LocalDateTime.now(), MILLIS) >= lifetime)
 	
 	@Throws(MatrixE2EException::class)
-	override fun encrypt(message : String) : String
-	{
-		val encrypted = wrapOlmEx { olmSession.encryptMessage(message) } ?: throw OlmEncryptionException()
+	override fun encrypt(message : String) : String = wrapOlmEx encrypted@ {
+		val encrypted = olmSession.encryptMessage(message)
 		e2e.keyStore.storeOutboundSession(roomId, olmSession, olmSessionTimestamp)
-		return encrypted
-	}
+		return@encrypted encrypted
+	} ?: throw OlmEncryptionException()
 }
 
 
@@ -75,12 +83,11 @@ open class OlmInboundGroupSessionWrapper(
 		get() = olmSession.sessionIdentifier()
 	
 	@Throws(MatrixE2EException::class)
-	override fun decrypt(message : String) : String
-	{
-		val decrypted = wrapOlmEx { olmSession.decryptMessage(message)?.decryptedMessage } ?: throw OlmDecryptionException()
+	override fun decrypt(message : String) : String = wrapOlmEx decrypted@ {
+		val decrypted = olmSession.decryptMessage(message)
 		e2e.keyStore.storeInboundSession(olmSession)
-		return decrypted
-	}
+		return@decrypted decrypted
+	}?.decryptedMessage ?: throw OlmDecryptionException()
 	
 	@Throws(MatrixOlmException::class)
 	override fun export() : E2EInboundGroupSessionExport = wrapOlmEx {
