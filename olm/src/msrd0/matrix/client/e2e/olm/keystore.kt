@@ -31,17 +31,13 @@ interface KeyStore
 	/** Return true if this key store stores an [OlmAccount]. */
 	fun hasAccount() : Boolean
 	
-	/** Store the OLM session. */
+	/** Store the OLM session associated with the identity key. */
 	@Throws(OlmException::class)
-	fun storeSession(session : OlmSession)
+	fun storeSession(idKey : String, session : OlmSession)
 	
-	/** Find the stored session uniquely identified by the [sessionId] or return null. */
+	/** Return all stored OLM sessions for the given identity key. */
 	@Throws(OlmException::class)
-	fun findSession(sessionId : String) : OlmSession?
-	
-	/** Return all stored OLM sessions. */
-	@Throws(OlmException::class)
-	fun allSessions() : Collection<OlmSession>
+	fun allSessions(idKey : String) : Collection<OlmSession>
 	
 	/** Store the outbound [session] with its [timestamp] for the [room]. */
 	@Throws(OlmException::class)
@@ -72,18 +68,15 @@ open class InMemoryKeyStore : KeyStore
 	override fun hasAccount() = _account != null
 	
 	
-	protected var _sessions = HashMap<String, OlmSession>()
+	protected var _sessions = HashMap<String, MutableSet<OlmSession>>()
 	
-	override fun storeSession(session : OlmSession)
+	override fun storeSession(idKey : String, session : OlmSession)
 	{
-		_sessions[session.sessionIdentifier()] = session
+		_sessions[idKey] = (_sessions[idKey] ?: HashSet()).apply { add(session) }
 	}
 	
-	override fun findSession(sessionId : String) : OlmSession?
-			= _sessions[sessionId]
-	
-	override fun allSessions() : Collection<OlmSession>
-			= _sessions.values
+	override fun allSessions(idKey : String) : Collection<OlmSession>
+			= _sessions[idKey] ?: emptyList()
 	
 	
 	protected var _outboundSessions = HashMap<RoomId, Pair<OlmOutboundGroupSession, LocalDateTime>>()

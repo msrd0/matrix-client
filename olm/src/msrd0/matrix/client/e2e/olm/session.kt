@@ -26,7 +26,8 @@ import java.time.temporal.ChronoUnit.MILLIS
 
 open class OlmSessionWrapper(
 		val e2e : OlmE2E,
-		val olmSession : OlmSession
+		val olmSession : OlmSession,
+		val otherIdentityKey : String
 ) : E2ESession
 {
 	override val sessionId : String
@@ -35,14 +36,14 @@ open class OlmSessionWrapper(
 	@Throws(MatrixOlmException::class)
 	override fun encrypt(message : String) : E2EMessage = wrapOlmEx encrypted@ {
 		val encrypted = olmSession.encryptMessage(message)
-		e2e.keyStore.storeSession(olmSession)
+		e2e.keyStore.storeSession(otherIdentityKey, olmSession)
 		return@encrypted encrypted
 	}.e2eMessage
 	
 	@Throws(MatrixOlmException::class)
 	override fun decrypt(message : E2EMessage) : String = wrapOlmEx decrypted@ {
 		val decrypted = olmSession.decryptMessage(message.olmMessage)
-		e2e.keyStore.storeSession(olmSession)
+		e2e.keyStore.storeSession(otherIdentityKey, olmSession)
 		return@decrypted decrypted
 	}
 }

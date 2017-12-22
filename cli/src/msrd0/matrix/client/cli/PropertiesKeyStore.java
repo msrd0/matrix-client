@@ -108,7 +108,7 @@ public class PropertiesKeyStore implements KeyStore
 	
 	
 	@Override
-	public void storeSession(@Nonnull OlmSession session)
+	public void storeSession(@Nonnull String idKey, @Nonnull OlmSession session)
 			throws OlmException
 	{
 		String str;
@@ -120,15 +120,14 @@ public class PropertiesKeyStore implements KeyStore
 		{
 			throw new OlmException(EXCEPTION_CODE_ACCOUNT_SERIALIZATION, ex.getMessage());
 		}
-		properties.setProperty("olm.session." + session.sessionIdentifier(), str);
+		properties.setProperty("olm.session." + idKey + "." + session.sessionIdentifier(), str);
 	}
 	
 	@Nullable
-	@Override
-	public OlmSession findSession(@Nonnull String sessionId)
+	public OlmSession findSession(@Nonnull String idKey, @Nonnull String sessionId)
 			throws OlmException
 	{
-		final String str = properties.getProperty("olm.session." + sessionId);
+		final String str = properties.getProperty("olm.session." + idKey + "." + sessionId);
 		if (str.isEmpty())
 			return null;
 		OlmSession session;
@@ -145,17 +144,17 @@ public class PropertiesKeyStore implements KeyStore
 	
 	@Nonnull
 	@Override
-	public Collection<OlmSession> allSessions()
+	public Collection<OlmSession> allSessions(@Nonnull String idKey)
 			throws OlmException
 	{
 		final List<String> keys = properties.keySet().stream()
 				.map((key) -> (String)key)
-				.filter((key) -> key.startsWith("olm.session."))
+				.filter((key) -> key.startsWith("olm.session." + idKey + "."))
 				.map((key) -> key.substring(12))
 				.collect(Collectors.toList());
 		final List<OlmSession> sessions = new ArrayList<>(keys.size());
 		for (String key : keys)
-			sessions.add(findSession(key));
+			sessions.add(findSession(idKey, key));
 		return sessions;
 	}
 	
