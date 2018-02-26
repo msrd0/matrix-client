@@ -1,6 +1,6 @@
 /*
  * matrix-client
- * Copyright (C) 2017 Dominic Meiser
+ * Copyright (C) 2017-2018 Dominic Meiser
  * Copyright (C) 2017 Julius Lehmann
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,6 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
  */
+
 @file:JvmName("HttpUtil")
 package msrd0.matrix.client.util
 
