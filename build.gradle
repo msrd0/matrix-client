@@ -182,7 +182,7 @@ configure(allprojects - project('matrix-client-cli')) {
 				maven = true
 			}
 			defaults {
-				 publications('mavenJava')
+				 publications('mavenKotlin')
 			}
 		}
 	}
