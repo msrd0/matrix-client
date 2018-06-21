@@ -30,6 +30,10 @@ buildscript {
 		
 		// version check
 		classpath "com.github.ben-manes:gradle-versions-plugin:0.17.0"
+
+		// artifactory
+		classpath "org.jfrog.buildinfo:build-info-extractor-gradle:+"
+
 	}
 }
 
@@ -50,7 +54,7 @@ allprojects {
 	repositories {
 		mavenLocal()
 		jcenter()
-		maven { url "https://maven.devpi.de/repository/default/" }
+		maven { url "https://maven.nextgenenergy.co.nz/artifactory/maven/" }
 	}
 	
 	dependencies {
@@ -134,7 +138,8 @@ configure(allprojects - project('matrix-client-cli')) {
 	build {
 		dependsOn "dokka"
 	}
-	
+
+	apply plugin: 'com.jfrog.artifactory'
 	apply plugin: 'maven-publish'
 	
 	publishing {
@@ -160,17 +165,28 @@ configure(allprojects - project('matrix-client-cli')) {
 				}
 			}
 		}
-		
-		repositories {
-			maven {
-				url "https://maven.devpi.de/repository/default/"
-				credentials(PasswordCredentials) {
-					username "gitlab-ci"
-					password System.getenv("ARTIFACTORY_PASSWORD")
-				}
+	}
+
+	artifactory {
+		contextUrl = 'https://maven.nextgenenergy.co.nz/artifactory'
+		resolve {
+			repository {
+				repoKey = 'maven'
+			}
+		}
+		publish {
+				repository {
+				repoKey = 'maven-local'
+				username = 'gitlab-ci'
+				password = System.getenv("ARTIFACTORY_PASSWORD")
+				maven = true
+			}
+			defaults {
+				 publications('mavenJava')
 			}
 		}
 	}
+
 	
 }
 

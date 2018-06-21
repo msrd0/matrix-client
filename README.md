@@ -28,7 +28,7 @@ There is also a cli interface written in Java in the `cli` folder.
 
 ```gradle
 repositories {
-	maven { url "https://maven.devpi.de/repository/default/" }
+	maven { url "https://maven.nextgenenergy.co.nz/artifactory/maven/" }
 }
 
 dependencies {
