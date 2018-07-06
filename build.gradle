@@ -44,7 +44,7 @@ buildscript {
 }
 
 allprojects {
-	group 'msrd0.matrix'
+	group 'de.msrd0.matrix'
 	version "$matrix_client_version"
 	
 	apply plugin: 'java'

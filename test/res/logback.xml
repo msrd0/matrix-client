@@ -6,7 +6,7 @@
         </encoder>
     </appender>
 
-    <logger name="msrd0.matrix.client" level="DEBUG" />
+    <logger name="de.msrd0.matrix.client" level="DEBUG" />
 
     <root level="INFO">
         <appender-ref ref="STDOUT" />
