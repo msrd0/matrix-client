@@ -17,9 +17,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
  */
 
-package de.msrd0.matrix.client
+package de.msrd0.matrix.client.modules.devicemanagement
 
 import com.beust.klaxon.*
+import de.msrd0.matrix.client.*
 import java.time.*
 
 /**

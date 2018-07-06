@@ -23,6 +23,7 @@ import com.beust.klaxon.*
 import de.msrd0.matrix.client.event.*
 import de.msrd0.matrix.client.filter.*
 import de.msrd0.matrix.client.listener.*
+import de.msrd0.matrix.client.modules.devicemanagement.Device
 import de.msrd0.matrix.client.util.*
 import kotlinx.coroutines.experimental.launch
 import kotlinx.coroutines.experimental.sync.*
@@ -642,74 +643,6 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 		for (user in users)
 			devices[user] = listOf("*")
 		sendToDevice(ev, evType, devices)
-	}
-	
-	
-	/**
-	 * Return all devices from the current user.
-	 *
-	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 */
-	@Throws(MatrixAnswerException::class)
-	fun devices() : List<Device>
-	{
-		val res = target.get("_matrix/client/r0/devices", token ?: throw NoTokenException(), id)
-		checkForError(res)
-		return res.json.array<JsonObject>("devices")
-				?.map { Device(it) }
-				?: missing("devices")
-	}
-	
-	/**
-	 * Return a particular device from the current user.
-	 *
-	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 */
-	@Throws(MatrixAnswerException::class)
-	fun device(deviceId : String) : Device?
-	{
-		val res = target.get("_matrix/client/r0/devices/$deviceId", token ?: throw NoTokenException(), id)
-		if (res.status.status == 404)
-			return null
-		checkForError(res)
-		return Device(res.json)
-	}
-	
-	/**
-	 * Update the display name of a certain device of the current user.
-	 *
-	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 */
-	@Throws(MatrixAnswerException::class)
-	fun updateDeviceDisplayName(deviceId : String, displayName : String)
-	{
-		val res = target.put("_matrix/client/r0/devices/$deviceId", token ?: throw NoTokenException(), id,
-				JsonObject(mapOf("display_name" to displayName)))
-		checkForError(res)
-	}
-	
-	/**
-	 * Delete a certain device of the current user. Note that this might require authentication with the
-	 * matrix server, although a valid access token is present. It is recommended to use at least the
-	 * `DefaultFlowHelper` with the password of the user.
-	 *
-	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 * @throws UnsupportedFlowsException If the flow helper can't authenticate.
-	 */
-	@Throws(MatrixAnswerException::class, UnsupportedFlowsException::class)
-	fun deleteDevice(deviceId : String, helper : FlowHelper = DefaultFlowHelper())
-	{
-		val json = JsonObject()
-		var res = target.delete("_matrix/client/r0/devices/$deviceId", json)
-		
-		while (res.status.status == 401 && res.json.containsKey("flows"))
-		{
-			val flowResponse = helper.answer(FlowRequest.fromJson(res.json))
-			json["auth"] = flowResponse.json
-			res = target.delete("_matrix/client/r0/devices/$deviceId", json)
-		}
-		
-		checkForError(res)
 	}
 	
 	
