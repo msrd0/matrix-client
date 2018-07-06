@@ -22,6 +22,7 @@ package de.msrd0.matrix.client.test
 import de.msrd0.matrix.client.*
 import de.msrd0.matrix.client.event.*
 import de.msrd0.matrix.client.event.state.*
+import de.msrd0.matrix.client.modules.contentrepo.downloadBytes
 import de.msrd0.matrix.client.modules.devicemanagement.*
 import org.apache.commons.io.IOUtils
 import org.hamcrest.MatcherAssert.*

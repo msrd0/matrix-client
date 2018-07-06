@@ -23,6 +23,7 @@ import com.beust.klaxon.*
 import de.msrd0.matrix.client.*
 import de.msrd0.matrix.client.event.MatrixEventTypes.*
 import de.msrd0.matrix.client.event.MessageTypes.*
+import de.msrd0.matrix.client.modules.contentrepo.*
 import org.slf4j.*
 import java.awt.image.RenderedImage
 import java.io.*

@@ -17,53 +17,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
  */
 
-package de.msrd0.matrix.client
+package de.msrd0.matrix.client.modules.contentrepo
 
+import de.msrd0.matrix.client.*
 import de.msrd0.matrix.client.MatrixClient.Companion.checkForError
 import de.msrd0.matrix.client.util.toImage
 import java.awt.image.*
 import java.io.*
-import java.util.regex.Pattern
 import javax.imageio.ImageIO
 
-/**
- * This class represents a matrix content url of format `mxc://example.tld/FHyPlCeYUSFFxlgbQYZmoEoe`.
- */
-data class MatrixContentUrl(
-		val domain : String,
-		val mediaId : String
-)
-{
-	companion object
-	{
-		private val pattern : Pattern = Pattern.compile("mxc://(?<domain>[^/]+)/(?<mediaId>[^/]+)")
-		
-		@JvmStatic
-		fun fromString(str : String) : MatrixContentUrl
-		{
-			val matcher = pattern.matcher(str)
-			if (!matcher.matches())
-				throw IllegalArgumentException("The supplied url doesn't match the required pattern")
-			return MatrixContentUrl(
-					matcher.group("domain"),
-					matcher.group("mediaId")
-			)
-		}
-	}
-	
-	override fun toString() = "mxc://$domain/$mediaId"
-}
-
-data class ImageInfo(
-		val width : Int,
-		val height : Int,
-		val mimetype : String,
-		val size : Int
-)
-{
-	constructor(image : RenderedImage, mimetype : String, size : Int)
-			: this(image.width, image.height, mimetype, size)
-}
 
 /**
  * This object helps accessing the matrix content repository.
@@ -82,7 +44,8 @@ object ContentRepo
 		val res = client.target.post("_matrix/media/r0/upload", client.token ?: throw NoTokenException(), client.id,
 				bytes, mimetype)
 		checkForError(res)
-		return MatrixContentUrl.fromString(res.json.string("content_uri") ?: missing("content_uri"))
+		return MatrixContentUrl(res.json.string("content_uri")
+				?: missing("content_uri"))
 	}
 	
 	/**
@@ -150,7 +113,7 @@ object ContentRepo
 	@JvmStatic
 	@Throws(MatrixAnswerException::class)
 	fun downloadBytes(url : String, client : MatrixClient)
-			= downloadBytes(MatrixContentUrl.fromString(url), client)
+			= downloadBytes(MatrixContentUrl(url), client)
 	
 	
 	/**
@@ -177,7 +140,7 @@ object ContentRepo
 	@JvmStatic
 	@Throws(MatrixAnswerException::class)
 	fun downloadStream(url : String, client : MatrixClient)
-			= downloadStream(MatrixContentUrl.fromString(url), client)
+			= downloadStream(MatrixContentUrl(url), client)
 	
 	
 	@JvmStatic
@@ -204,12 +167,12 @@ fun MatrixClient.uploadImage(image : RenderedImage, imageType : String = "PNG")
 @Throws(MatrixAnswerException::class)
 @Deprecated("Deprecated API call", replaceWith = ReplaceWith("downloadBytes(url)"))
 fun MatrixClient.download(url : MatrixContentUrl)
-		= @Suppress("DEPRECATION") ContentRepo.download(url, this)
+		= @Suppress("DEPRECATION") (ContentRepo.download(url, this))
 
 @Throws(MatrixAnswerException::class)
 @Deprecated("Deprecated API call", replaceWith = ReplaceWith("downloadBytes(url)"))
 fun MatrixClient.download(url : String)
-		= @Suppress("DEPRECATION") ContentRepo.download(url, this)
+		= @Suppress("DEPRECATION") (ContentRepo.download(url, this))
 
 @Throws(MatrixAnswerException::class)
 fun MatrixClient.downloadBytes(url : MatrixContentUrl)

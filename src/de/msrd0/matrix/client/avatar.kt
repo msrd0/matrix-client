@@ -21,6 +21,7 @@ package de.msrd0.matrix.client
 
 import com.beust.klaxon.JsonObject
 import de.msrd0.matrix.client.event.MatrixEventContent
+import de.msrd0.matrix.client.modules.contentrepo.*
 import de.msrd0.matrix.client.util.JsonSerializable
 import java.awt.image.*
 import java.io.ByteArrayInputStream
