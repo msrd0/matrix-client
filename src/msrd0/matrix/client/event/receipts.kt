@@ -33,13 +33,13 @@ class ReceiptContent(val content : Map<String, Map<String, Map<MatrixId, Long>>>
 		@Throws(IllegalJsonException::class)
 		fun fromJson(json : JsonObject)
 				= ReceiptContent(json
-						.mapKeys { it.key as String }
+						.mapKeys { it.key }
 						.mapValues { (it.value as JsonObject)
-								.mapKeys { it.key as String }
+								.mapKeys { it.key }
 								.mapValues { (it.value as JsonObject)
-										.mapKeys { MatrixId.fromString(it.key as String) }
+										.mapKeys { MatrixId.fromString(it.key) }
 										.mapValues {
-											val value = it.value;
+											val value = it.value
 											when (value) {
 												is Int -> value.toLong()
 												is Long -> value

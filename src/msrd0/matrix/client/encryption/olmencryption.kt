@@ -19,7 +19,6 @@
 
 package msrd0.matrix.client.encryption
 
-import com.beust.klaxon.string
 import org.matrix.olm.OlmAccount
 
 abstract class OlmEncryption(val deviceId : String)

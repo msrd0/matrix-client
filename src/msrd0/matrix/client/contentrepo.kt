@@ -19,7 +19,6 @@
 
 package msrd0.matrix.client
 
-import com.beust.klaxon.string
 import msrd0.matrix.client.MatrixClient.Companion.checkForError
 import msrd0.matrix.client.util.toImage
 import java.awt.image.*
