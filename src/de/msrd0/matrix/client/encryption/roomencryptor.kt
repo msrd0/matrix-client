@@ -21,6 +21,10 @@ package de.msrd0.matrix.client.encryption
 
 import com.beust.klaxon.JsonObject
 
+/**
+ * **DEPRECATED**. Don't use. This will be replaced with the new e2e api very soon.
+ */
+@Deprecated("Will be replaced with e2e api")
 interface RoomEncryptor
 {
 	/**

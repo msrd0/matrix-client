@@ -207,6 +207,4 @@ dependencies {
 	// json lib
 	compile "com.beust:klaxon:$klaxonVersion"
 	
-	// olm java
-	compile "msrd0.matrix:matrix-olm-java:2.+"
 }
