@@ -22,6 +22,7 @@ package de.msrd0.matrix.client.event.state
 import com.beust.klaxon.JsonObject
 import de.msrd0.matrix.client.*
 import de.msrd0.matrix.client.event.*
+import de.msrd0.matrix.client.room.MatrixRoom
 
 /**
  * The content of a room history visibility event.
@@ -50,6 +51,6 @@ class RoomHistoryVisibilityEventContent(val historyVisibility : String) : Matrix
  */
 class RoomHistoryVisibilityEvent
 @Throws(IllegalJsonException::class)
-constructor(room : Room, json : JsonObject)
+constructor(room : MatrixRoom, json : JsonObject)
 	: MatrixRoomEvent<RoomHistoryVisibilityEventContent>(room, json,
 		RoomHistoryVisibilityEventContent.fromJson(json.obj("content") ?: missing("content")))

@@ -20,8 +20,9 @@
 package de.msrd0.matrix.client
 
 import de.msrd0.matrix.client.MatrixClient.Companion.checkForError
+import de.msrd0.matrix.client.room.MatrixRoomId
 
-class RoomInvitation(val client : MatrixClient, val room : RoomId)
+class RoomInvitation(val client : MatrixClient, val room : MatrixRoomId)
 {
 	@Throws(MatrixAnswerException::class)
 	fun accept()

@@ -23,6 +23,7 @@ import com.beust.klaxon.JsonObject
 import de.msrd0.matrix.client.*
 import de.msrd0.matrix.client.event.*
 import de.msrd0.matrix.client.event.MatrixEventTypes.*
+import de.msrd0.matrix.client.room.MatrixRoom
 import de.msrd0.matrix.client.util.emptyMutableMap
 
 /**
@@ -126,6 +127,6 @@ data class RoomPowerLevels(
  */
 class RoomPowerLevelsEvent
 @Throws(IllegalJsonException::class)
-constructor(room : Room, json : JsonObject)
+constructor(room : MatrixRoom, json : JsonObject)
 	: MatrixRoomEvent<RoomPowerLevels>(room, json,
 		RoomPowerLevels.fromJson(json.obj("content") ?: missing("content")))

@@ -22,11 +22,12 @@ package de.msrd0.matrix.client.event.state
 import com.beust.klaxon.JsonObject
 import de.msrd0.matrix.client.*
 import de.msrd0.matrix.client.event.*
+import de.msrd0.matrix.client.room.*
 
 /**
  * The content of a room canonical alias event.
  */
-class RoomCanonicalAliasEventContent(val alias : RoomAlias) : MatrixEventContent()
+class RoomCanonicalAliasEventContent(val alias : MatrixRoomAlias) : MatrixEventContent()
 {
 	companion object
 	{
@@ -38,8 +39,7 @@ class RoomCanonicalAliasEventContent(val alias : RoomAlias) : MatrixEventContent
 		@JvmStatic
 		@Throws(IllegalJsonException::class)
 		fun fromJson(json : JsonObject) : RoomCanonicalAliasEventContent
-				= RoomCanonicalAliasEventContent(RoomAlias.fromString(
-					json.string("alias") ?: missing("alias")))
+				= RoomCanonicalAliasEventContent(MatrixRoomAlias(json.string("alias") ?: missing("alias")))
 	}
 	
 	override val json : JsonObject get()
@@ -51,6 +51,6 @@ class RoomCanonicalAliasEventContent(val alias : RoomAlias) : MatrixEventContent
  */
 class RoomCanonicalAliasEvent
 @Throws(IllegalJsonException::class)
-constructor(room : Room, json : JsonObject)
+constructor(room : MatrixRoom, json : JsonObject)
 	: MatrixRoomEvent<RoomCanonicalAliasEventContent>(room, json,
 		RoomCanonicalAliasEventContent.fromJson(json.obj("content") ?: missing("content")))

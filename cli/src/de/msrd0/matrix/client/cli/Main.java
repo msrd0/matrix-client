@@ -32,6 +32,7 @@ import com.google.common.base.Stopwatch;
 import de.msrd0.matrix.client.*;
 import de.msrd0.matrix.client.event.*;
 import de.msrd0.matrix.client.listener.*;
+import de.msrd0.matrix.client.room.MatrixRoom;
 import org.slf4j.*;
 
 public class Main
@@ -156,7 +157,7 @@ public class Main
 		// run blocking synchronization in a coroutine
 		client.startSyncBlocking();
 		
-		Room curr = null;
+		MatrixRoom curr = null;
 		while (true)
 		{
 			System.out.print("> ");
@@ -172,8 +173,8 @@ public class Main
 			
 			else if (line.equals("rooms"))
 			{
-				Collection<Room> rooms = client.getRooms();
-				for (Room room : rooms)
+				Collection<MatrixRoom> rooms = client.getRooms();
+				for (MatrixRoom room : rooms)
 					System.out.println("  -> " + room.getName() + " @ " + room.getId().getDomain());
 			}
 			
@@ -275,7 +276,7 @@ public class Main
 				" [" + msg.getSender() + "] " + body);
 	}
 	
-	private static void printMessages(Room room) throws MatrixAnswerException, IOException
+	private static void printMessages(MatrixRoom room) throws MatrixAnswerException, IOException
 	{
 		Messages msgs = room.retrieveMessages();
 		for (Message msg : msgs)

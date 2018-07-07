@@ -23,7 +23,7 @@ import com.beust.klaxon.*
 import de.msrd0.matrix.client.event.*
 import de.msrd0.matrix.client.filter.*
 import de.msrd0.matrix.client.listener.*
-import de.msrd0.matrix.client.modules.devicemanagement.Device
+import de.msrd0.matrix.client.room.*
 import de.msrd0.matrix.client.util.*
 import kotlinx.coroutines.experimental.launch
 import kotlinx.coroutines.experimental.sync.*
@@ -229,7 +229,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 		protected set
 	
 	/** The rooms that this user has joined. */
-	private val roomsJoined = HashMap<RoomId, Room>()
+	private val roomsJoined = HashMap<MatrixRoomId, MatrixRoom>()
 	/** The rooms that this user has joined. */
 	val rooms get() = roomsJoined.values
 	/** The rooms that this user has an invitation for. */
@@ -370,7 +370,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 		val roomsJoined = rooms.obj("join") ?: missing("rooms.join")
 		val roomsInvited = rooms.obj("invite") ?: missing("rooms.invite")
 		
-		for (room in roomsJoined.keys.map { Room(this, RoomId.fromString(it)) })
+		for (room in roomsJoined.keys.map { MatrixRoom(this, MatrixRoomId(it)) })
 		{
 			if (this.roomsJoined.containsKey(room.id))
 			{
@@ -381,7 +381,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 			fire(RoomJoinEvent(room))
 		}
 		
-		for (room in roomsInvited.keys.map { RoomInvitation(this, RoomId.fromString(it)) })
+		for (room in roomsInvited.keys.map { RoomInvitation(this, MatrixRoomId(it)) })
 		{
 			this.roomsInvited.add(room)
 			fire(RoomInvitationEvent(room))
@@ -481,11 +481,11 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 				next_batch = json.string("next_batch") ?: missing("next_batch")
 				val rooms = json.obj("rooms") ?: missing("rooms")
 				val join = rooms.obj("join") ?: missing("rooms.join")
-				for (roomId in join.keys.map { RoomId.fromString(it) })
+				for (roomId in join.keys.map { MatrixRoomId(it) })
 				{
 					if (!roomsJoined.contains(roomId))
 					{
-						val room = Room(this, roomId)
+						val room = MatrixRoom(this, roomId)
 						roomsJoined[roomId] = room
 						fire(RoomJoinEvent(room))
 					}
@@ -496,7 +496,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 						fire(RoomMessageReceivedEvent(room, msg))
 				}
 				val invite = rooms.obj("invite") ?: missing("rooms.invite")
-				for (roomId in invite.keys.map { RoomId.fromString(it) })
+				for (roomId in invite.keys.map { MatrixRoomId(it) })
 				{
 					val inv = RoomInvitation(this, roomId)
 					roomsInvited.add(inv)
@@ -645,30 +645,6 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 		sendToDevice(ev, evType, devices)
 	}
 	
-	
-	/**
-	 * Create a new room.
-	 *
-	 * @param name If not null, set the `m.room.name` event.
-	 * @param topic If not null, set the `m.room.topic` event.
-	 * @param public If true, this room will be published to the room list.
-	 * @return The created room.
-	 * @throws MatrixAnswerException On errors in the matrix answer.
-	 */
-	@Throws(MatrixAnswerException::class)
-	@JvmOverloads
-	fun createRoom(name : String? = null, topic : String? = null, public : Boolean = false) : Room
-	{
-		val json = JsonObject()
-		if (name != null)
-			json["name"] = name
-		if (topic != null)
-			json["topic"] = topic
-		json["preset"] = if (public) "public_chat" else "private_chat"
-		val res = target.post("_matrix/client/r0/createRoom", token ?: throw NoTokenException(), id, json)
-		checkForError(res)
-		return Room(this, RoomId.fromString(res.json.string("room_id") ?: missing("room_id")))
-	}
 }
 
 @Deprecated("Use MatrixClient instead")

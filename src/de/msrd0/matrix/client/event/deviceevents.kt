@@ -20,11 +20,11 @@
 package de.msrd0.matrix.client.event
 
 import com.beust.klaxon.*
-import de.msrd0.matrix.client.RoomId
+import de.msrd0.matrix.client.room.MatrixRoomId
 
 class NewDeviceEventContent(
 		val device_id : String,
-		val rooms : Collection<RoomId>
+		val rooms : Collection<MatrixRoomId>
 ) : MatrixEventContent()
 {
 	override val json : JsonObject get()

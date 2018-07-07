@@ -21,6 +21,7 @@ package de.msrd0.matrix.client.event.call
 
 import com.beust.klaxon.JsonObject
 import de.msrd0.matrix.client.*
+import de.msrd0.matrix.client.room.MatrixRoom
 
 /**
  * The content of a call hangup event.
@@ -47,6 +48,6 @@ class CallHangupEventContent(
  */
 class CallHangupEvent
 @Throws(IllegalJsonException::class)
-constructor(room : Room, json : JsonObject)
+constructor(room : MatrixRoom, json : JsonObject)
 	: CallEvent<CallHangupEventContent>(room, json,
 		CallHangupEventContent.fromJson(json.obj("content") ?: missing("content")))

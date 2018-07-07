@@ -21,6 +21,7 @@ package de.msrd0.matrix.client.event
 
 import com.beust.klaxon.JsonObject
 import de.msrd0.matrix.client.*
+import de.msrd0.matrix.client.room.*
 import de.msrd0.matrix.client.util.JsonSerializable
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit.*
@@ -74,12 +75,12 @@ constructor(
 }
 
 abstract class MatrixRoomEvent<out C : MatrixEventContent>(
-		val room : Room,
+		val room : MatrixRoom,
 		data : MatrixEventData,
 		content : C
 ) : MatrixEvent<C>(data, content)
 {
-	constructor(room : Room, json : JsonObject, content : C)
+	constructor(room : MatrixRoom, json : JsonObject, content : C)
 			: this(room, MatrixEventData(json), content)
 	
 	val roomId get() = room.id

@@ -20,6 +20,7 @@
 package de.msrd0.matrix.client.test
 
 import de.msrd0.matrix.client.*
+import de.msrd0.matrix.client.room.*
 import org.hamcrest.MatcherAssert.*
 import org.hamcrest.Matchers.*
 import org.testng.annotations.Test
@@ -47,13 +48,13 @@ class Tests
 	fun roomIdFromString()
 	{
 		val ids = arrayOf(
-				Pair("!AikeXjUeFRjsQZJWhb:matrix.org", RoomId("AikeXjUeFRjsQZJWhb", "matrix.org")),
-				Pair("!AikeXjUeFRjsQZJWhb:localhost:8008", RoomId("AikeXjUeFRjsQZJWhb", "localhost:8008"))
+				Pair("!AikeXjUeFRjsQZJWhb:matrix.org", MatrixRoomId("AikeXjUeFRjsQZJWhb", "matrix.org")),
+				Pair("!AikeXjUeFRjsQZJWhb:localhost:8008", MatrixRoomId("AikeXjUeFRjsQZJWhb", "localhost:8008"))
 		)
 		for ((str, id) in ids)
 		{
 			assertThat(str, equalTo("$id"))
-			assertThat(id, equalTo(RoomId.fromString(str)))
+			assertThat(id, equalTo(MatrixRoomId(str)))
 		}
 	}
 	
@@ -61,13 +62,13 @@ class Tests
 	fun roomAliasFromString()
 	{
 		val aliases = arrayOf(
-				Pair("#matrix-dev:matrix.org", RoomAlias("matrix-dev", "matrix.org")),
-				Pair("#test:localhost:8008", RoomAlias("test", "localhost:8008"))
+				Pair("#matrix-dev:matrix.org", MatrixRoomAlias("matrix-dev", "matrix.org")),
+				Pair("#test:localhost:8008", MatrixRoomAlias("test", "localhost:8008"))
 		)
 		for ((str, alias) in aliases)
 		{
 			assertThat(str, equalTo("$alias"))
-			assertThat(alias, equalTo(RoomAlias.fromString(str)))
+			assertThat(alias, equalTo(MatrixRoomAlias(str)))
 		}
 	}
 }

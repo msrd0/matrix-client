@@ -20,7 +20,7 @@
 package de.msrd0.matrix.client.filter
 
 import com.beust.klaxon.*
-import de.msrd0.matrix.client.RoomId
+import de.msrd0.matrix.client.room.MatrixRoomId
 import de.msrd0.matrix.client.util.JsonSerializable
 
 class RoomFilter : JsonSerializable
@@ -36,9 +36,9 @@ class RoomFilter : JsonSerializable
 	/** The state events to include for rooms. */
 	var state = RoomEventFilter()
 	/** A list of room IDs to exclude. A matching room will be excluded even if listed in `rooms`. */
-	var notRooms = ArrayList<RoomId>()
+	var notRooms = ArrayList<MatrixRoomId>()
 	/** A list of room IDs to include. */
-	var rooms = ArrayList<RoomId>()
+	var rooms = ArrayList<MatrixRoomId>()
 	
 	override val json : JsonObject get()
 	{

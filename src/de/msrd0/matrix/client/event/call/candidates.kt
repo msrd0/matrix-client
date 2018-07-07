@@ -21,6 +21,7 @@ package de.msrd0.matrix.client.event.call
 
 import com.beust.klaxon.*
 import de.msrd0.matrix.client.*
+import de.msrd0.matrix.client.room.MatrixRoom
 import de.msrd0.matrix.client.util.JsonSerializable
 
 data class CallCandidate(
@@ -79,6 +80,6 @@ class CallCandidatesEventContent(
  */
 class CallCandidatesEvent
 @Throws(IllegalJsonException::class)
-constructor(room : Room, json : JsonObject)
+constructor(room : MatrixRoom, json : JsonObject)
 	: CallEvent<CallCandidatesEventContent>(room, json,
 		CallCandidatesEventContent.fromJson(json.obj("content") ?: missing("content")))

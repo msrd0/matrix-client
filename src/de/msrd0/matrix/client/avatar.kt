@@ -67,7 +67,7 @@ class Avatar @JvmOverloads constructor(
 {
 	@JvmOverloads
 	constructor(url : String, info : AvatarInfo? = null)
-			: this(MatrixContentUrl.fromString(url), info)
+			: this(MatrixContentUrl(url), info)
 	
 	companion object
 	{

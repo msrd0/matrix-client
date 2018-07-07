@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
  */
 
-package de.msrd0.matrix.client
+package de.msrd0.matrix.client.room
 
 import de.msrd0.matrix.client.util.emptyMutableMap
 import kotlin.reflect.KProperty
@@ -93,11 +93,11 @@ class RoomEventStateKeyMap<V>(
  * Delegate for room properties from a state event with multiple state keys.
  */
 class RoomEventStateKeyDelegate<V>(
-		val retrieve : Room.(String) -> V,
-		val update : Room.(String, V) -> Unit
+		val retrieve : RoomCache.(String) -> V,
+		val update : RoomCache.(String, V) -> Unit
 )
 {
-	operator fun getValue(self : Room, property : KProperty<*>) : RoomEventStateKeyMap<V>
+	operator fun getValue(self : RoomCache, property : KProperty<*>) : RoomEventStateKeyMap<V>
 	{
 		val name = property.name
 		

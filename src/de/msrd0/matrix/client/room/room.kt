@@ -17,9 +17,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0>.
  */
 
-package de.msrd0.matrix.client
+package de.msrd0.matrix.client.room
 
 import com.beust.klaxon.JsonObject
+import de.msrd0.matrix.client.*
 import de.msrd0.matrix.client.MatrixClient.Companion.checkForError
 import de.msrd0.matrix.client.event.*
 import de.msrd0.matrix.client.event.MatrixEventTypes.*
@@ -29,16 +30,16 @@ import org.slf4j.*
 /**
  * This class represents a matrix room.
  */
-open class Room(
+open class MatrixRoom(
 		val client : MatrixClient,
-		val id : RoomId
+		val id : MatrixRoomId
 ) : RoomCache()
 {
 	override fun toString() = "Room(name=$name, id=$id)"
 	
 	companion object
 	{
-		val logger : Logger = LoggerFactory.getLogger(Room::class.java)
+		val logger : Logger = LoggerFactory.getLogger(MatrixRoom::class.java)
 	}
 	
 	/**
@@ -75,7 +76,7 @@ open class Room(
 	/** The name of this room or it's id. */
 	var name : String by RoomEventDelegate(
 			{ RoomNameEventContent.fromJson(retrieveStateEvent(ROOM_NAME) ?: return@RoomEventDelegate id.id).name },
-			{ sendStateEvent(ROOM_NAME, RoomNameEventContent(it))}
+			{ sendStateEvent(ROOM_NAME, RoomNameEventContent(it)) }
 	)
 	
 	/** The topic of this room or an empty string. */
@@ -86,26 +87,38 @@ open class Room(
 	
 	/** The avatar of this room or null. */
 	var avatar : Avatar? by RoomEventDelegate(
-			{ Avatar.fromJson(retrieveStateEvent(ROOM_AVATAR) ?: return@RoomEventDelegate null) },
+			{
+				Avatar.fromJson(retrieveStateEvent(ROOM_AVATAR)
+						?: return@RoomEventDelegate null)
+			},
 			{ sendStateEvent(ROOM_AVATAR, it!!) }
 	)
 	
 	/** All room aliases sorted by their homeserver. */
-	val aliases by RoomEventStateKeyDelegate<List<RoomAlias>>(
-			{ hs -> RoomAliasesEventContent.fromJson(retrieveStateEvent(ROOM_ALIASES, hs) ?: return@RoomEventStateKeyDelegate emptyList()).aliases },
+	val aliases by RoomEventStateKeyDelegate<List<MatrixRoomAlias>>(
+			{ hs ->
+				RoomAliasesEventContent.fromJson(retrieveStateEvent(ROOM_ALIASES, hs)
+						?: return@RoomEventStateKeyDelegate emptyList()).aliases
+			},
 			{ hs, aliasList -> sendStateEvent(ROOM_ALIASES, RoomAliasesEventContent(aliasList), hs) }
 	)
 	
 	/** The canonical alias of this room or null. */
-	var canonicalAlias : RoomAlias? by RoomEventDelegate(
-			{ RoomCanonicalAliasEventContent.fromJson(retrieveStateEvent(ROOM_CANONICAL_ALIAS) ?: return@RoomEventDelegate null).alias },
+	var canonicalAlias : MatrixRoomAlias? by RoomEventDelegate(
+			{
+				RoomCanonicalAliasEventContent.fromJson(retrieveStateEvent(ROOM_CANONICAL_ALIAS)
+						?: return@RoomEventDelegate null).alias
+			},
 			{ sendStateEvent(ROOM_CANONICAL_ALIAS, RoomCanonicalAliasEventContent(it!!)) }
 	)
 	
 	/** The power levels of this room. */
 	// TODO the power levels should be updated when we change the respective properties, not only through assignment
 	var powerLevels : RoomPowerLevels by RoomEventDelegate(
-			{ RoomPowerLevels.fromJson(retrieveStateEvent(ROOM_POWER_LEVELS) ?: return@RoomEventDelegate RoomPowerLevels()) },
+			{
+				RoomPowerLevels.fromJson(retrieveStateEvent(ROOM_POWER_LEVELS)
+						?: return@RoomEventDelegate RoomPowerLevels())
+			},
 			{ sendStateEvent(ROOM_POWER_LEVELS, it) }
 	)
 	
@@ -200,7 +213,7 @@ open class Room(
 	 * @throws MatrixAnswerException On errors in the matrix answer.
 	 */
 	@Throws(MatrixAnswerException::class)
-	fun addAlias(alias : RoomAlias)
+	fun addAlias(alias : MatrixRoomAlias)
 	{
 		val res = client.target.put("_matrix/client/r0/directory/room/$alias", client.token ?: throw NoTokenException(),
 				client.id, JsonObject(mapOf("room_id" to "$id")))

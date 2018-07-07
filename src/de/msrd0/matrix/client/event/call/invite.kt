@@ -21,6 +21,7 @@ package de.msrd0.matrix.client.event.call
 
 import com.beust.klaxon.JsonObject
 import de.msrd0.matrix.client.*
+import de.msrd0.matrix.client.room.MatrixRoom
 
 /**
  * The content of a call invite event.
@@ -59,6 +60,6 @@ class CallInviteEventContent(
  */
 class CallInviteEvent
 @Throws(IllegalJsonException::class)
-constructor(room : Room, json : JsonObject)
+constructor(room : MatrixRoom, json : JsonObject)
 	: CallEvent<CallInviteEventContent>(room, json,
 		CallInviteEventContent.fromJson(json.obj("content") ?: missing("content")))

@@ -24,6 +24,7 @@ import de.msrd0.matrix.client.event.*
 import de.msrd0.matrix.client.event.state.*
 import de.msrd0.matrix.client.modules.contentrepo.downloadBytes
 import de.msrd0.matrix.client.modules.devicemanagement.*
+import de.msrd0.matrix.client.room.*
 import org.apache.commons.io.IOUtils
 import org.hamcrest.MatcherAssert.*
 import org.hamcrest.Matchers.*
@@ -44,7 +45,7 @@ class MatrixClientTest
 		var id = MatrixId("test${System.currentTimeMillis()}", "synapse")
 		val password = "Eish2nies9peifaez7uX"
 		var userData : MatrixUserData? = null
-		var roomId : RoomId? = null
+		var roomId : MatrixRoomId? = null
 		
 		val testImage : RenderedImage = ImageIO.read(getSystemResourceAsStream("matrix-logo.png"))
 		var testAvatar : Avatar? = null
@@ -178,8 +179,8 @@ class MatrixClientTest
 		val aliases = listOf(
 				"#test${System.currentTimeMillis()}:synapse",
 				"#dummy${System.currentTimeMillis()}:synapse"
-		).map { RoomAlias.fromString(it) }
-		val room = Room(client, roomId!!)
+		).map { MatrixRoomAlias(it) }
+		val room = MatrixRoom(client, roomId!!)
 		
 		var powerLevels = room.powerLevels
 		val powerLevelEvent = "msrd0.matrix.client.test.power_level_event" to 7
@@ -218,7 +219,7 @@ class MatrixClientTest
 	fun room_send_message()
 	{
 		val client = newClient()
-		val room = Room(client, roomId!!)
+		val room = MatrixRoom(client, roomId!!)
 		
 		val msg = FormattedTextMessageContent(
 				"This is a test message",
@@ -241,7 +242,7 @@ class MatrixClientTest
 	fun room_send_image()
 	{
 		val client = newClient()
-		val room = Room(client, roomId!!)
+		val room = MatrixRoom(client, roomId!!)
 		
 		val msg = ImageMessageContent("matrix-logo.png")
 		val img = testImage
@@ -265,7 +266,7 @@ class MatrixClientTest
 	fun room_send_file()
 	{
 		val client = newClient()
-		val room = Room(client, roomId!!)
+		val room = MatrixRoom(client, roomId!!)
 		
 		val msg = FileMessageContent("blindtext.txt")
 		val bytes = testFile.toByteArray(UTF_8)

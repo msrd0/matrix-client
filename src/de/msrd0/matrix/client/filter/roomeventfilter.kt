@@ -20,14 +20,14 @@
 package de.msrd0.matrix.client.filter
 
 import com.beust.klaxon.*
-import de.msrd0.matrix.client.RoomId
+import de.msrd0.matrix.client.room.MatrixRoomId
 
 class RoomEventFilter : EventFilter()
 {
 	/** A list of room IDs to exclude. A matching room will be excluded even if in `rooms`. */
-	var notRooms = ArrayList<RoomId>()
+	var notRooms = ArrayList<MatrixRoomId>()
 	/** A list of room IDs to include. */
-	var rooms = ArrayList<RoomId>()
+	var rooms = ArrayList<MatrixRoomId>()
 	
 	override val json : JsonObject get()
 	{

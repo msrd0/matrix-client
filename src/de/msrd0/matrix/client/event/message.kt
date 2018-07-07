@@ -24,6 +24,7 @@ import de.msrd0.matrix.client.*
 import de.msrd0.matrix.client.event.MatrixEventTypes.*
 import de.msrd0.matrix.client.event.MessageTypes.*
 import de.msrd0.matrix.client.modules.contentrepo.*
+import de.msrd0.matrix.client.room.*
 import org.slf4j.*
 import java.awt.image.RenderedImage
 import java.io.*
@@ -313,7 +314,7 @@ interface Message
  */
 class RoomMessageEvent
 @Throws(IllegalJsonException::class)
-constructor(room : Room, json : JsonObject)
+constructor(room : MatrixRoom, json : JsonObject)
 	: MatrixRoomEvent<MessageContent>(room, json,
 		MessageContent.fromJson(json.obj("content") ?: missing("content")))
 	, Message
@@ -330,14 +331,14 @@ class Messages(
 		private val messages : List<Message> = emptyList()
 ) : List<Message> by messages
 {
-	constructor(start : String, end : String, room : Room, json : JsonArray<JsonObject>)
+	constructor(start : String, end : String, room : MatrixRoom, json : JsonArray<JsonObject>)
 			: this(start, end, fromJson(room, json))
 	
 	companion object
 	{
 		private val logger : Logger = LoggerFactory.getLogger(Messages::class.java)
 		
-		fun fromJson(room : Room, json : JsonArray<JsonObject>) : List<Message> = json.mapNotNull {
+		fun fromJson(room : MatrixRoom, json : JsonArray<JsonObject>) : List<Message> = json.mapNotNull {
 			val type = it.string("type")
 			if (type == ROOM_MESSAGE)
 				RoomMessageEvent(room, it)

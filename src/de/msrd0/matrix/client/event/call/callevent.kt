@@ -22,6 +22,7 @@ package de.msrd0.matrix.client.event.call
 import com.beust.klaxon.JsonObject
 import de.msrd0.matrix.client.*
 import de.msrd0.matrix.client.event.*
+import de.msrd0.matrix.client.room.MatrixRoom
 import de.msrd0.matrix.client.util.JsonSerializable
 
 data class CallEventDescriptor(
@@ -63,12 +64,12 @@ abstract class CallEventContent(
  * A call event.
  */
 abstract class CallEvent<out C : CallEventContent>(
-		room : Room,
+		room : MatrixRoom,
 		data : MatrixEventData,
 		content : C
 ) : MatrixRoomEvent<C>(room, data, content)
 {
-	constructor(room : Room, json : JsonObject, content : C)
+	constructor(room : MatrixRoom, json : JsonObject, content : C)
 			: this(room, MatrixEventData(json), content)
 	
 	val callId get() = content.callId
