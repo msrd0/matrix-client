@@ -28,8 +28,8 @@ import java.time.*
 data class Device(
 		val deviceId : String,
 		val displayName : String?,
-		val lastSeenIp : String,
-		val lastSeen : ZonedDateTime
+		val lastSeenIp : String?,
+		val lastSeen : ZonedDateTime?
 )
 {
 	companion object
@@ -49,7 +49,7 @@ data class Device(
 	constructor(json : JsonObject) : this(
 			json.string("device_id") ?: missing("device_id"),
 			json.string("display_name"),
-			json.string("last_seen_ip") ?: missing("last_seen_ip"),
-			Instant.ofEpochMilli(json.long("last_seen_ts") ?: missing("last_seen_ts")).atZone(ZoneId.systemDefault())
+			json.string("last_seen_ip"),
+			json.long("last_seen_ts")?.let { Instant.ofEpochMilli(it) }?.atZone(ZoneId.systemDefault())
 	)
 }
