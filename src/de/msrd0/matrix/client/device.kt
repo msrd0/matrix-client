@@ -27,7 +27,7 @@ import java.time.*
  */
 data class Device(
 		val deviceId : String,
-		val displayName : String,
+		val displayName : String?,
 		val lastSeenIp : String,
 		val lastSeen : ZonedDateTime
 )
@@ -48,7 +48,7 @@ data class Device(
 	@Throws(IllegalJsonException::class)
 	constructor(json : JsonObject) : this(
 			json.string("device_id") ?: missing("device_id"),
-			json.string("display_name") ?: missing("display_name"),
+			json.string("display_name"),
 			json.string("last_seen_ip") ?: missing("last_seen_ip"),
 			Instant.ofEpochMilli(json.long("last_seen_ts") ?: missing("last_seen_ts")).atZone(ZoneId.systemDefault())
 	)
