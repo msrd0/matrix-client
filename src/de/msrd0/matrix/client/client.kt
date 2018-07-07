@@ -700,13 +700,13 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	fun deleteDevice(deviceId : String, helper : FlowHelper = DefaultFlowHelper())
 	{
 		val json = JsonObject()
-		var res = target.delete("_matrix/client/r0/devices/$deviceId", json)
+		var res = target.delete("_matrix/client/r0/devices/$deviceId", token ?: throw NoTokenException(), id, json)
 		
 		while (res.status.status == 401 && res.json.containsKey("flows"))
 		{
 			val flowResponse = helper.answer(FlowRequest.fromJson(res.json))
 			json["auth"] = flowResponse.json
-			res = target.delete("_matrix/client/r0/devices/$deviceId", json)
+			res = target.delete("_matrix/client/r0/devices/$deviceId", token ?: throw NoTokenException(), id, json)
 		}
 		
 		checkForError(res)
