@@ -61,14 +61,14 @@ class MatrixClientTest
 		}
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
+	@Test(groups = ["api"], dependsOnMethods = ["client_register"])
 	fun avatar()
 	{
 		val client = newClient()
 		testAvatar = Avatar.fromImage(testImage, client)
 	}
 	
-	@Test(groups = arrayOf("api"))
+	@Test(groups = ["api"])
 	fun client_register()
 	{
 		val client = MatrixClient.register(id.localpart, hs, password)
@@ -82,7 +82,7 @@ class MatrixClientTest
 		id = client.id // to make sure the domain is what synapse think it would be
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
+	@Test(groups = ["api"], dependsOnMethods = ["client_register"])
 	fun client_login()
 	{
 		val client = newClient()
@@ -101,7 +101,7 @@ class MatrixClientTest
 		client.sync()
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register", "avatar"))
+	@Test(groups = ["api"], dependsOnMethods = ["client_register", "avatar"])
 	fun client_update()
 	{
 		val client = newClient()
@@ -116,7 +116,7 @@ class MatrixClientTest
 		assertThat(client.downloadBytes(avatar.url).first.size, equalTo(testAvatar!!.info!!.size))
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
+	@Test(groups = ["api"], dependsOnMethods = ["client_register"])
 	fun device_update()
 	{
 		val client = newClient()
@@ -128,7 +128,33 @@ class MatrixClientTest
 		assertThat(device!!.displayName, equalTo(name))
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("client_register"))
+	@Test(groups = ["api"], dependsOnMethods = ["client_register"])
+	fun device_delete()
+	{
+		val client = newClient()
+		
+		// create a new client
+		val tbd = newClient()
+		tbd.userData = null // make sure we create a new device
+		val auth = tbd.auth(LoginType.PASSWORD)!!
+		auth.setProperty("password", password)
+		val res = auth.submit()
+		assertThat(res.filter { it.isSuccess }.size, greaterThan(0))
+		val deviceId = tbd.deviceId
+		assertNotNull(deviceId) // we are now logged in with a new device
+		deviceId!!
+		
+		// make sure the device is one of our devices
+		assertThat(client.devices().map { it.deviceId }, contains(deviceId))
+		
+		// delete the device
+		client.deleteDevice(deviceId, DefaultFlowHelper(password))
+		
+		// make sure the device is no longer our device
+		assertThat(client.devices().map { it.deviceId }, not(contains(deviceId)))
+	}
+	
+	@Test(groups = ["api"], dependsOnMethods = ["client_register"])
 	fun room_create()
 	{
 		val client = newClient()
@@ -167,7 +193,7 @@ class MatrixClientTest
 		assertThat(room.historyVisibility, equalTo(RoomHistoryVisibility.SHARED))
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create", "avatar"))
+	@Test(groups = ["api"], dependsOnMethods = ["room_create", "avatar"])
 	fun room_update()
 	{
 		val client = newClient()
@@ -212,7 +238,7 @@ class MatrixClientTest
 		
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create"))
+	@Test(groups = ["api"], dependsOnMethods = ["room_create"])
 	fun room_send_message()
 	{
 		val client = newClient()
@@ -235,7 +261,7 @@ class MatrixClientTest
 		assertThat(content.formattedBody, equalTo(msg.formattedBody))
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create"))
+	@Test(groups = ["api"], dependsOnMethods = ["room_create"])
 	fun room_send_image()
 	{
 		val client = newClient()
@@ -259,7 +285,7 @@ class MatrixClientTest
 		assertThat(downloaded.height, equalTo(img.height))
 	}
 	
-	@Test(groups = arrayOf("api"), dependsOnMethods = arrayOf("room_create"))
+	@Test(groups = ["api"], dependsOnMethods = ["room_create"])
 	fun room_send_file()
 	{
 		val client = newClient()
