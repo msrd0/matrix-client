@@ -1,5 +1,6 @@
 buildscript {
 	ext.artifactoryVersion = '4.7.5'
+	ext.commonsCodecVersion = '1.11'
 	ext.commonsIoVersion = '2.6'
 	ext.consoleReporterVersion = '0.5.0'
 	ext.guavaVersion = '25.1-jre'
@@ -199,6 +200,7 @@ configure(allprojects - project('matrix-client-cli')) {
 dependencies {
 	
 	// apache commons
+	compile "commons-codec:commons-codec:$commonsCodecVersion"
 	compile "commons-io:commons-io:$commonsIoVersion"
 	
 	// http lib
