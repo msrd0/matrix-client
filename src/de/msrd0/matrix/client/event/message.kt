@@ -23,9 +23,12 @@ import com.beust.klaxon.*
 import de.msrd0.matrix.client.*
 import de.msrd0.matrix.client.event.MatrixEventTypes.*
 import de.msrd0.matrix.client.event.MessageTypes.*
+import de.msrd0.matrix.client.util.*
 import org.slf4j.*
 import java.awt.image.RenderedImage
 import java.io.*
+import java.lang.System.*
+import java.security.SecureRandom
 import java.time.LocalDateTime
 import javax.imageio.ImageIO
 
@@ -158,6 +161,82 @@ abstract class UrlMessageContent
 	}
 }
 
+data class EncryptedFileKey(
+		val alg : String,
+		val ext : Boolean,
+		val k : String,
+		val keyOps : List<String>,
+		val kty : String
+) : JsonSerializable
+{
+	@Throws(IllegalJsonException::class)
+	constructor(json : JsonObject) : this(
+			json.string("alg") ?: missing("alg"),
+			json.boolean("ext") ?: missing("ext"),
+			json.string("k") ?: missing("k"),
+			json.array<String>("key_ops") ?: missing("key_ops"),
+			json.string("kty") ?: missing("kty")
+	)
+	
+	override val json : JsonObject get() = JsonObject(mapOf(
+			"alg" to alg,
+			"ext" to ext,
+			"k" to k,
+			"key_ops" to JsonArray(keyOps),
+			"kty" to kty
+	))
+}
+
+data class EncryptedFileInfo(
+		val url : MatrixContentUrl,
+		val mimetype : String,
+		val key : EncryptedFileKey,
+		val hashes : Map<String, String>
+) : JsonSerializable
+{
+	@Throws(IllegalJsonException::class)
+	constructor(json : JsonObject) : this(
+			json.string("url")?.let { MatrixContentUrl.fromString(it) } ?: missing("url"),
+			json.string("mimetype") ?: missing("mimetype"),
+			json.obj("key")?.let { EncryptedFileKey(it) } ?: missing("key"),
+			json.obj("hashes")?.mapValues { (_, v) ->
+				(v as? String) ?: throw IllegalJsonException("Hash is not of type String")
+			} ?: missing("hashes")
+	)
+	{
+		iv = json.string("iv")?.fromBase64() ?: missing("iv")
+	}
+	
+	companion object
+	{
+		private val srng = SecureRandom()
+	}
+	
+	lateinit var iv : ByteArray
+	
+	fun randomIv()
+	{
+		iv = ByteArray(128) { 0 }
+		val rand = ByteArray(64)
+		srng.nextBytes(rand)
+		arraycopy(rand, 0, iv, 0, 64)
+	}
+	
+	override val json : JsonObject get() = JsonObject(mapOf(
+			"url" to "$url",
+			"mimetype" to mimetype,
+			"key" to key.json,
+			"iv" to if (::iv.isInitialized) iv.toUnpaddedBase64() else null,
+			"hashes" to hashes
+	))
+}
+
+abstract class EncryptedUrlMessageContent
+@JvmOverloads constructor(
+		body : String,
+		mimetype : String = "application/octet-stream"
+)
+
 /**
  * The content of an image message. Please make sure to call `uploadImage` before trying to send events of this type.
  */
@@ -230,6 +309,11 @@ open class ImageMessageContent(alt : String) : UrlMessageContent(alt, IMAGE, "im
 		json["h"] = height
 		return json
 	}
+}
+
+open class EncryptedImageMessageContent(alt : String) : UrlMessageContent(alt, IMAGE, "image/png")
+{
+
 }
 
 /**
