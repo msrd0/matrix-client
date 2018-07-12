@@ -97,7 +97,7 @@ configure(allprojects - project('matrix-client-cli')) {
 	dependencies {
 		// stdlib
 		compile "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
-		compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlinVersion"
+		compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
 		compile "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion"
 	}
 	

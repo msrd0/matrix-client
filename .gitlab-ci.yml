@@ -28,3 +28,14 @@ deploy:
     - GRADLE_USER_HOME=.gradle gradle artifactoryPublish
   only:
     - master
+
+pages:
+  stage: deploy
+  script:
+    - GRADLE_USER_HOME=.gradle gradle dokka
+    - mv build/javadoc public
+  artifacts:
+    paths:
+      - public
+  only:
+    - tags
