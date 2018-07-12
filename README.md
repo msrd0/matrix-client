@@ -38,12 +38,12 @@ repositories {
 }
 
 dependencies {
-	compile "msrd0.matrix:matrix-client:+"
+	compile "de.msrd0.matrix:matrix-client:1.0-rc1"
 }
 ```
 
 ## Usage
 
 To see how this client can be used, take a look at the
-[Main](https://gitlab.com/mextrix/matrix-client/blob/master/cli/src/msrd0/matrix/client/cli/Main.java)
+[Main](https://gitlab.com/mextrix/matrix-client/blob/master/cli/src/de/msrd0/matrix/client/cli/Main.java)
 class in the cli project

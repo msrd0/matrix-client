@@ -1,5 +1,5 @@
 apply plugin: 'application'
-mainClassName = "msrd0.matrix.client.cli.Main"
+mainClassName = "de.msrd0.matrix.client.cli.Main"
 run.standardInput = System.in
 
 dependencies {
