@@ -2,6 +2,12 @@
 
 A [matrix](https://matrix.org/) client for Java and other JVM languages written in Kotlin.
 
+The documentation of the `master`-branch is automatically uploaded here:
+https://mextrix.gitlab.io/matrix-client/
+
+If you encounter any problems, please open an issue here:
+https://gitlab.com/mextrix/matrix-client/issues
+
 There is also a cli interface written in Java in the `cli` folder.
 
 ## Supported Modules
