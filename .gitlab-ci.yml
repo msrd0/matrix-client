@@ -33,8 +33,9 @@ pages:
   stage: deploy
   script:
     - GRADLE_USER_HOME=.gradle gradle dokka
+    - mv build/javadoc public
   artifacts:
     paths:
-      - build/javadoc
+      - public
   only:
     - master
