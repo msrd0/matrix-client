@@ -22,8 +22,8 @@ package de.msrd0.matrix.client.util
 object MextrixMatrixClient
 {
 	@JvmStatic
-	val VERSION = "0.1-SNAPSHOT"
-	
+	val VERSION = "1.0"
+
 	@JvmStatic
 	val URL = "https://gitlab.com/mextrix/matrix-client"
 }
