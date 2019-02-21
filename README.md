@@ -32,7 +32,7 @@ repositories {
 }
 
 dependencies {
-	compile "de.msrd0.matrix:matrix-client:1.0"
+	compile "de.msrd0.matrix:matrix-client:1.1"
 }
 ```
 
