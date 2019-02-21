@@ -19,8 +19,8 @@
 
 package de.msrd0.matrix.client.listener
 
-import kotlinx.coroutines.experimental.launch
-import kotlinx.coroutines.experimental.sync.Mutex
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.LinkedList
@@ -48,13 +48,11 @@ class EventQueue
 	fun addListener(type : EventType, listener : Listener<*>)
 	{
 		if (!listeners.containsKey(type))
-			listeners.put(type, LinkedList<Listener<*>>())
+			listeners.put(type, LinkedList())
 		listeners[type]!!.addFirst(listener)
 	}
 	
 	
-	/** The lock that is used to notify the queue of new events. */
-	private val lock = Mutex()
 	/** The queue that is used to store events. */
 	private val q : BlockingDeque<Event> = LinkedBlockingDeque()
 	/** Tells the queue whether it should be stopped. */
@@ -92,7 +90,7 @@ class EventQueue
 		if (isRunning)
 			throw IllegalStateException("The queue is already running")
 		
-		launch {
+		GlobalScope.launch {
 			isRunning = true
 			logger.debug("EventQueue started on Thread ${Thread.currentThread()}")
 			
