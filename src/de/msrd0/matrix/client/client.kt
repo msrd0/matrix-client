@@ -24,8 +24,10 @@ import de.msrd0.matrix.client.event.*
 import de.msrd0.matrix.client.filter.*
 import de.msrd0.matrix.client.listener.*
 import de.msrd0.matrix.client.util.*
-import kotlinx.coroutines.experimental.launch
-import kotlinx.coroutines.experimental.sync.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.slf4j.*
 import java.net.URI
 
@@ -515,7 +517,7 @@ open class MatrixClient(val hs : HomeServer, val id : MatrixId) : ListenerRegist
 	@JvmOverloads
 	fun startSyncBlocking(timeout : Int = 30000)
 	{
-		launch {
+		GlobalScope.launch {
 			syncBlocking(timeout)
 		}
 	}
