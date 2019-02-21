@@ -1,18 +1,19 @@
 buildscript {
 	ext.artifactoryVersion = '4.7.5'
+	ext.commonsCodecVersion = '1.11'
 	ext.commonsIoVersion = '2.6'
-	ext.consoleReporterVersion = '0.5.0'
-	ext.guavaVersion = '25.1-jre'
+	ext.consoleReporterVersion = '0.6.2'
+	ext.guavaVersion = '27.0.1-jre'
 	ext.hamcrestVersion = '1.3'
 	ext.jacocoVersion = '0.4.0'
-	ext.klaxonVersion = '3.0.6'
-	ext.kotlinCoroutinesVersion = '0.23.4'
+	ext.klaxonVersion = '5.0.5'
+	ext.kotlinCoroutinesVersion = '1.1.1'
 	ext.kotlinDokkaVersion = '0.9.17'
-	ext.kotlinVersion = '1.2.51'
-	ext.licenserVersion = '0.4'
+	ext.kotlinVersion = '1.3.21'
+	ext.licenserVersion = '0.4.1'
 	ext.logbackVersion = '1.2.3'
-	ext.lombokVersion = '1.18.0'
-	ext.okhttpVersion = '3.10.0'
+	ext.lombokVersion = '1.18.6'
+	ext.okhttpVersion = '3.13.1'
 	ext.slf4jVersion = '1.7.25'
 	ext.testngVersion = '6.14.3'
 	ext.versionsPluginVersion = '0.20.0'
@@ -120,12 +121,7 @@ configure(allprojects - project('matrix-client-cli')) {
 	compileTestKotlin {
 		kotlinOptions.jvmTarget = "1.8"
 	}
-	kotlin {
-		experimental {
-			coroutines 'enable'
-		}
-	}
-	
+
 	apply plugin: "org.jetbrains.dokka"
 	
 	dokka {
@@ -199,6 +195,7 @@ configure(allprojects - project('matrix-client-cli')) {
 dependencies {
 	
 	// apache commons
+	compile "commons-codec:commons-codec:$commonsCodecVersion"
 	compile "commons-io:commons-io:$commonsIoVersion"
 	
 	// http lib
