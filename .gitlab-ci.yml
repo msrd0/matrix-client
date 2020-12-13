@@ -1,11 +1,11 @@
-image: msrd0/gradle
+image: adoptopenjdk/openjdk11:alpine-slim
 
 build:
   stage: build
   before_script:
     - mkdir -p .gradle
   script:
-    - GRADLE_USER_HOME=.gradle gradle assemble
+    - GRADLE_USER_HOME=.gradle ./gradlew assemble
   artifacts:
     paths:
       - build/
@@ -18,21 +18,13 @@ test:
     - name: registry.gitlab.com/msrd0/docker-synapse
       alias: synapse
   script:
-    - GRADLE_USER_HOME=.gradle gradle test
-    - GRADLE_USER_HOME=.gradle gradle jacocoTestReport
-
-
-deploy:
-  stage: deploy
-  script:
-    - GRADLE_USER_HOME=.gradle gradle artifactoryPublish
-  only:
-    - master
+    - GRADLE_USER_HOME=.gradle ./gradlew test
+    - GRADLE_USER_HOME=.gradle ./gradlew jacocoTestReport
 
 pages:
   stage: deploy
   script:
-    - GRADLE_USER_HOME=.gradle gradle dokka
+    - GRADLE_USER_HOME=.gradle ./gradlew dokka
     - mv build/javadoc public
   artifacts:
     paths:
