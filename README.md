@@ -1,4 +1,4 @@
-# matrix-client [![GitLab CI Build Status](https://gitlab.com/mextrix/matrix-client/badges/master/build.svg)](https://gitlab.com/mextrix/matrix-client/pipelines) [![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![coverage report](https://gitlab.com/mextrix/matrix-client/badges/master/coverage.svg)](https://gitlab.com/mextrix/matrix-client/commits/master)
+# matrix-client [![GitLab CI Build Status](https://gitlab.com/mextrix/matrix-client/badges/master/pipeline.svg)](https://gitlab.com/mextrix/matrix-client/pipelines) [![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![coverage report](https://gitlab.com/mextrix/matrix-client/badges/master/coverage.svg)](https://gitlab.com/mextrix/matrix-client/commits/master)
 
 A [matrix](https://matrix.org/) client for Java and other JVM languages written in Kotlin.
 
@@ -9,6 +9,8 @@ If you encounter any problems, please open an issue here:
 https://gitlab.com/mextrix/matrix-client/issues
 
 There is also a cli interface written in Java in the `cli` folder.
+
+**NOTE:** There is nobody actively working on this project. If you are interested in working on this project, please get in touch.
 
 ## Supported Modules
 
@@ -32,13 +34,15 @@ There is also a cli interface written in Java in the `cli` folder.
 
 ## Gradle
 
+After running `./gradlew install` on this project, you can use it like this:
+
 ```gradle
 repositories {
-	maven { url "https://maven.nextgenenergy.co.nz/artifactory/maven/" }
+	mavenLocal()
 }
 
 dependencies {
-	compile "de.msrd0.matrix:matrix-client:1.0-rc1"
+	compile "de.msrd0.matrix:matrix-client:1.0"
 }
 ```
 
